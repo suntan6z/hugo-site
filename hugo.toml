@@ -1,5 +1,5 @@
 baseURL = "https://lorenzo.loconsole.eu"
-locale = "en-us"
+languageCode = "en"
 title = "Lorenzo Loconsole"
 
 [params]
@@ -46,10 +46,6 @@ title = "Lorenzo Loconsole"
     weight = 4
 
 enableRobotsTXT = true
-
-[sitemap]
-  changefreq = "monthly"
-  priority = 0.5
 
 [outputs]
   home = ["HTML", "Sitemap", "ROBOTS"]
