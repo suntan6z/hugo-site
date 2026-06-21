@@ -2,6 +2,7 @@
 title: "Digital Entrepreneurship Accelerator: Bansko, Bulgaria"
 date: 2021-09-10
 slug: "digital-entrepreneurship-accelerator"
+featured_image: "/images/erasmus/accelerator1.jpeg"
 category: "Erasmus+"
 draft: false
 partner_name: "Association Walktogether"
