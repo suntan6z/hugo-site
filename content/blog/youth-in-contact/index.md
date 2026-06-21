@@ -2,6 +2,7 @@
 title: "Youth in Contact: Chérac, France"
 date: 2020-11-22
 slug: "youth-in-contact"
+featured_image: "/images/erasmus/youthciphoto1.jpg"
 category: "Erasmus+"
 draft: false
 partner_name: "Les Schini's"
