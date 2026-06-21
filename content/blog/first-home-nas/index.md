@@ -4,6 +4,7 @@ date: 2026-02-09
 slug: "first-home-nas"
 category: "Technology"
 draft: false
+description: "How I set up my first home NAS with the Ugreen DXP2800, discovered self-hosting with Jellyfin, and took a step toward reclaiming ownership of my digital life."
 ---
 
 When I first stumbled upon a YouTube video of a tech reviewer talking about NAS, I was curious to finally understand what that meant. I've been hearing about it for a long time and I knew it was something that you need to attach to your home network, but I never understood how it actually worked or how it is useful in today's world.

@@ -4,6 +4,7 @@ date: 2024-12-20
 slug: "out-the-shadow"
 category: "Erasmus+"
 draft: false
+description: "My experience at the Out the Shadow Erasmus+ training course in Dobczyce, Poland — a Black Light Theatre project exploring mental health and self-expression."
 partner_name: "Fundacja Innowacyjnej Edukacji"
 partner_url: "https://www.fundacjainnowacyjnejedukacji.eu"
 partner_logo_url: "/images/erasmus/fundacjalogo.png"
