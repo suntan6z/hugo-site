@@ -1,0 +1,18 @@
+{{ define "main" }}
+<div style="min-height:calc(100vh - 4rem);display:flex;align-items:center;justify-content:center;padding:4rem 1.5rem">
+  <div id="not-found-wrap" style="display:flex;flex-direction:column;align-items:center;gap:2rem;max-width:900px;width:100%">
+    <div style="flex-shrink:0">
+      <img src="/img/404page.png" alt="404" style="width:min(280px,80vw);height:auto;filter:drop-shadow(0 8px 24px hsl(220 15% 15% / 0.12))" />
+    </div>
+    <div style="text-align:center;max-width:28rem">
+      <h2 style="font-family:'Fraunces',serif;font-size:clamp(1.5rem,3.5vw,2rem);font-weight:600;color:var(--accent-foreground);margin-bottom:1rem">
+        <em>Magnifique!</em> You have discovered my secret <u>404</u> collection!
+      </h2>
+      <p style="color:var(--muted-foreground);font-size:1rem;line-height:1.75;margin-bottom:2rem">
+        It is a rare find, <em>n'est-ce pas?</em> Truly a work of art. But alas, even the most beautiful errors must come to an end. <em>Sacré bleu!</em> Click the button below and pretend you saw nothing. <em>Au revoir!</em>
+      </p>
+      <a href="/" style="display:inline-flex;align-items:center;padding:0.75rem 2rem;background:var(--primary);color:var(--primary-foreground);border-radius:2rem;font-weight:500;font-size:1rem;transition:opacity 0.2s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Return to Home</a>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,219 @@
+{{ define "main" }}
+<div id="reading-progress" style="position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:100;transition:width 0.1s ease;width:0%"></div>
+
+<div style="padding-top:4.5rem">
+  <!-- Post header -->
+  <div style="padding:3rem 0 2rem;background:var(--hero-gradient)">
+    <div style="max-width:700px;margin:0 auto;padding:0 1.5rem">
+      <a href="/blog" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Blog
+      </a>
+
+      {{ if .Params.project_url }}
+      <a href="{{ .Params.project_url }}" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:1rem;font-size:0.875rem;color:var(--primary);text-decoration:none"
+         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+        🔗 Project website
+      </a>
+      {{ end }}
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin:1.5rem 0 1rem">
+        <span class="category-badge" style="font-size:0.8rem;padding:0.3rem 0.8rem">{{ .Params.category }}</span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {{ .Date.Format "Jan 2, 2006" }}
+        </span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {{ .ReadingTime }} min read
+        </span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {{ .Site.Params.author }}
+        </span>
+      </div>
+
+      <h1 style="font-family:'Fraunces',serif;font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.2;color:var(--foreground)">{{ .Title }}</h1>
+
+      {{ if .Params.excerpt }}
+      <p style="color:var(--muted-foreground);margin-top:1rem;font-size:1.05rem;line-height:1.75">{{ .Params.excerpt }}</p>
+      {{ end }}
+
+      <!-- Social share buttons (top) -->
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:1.5rem">
+        <span style="font-size:0.875rem;color:var(--muted-foreground);display:flex;align-items:center;gap:0.375rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </span>
+        <!-- X / Twitter -->
+        <a href="https://x.com/intent/tweet?text=Check+this+out+!+{{ .Title | urlquery }}&url={{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on X">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <!-- LinkedIn -->
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ .Permalink | urlquery }}&quote=Check+this+out+!" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <!-- Instagram -->
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        <!-- Threads -->
+        <a href="https://www.threads.net/intent/post?text=Check+this+out+!+{{ .Title | urlquery }}+{{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Threads">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.18.408-2.285 1.33-3.11.88-.788 2.12-1.272 3.594-1.4.997-.087 1.98-.05 2.928.107-.09-.542-.27-1.006-.535-1.378-.473-.663-1.249-1.003-2.306-1.012h-.046c-.79.004-1.477.186-2.04.542l-1.047-1.698c.845-.523 1.872-.803 3.052-.812h.074c1.667.014 2.95.6 3.81 1.741.715.949 1.12 2.18 1.204 3.66.424.154.823.34 1.193.564 1.16.7 2.035 1.69 2.533 2.862.784 1.847.85 4.576-1.286 6.669-1.835 1.793-4.092 2.593-7.287 2.616zM12.57 13.721c-1.488.13-3.07.587-3.07 2.139.02.57.31 1.637 2.121 1.808 1.894-.103 2.787-1.147 2.949-3.947z"/></svg>
+        </a>
+        <!-- Bluesky -->
+        <a href="https://bsky.app/intent/compose?text=Check+this+out+!+{{ .Title | urlquery }}+{{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Bluesky">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.627 3.603 3.493 6.163 3.187-.04.078-.08.166-.12.253-2.812 5.033 2.51 8.312 5.333 5.617 2.823 2.695 8.145-.584 5.333-5.617-.04-.087-.08-.175-.12-.253 2.56.306 5.378-.56 6.163-3.187C23.622 9.418 24 4.458 24 3.768c0-.688-.139-1.86-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>
+        </a>
+        <!-- Mastodon -->
+        <a href="https://mastodon.social/share?text=Check+this+out+!+{{ .Title | urlquery }}+{{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Mastodon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.668 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
+        </a>
+        <!-- Copy link -->
+        <button onclick="copyPostLink(this, '{{ .Permalink }}')" class="share-btn" title="Copy link">
+          <svg id="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+
+      <!-- Erasmus+ partner strip (top, before featured image) -->
+      {{ if eq .Params.category "Erasmus+" }}
+      <div style="margin-top:1.75rem;background:var(--muted,hsl(30 10% 94%));border-radius:0.75rem;padding:1.25rem 1.5rem">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2rem">
+          {{ if .Params.partner_name }}
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+            <span style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted-foreground)">Partner organisation</span>
+            <a href="{{ .Params.partner_url | default "#" }}" target="_blank" rel="noopener noreferrer"
+               style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;text-decoration:none;transition:transform 0.2s"
+               onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''">
+              {{ if .Params.partner_logo_url }}
+              <img src="{{ .Params.partner_logo_url }}" alt="{{ .Params.partner_name }}" style="height:3rem;width:auto;object-fit:contain" />
+              {{ end }}
+              <span style="font-size:0.75rem;color:var(--muted-foreground)">{{ .Params.partner_name }}</span>
+            </a>
+          </div>
+          <div style="width:1px;height:3rem;background:var(--border);flex-shrink:0"></div>
+          {{ end }}
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <img src="/images/erasmus/eufundedlogo.png" alt="Co-funded by the European Union" style="height:2.75rem;width:auto" />
+            <p style="font-size:0.72rem;color:var(--muted-foreground);max-width:18rem;line-height:1.5">
+              {{ .Params.eu_funding_text | default "Co-funded by the European Union under the Erasmus+ programme." }}
+            </p>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+
+      {{ if .Params.featured_image }}
+      <img src="{{ .Params.featured_image }}" alt="{{ .Title }}" style="width:100%;border-radius:0.75rem;margin-top:2rem;box-shadow:0 8px 32px -8px hsl(220 15% 15% / 0.2)" />
+      {{ end }}
+    </div>
+  </div>
+
+  <!-- Post body -->
+  <article class="post-body" id="post-body">
+    {{ .Content }}
+
+    <!-- Share (bottom) -->
+    <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border)">
+      <p style="font-size:0.875rem;color:var(--muted-foreground);margin-bottom:0.75rem">Share this article</p>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <a href="https://mastodon.social/share?text=Check+this+out+!+{{ .Title | urlquery }}+{{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">Mastodon</a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">LinkedIn</a>
+        <button onclick="navigator.clipboard.writeText('{{ .Permalink }}').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy link'},2000)})" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;cursor:pointer;font-family:inherit">Copy link</button>
+      </div>
+    </div>
+
+    <!-- Newsletter -->
+    <div style="margin-top:3rem;background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:2rem;box-shadow:0 4px 24px -6px hsl(220 15% 15%/0.08)">
+      <div style="display:flex;align-items:center;gap:0.875rem;margin-bottom:1rem">
+        <div style="width:2.5rem;height:2.5rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h3 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:600;margin:0">Subscribe to my Newsletter</h3>
+      </div>
+      <p style="font-size:0.875rem;color:var(--muted-foreground);margin-bottom:1.5rem;line-height:1.6">Get notified when I publish new articles about technology, EU policy, and personal reflections. No spam, unsubscribe anytime.</p>
+      <div id="newsletter-subscribed" style="display:none;align-items:center;gap:0.5rem;color:var(--primary);font-weight:500">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        You're subscribed!
+      </div>
+      <form id="newsletter-form" style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <!-- honeypot -->
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <input type="text" id="nl-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+        <input type="email" id="newsletter-email" placeholder="your@email.com" required
+          style="flex:1;min-width:200px;padding:0.65rem 1rem;border:1px solid var(--border);border-radius:0.5rem;background:var(--background);font-family:inherit;font-size:0.9rem;color:var(--foreground);outline:none" />
+        <button type="submit" id="newsletter-btn" class="btn-primary" style="display:flex;align-items:center;gap:0.5rem">
+          Subscribe
+          <svg id="nl-send-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </div>
+  </article>
+
+  <!-- Prev / Next -->
+  <nav class="post-nav" aria-label="Post navigation">
+    {{ with .PrevInSection }}
+    <a href="{{ .Permalink }}" class="post-nav-link">← Previous<span>{{ .Title }}</span></a>
+    {{ else }}<div></div>{{ end }}
+    {{ with .NextInSection }}
+    <a href="{{ .Permalink }}" class="post-nav-link" style="text-align:right">Next →<span>{{ .Title }}</span></a>
+    {{ else }}<div></div>{{ end }}
+  </nav>
+</div>
+
+<script>
+const bar = document.getElementById('reading-progress');
+const body = document.getElementById('post-body');
+window.addEventListener('scroll', () => {
+  if (!body) return;
+  const total = body.offsetHeight - window.innerHeight;
+  const scrolled = Math.max(0, window.scrollY - body.offsetTop);
+  bar.style.width = Math.min(100, (scrolled / total) * 100) + '%';
+});
+
+function copyPostLink(btn, url) {
+  const copyIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.innerHTML = checkIcon;
+    setTimeout(() => { btn.innerHTML = copyIcon; }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    btn.innerHTML = checkIcon;
+    setTimeout(() => { btn.innerHTML = copyIcon; }, 2000);
+  });
+}
+
+document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn  = document.getElementById('newsletter-btn');
+  const icon = document.getElementById('nl-send-icon');
+  btn.disabled = true;
+  btn.childNodes[0].textContent = 'Subscribing… ';
+  try {
+    await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/subscribe-newsletter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:   document.getElementById('newsletter-email').value,
+        website: document.getElementById('nl-website').value
+      })
+    });
+    e.target.style.display = 'none';
+    const ok = document.getElementById('newsletter-subscribed');
+    ok.style.display = 'flex';
+  } catch {
+    btn.disabled = false;
+    btn.childNodes[0].textContent = 'Subscribe ';
+  }
+});
+</script>
+{{ end }}
