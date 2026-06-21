@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /privacy-policy/
+Disallow: /categories/
+
+Sitemap: https://lorenzo.loconsole.eu/sitemap.xml
