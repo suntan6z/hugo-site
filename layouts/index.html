@@ -78,10 +78,10 @@
     </div>
 
     <!-- Scrolling city pills -->
-    <div style="position:relative;overflow:hidden;margin:1.5rem 0 2rem">
-      <!-- fade edges -->
-      <div style="pointer-events:none;position:absolute;left:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to right,var(--background),transparent)"></div>
-      <div style="pointer-events:none;position:absolute;right:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to left,var(--background),transparent)"></div>
+    <div class="city-pills-wrap" style="position:relative;margin:1.5rem 0 2rem">
+      <!-- fade edges (desktop only) -->
+      <div class="city-pills-fade-l" style="pointer-events:none;position:absolute;left:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to right,var(--background),transparent)"></div>
+      <div class="city-pills-fade-r" style="pointer-events:none;position:absolute;right:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to left,var(--background),transparent)"></div>
       <div id="city-pills-track" style="display:flex;gap:0.75rem;width:max-content;animation:pillsScroll 18s linear infinite;cursor:pointer" onmouseenter="this.style.animationPlayState='paused'" onmouseleave="this.style.animationPlayState='running'">
         <!-- pills injected twice for seamless loop -->
       </div>
@@ -92,7 +92,7 @@
       <button id="gallery-prev" onclick="galleryScroll(-1)" style="display:none;position:absolute;left:-1rem;top:50%;transform:translateY(-50%);z-index:10;width:2.25rem;height:2.25rem;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px hsl(220 15% 15%/0.12);cursor:pointer;align-items:center;justify-content:center">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div id="gallery-strip" style="display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding:0.25rem 0">
+      <div id="gallery-strip" style="display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding:0.25rem 0;-webkit-overflow-scrolling:touch;touch-action:pan-x">
       </div>
       <button id="gallery-next" onclick="galleryScroll(1)" style="display:none;position:absolute;right:-1rem;top:50%;transform:translateY(-50%);z-index:10;width:2.25rem;height:2.25rem;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px hsl(220 15% 15%/0.12);cursor:pointer;align-items:center;justify-content:center">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -187,8 +187,10 @@ function buildPills() {
     btn.onclick = () => selectCity(c.slug);
     return btn;
   };
-  // duplicate for seamless loop
-  [...citiesData, ...citiesData].forEach(c => track.appendChild(makePill(c)));
+  // duplicate for seamless loop on desktop; single set on mobile
+  const isMobile = window.innerWidth <= 640;
+  const pills = isMobile ? [...citiesData] : [...citiesData, ...citiesData];
+  pills.forEach(c => track.appendChild(makePill(c)));
 }
 
 function setActivePill(slug) {
