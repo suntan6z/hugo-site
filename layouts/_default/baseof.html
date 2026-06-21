@@ -6,18 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Title -->
-  <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+  <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
 
   <!-- Core meta -->
   <meta name="description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta name="author" content="{{ .Site.Params.author }}" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch.png" />
   <link rel="canonical" href="{{ .Permalink }}" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
   <!-- Open Graph -->
   <meta property="og:site_name" content="{{ .Site.Title }}" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
+  <meta property="og:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta property="og:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta property="og:url" content="{{ .Permalink }}" />
   <meta property="og:image" content="{{ .Site.BaseURL }}hero-portrait.png" />
@@ -35,7 +38,7 @@
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
+  <meta name="twitter:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta name="twitter:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta name="twitter:image" content="{{ .Site.BaseURL }}hero-portrait.png" />
 
