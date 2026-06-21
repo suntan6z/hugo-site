@@ -382,7 +382,7 @@ footer {
 .social-icon {
   width: 40px; height: 40px;
   border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0;
   background: var(--muted); color: var(--muted-foreground);
   transition: all 0.3s;
 }
@@ -403,14 +403,14 @@ footer {
 .skills-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 3rem; }
 .skill-card { padding: 1.5rem; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); text-align: center; box-shadow: var(--card-shadow); transition: all 0.2s; }
 .skill-card:hover { transform: translateY(-4px); box-shadow: var(--card-shadow-hover); }
-.skill-icon { width: 3rem; height: 3rem; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: var(--primary); }
+.skill-icon { width: 3rem; height: 3rem; border-radius: 50%; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0; margin: 0 auto 1rem; color: var(--primary); }
 .skill-card h3 { font-family: 'Fraunces', serif; font-weight: 600; margin-bottom: 0.5rem; font-size: 1rem; }
 .skill-card p { font-size: 0.875rem; color: var(--muted-foreground); }
 
 /* Values */
 .values-list { display: flex; flex-direction: column; gap: 1.5rem; }
 .value-item { display: flex; gap: 1rem; }
-.value-icon { width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+.value-icon { width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 50%; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0; color: var(--primary); }
 .value-item h3 { font-weight: 600; color: var(--foreground); margin-bottom: 0.25rem; }
 .value-item p { font-size: 0.875rem; color: var(--muted-foreground); }
 
@@ -429,7 +429,7 @@ footer {
 .journey-city .emoji { font-size: 2.5rem; }
 .journey-city h3 { font-weight: 600; font-size: 1.1rem; }
 .journey-city p { font-size: 0.8rem; color: var(--muted-foreground); }
-.journey-line { width: 2px; height: 3rem; background: var(--border); display: flex; align-items: center; justify-content: center; position: relative; }
+.journey-line { width: 2px; height: 3rem; background: var(--border); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0; position: relative; }
 .journey-plane { font-size: 1.5rem; transform: rotate(90deg); }
 
 /* Now page */
@@ -479,7 +479,7 @@ footer {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius);
 }
-.contact-method-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
+.contact-method-icon { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0; color: var(--primary); flex-shrink: 0; }
 .contact-method h3 { font-weight: 600; font-size: 0.95rem; }
 .contact-method p { font-size: 0.875rem; color: var(--muted-foreground); }
 
