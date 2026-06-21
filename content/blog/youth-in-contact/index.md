@@ -12,7 +12,6 @@ project_url: "https://youthincontact.wixsite.com/project"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
-![Youth in Contact venue - a beautiful French building in Chérac](/images/erasmus/youthciphoto1.jpg)
 
 ## Introduction: why this mattered
 
