@@ -1,0 +1,69 @@
+{{ define "main" }}
+<div style="padding-top:4rem">
+  <div class="container">
+    <div class="section-header fade-up">
+      <h1>Blog</h1>
+      <p>Thoughts on technology, European policy, cybersecurity, and personal reflections.</p>
+    </div>
+  </div>
+
+  <!-- Sticky category filter -->
+  <div class="category-filter">
+    <div class="container">
+      <div class="filter-btns">
+        <button class="filter-btn active" data-category="All" onclick="filterArticles('All', this)">All</button>
+        <button class="filter-btn" data-category="Technology" onclick="filterArticles('Technology', this)">Technology</button>
+        <button class="filter-btn" data-category="Cybersecurity" onclick="filterArticles('Cybersecurity', this)">Cybersecurity</button>
+        <button class="filter-btn" data-category="EU Policy" onclick="filterArticles('EU Policy', this)">EU Policy</button>
+        <button class="filter-btn" data-category="Personal" onclick="filterArticles('Personal', this)">Personal</button>
+        <button class="filter-btn" data-category="Erasmus+" onclick="filterArticles('Erasmus+', this)">Erasmus+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="articles-grid" id="articles-grid">
+      {{ range .Pages }}
+      <a href="{{ .Permalink }}" class="article-card fade-up" data-category="{{ .Params.category }}">
+        <div class="article-card-inner">
+          <div class="article-card-body">
+            <div class="article-meta">
+              <span class="category-badge">{{ .Params.category }}</span>
+              <span class="meta-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                {{ .Date.Format "Jan 2, 2006" }}
+              </span>
+              {{ if .Params.read_time }}<span class="meta-item">⏱ {{ .Params.read_time }}</span>{{ end }}
+            </div>
+            <h3>{{ .Title }}</h3>
+            <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
+          </div>
+          {{ if .Params.featured_image }}
+          <div class="article-thumb">
+            <img src="{{ .Params.featured_image }}" alt="{{ .Title }}" loading="lazy" />
+          </div>
+          {{ end }}
+        </div>
+      </a>
+      {{ end }}
+    </div>
+  </div>
+</div>
+
+<script>
+function filterArticles(category, btn) {
+  // Update active button
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Show/hide cards
+  document.querySelectorAll('#articles-grid .article-card').forEach(card => {
+    if (category === 'All' || card.dataset.category === category) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+</script>
+{{ end }}

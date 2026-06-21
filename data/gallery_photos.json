@@ -1,0 +1,23 @@
+[
+  { "city": "paris", "image_url": "/gallery/paris1.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris2.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris3.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris4.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris5.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris6.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris7.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris8.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris9.jpg",  "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris10.jpg", "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris11.jpg", "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris12.jpg", "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris13.jpg", "caption": "" },
+  { "city": "paris", "image_url": "/gallery/paris14.jpg", "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari1.jpg",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari2.jpg",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari3.jpg",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari4.jpg",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari5.png",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari6.jpg",   "caption": "" },
+  { "city": "bari",  "image_url": "/gallery/bari7.jpg",   "caption": "" }
+]
