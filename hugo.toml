@@ -1,0 +1,50 @@
+baseURL = "https://lorenzo.loconsole.eu"
+locale = "en-us"
+title = "Lorenzo Loconsole"
+
+[params]
+  author = "Lorenzo"
+  description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
+  heroPhoto = "/hero-portait.png"
+  resumeUrl = "/cvloconsole-fr.pdf"
+  email = "lorenzo@loconsole.eu"
+  location = "France, Europe 🇪🇺"
+  linkedin = "https://www.linkedin.com/in/lloconsole/"
+  mastodon = "https://c.im/@lv"
+  telegram = "https://t.me/loconsole_bot"
+  appleMusic = "https://music.apple.com/profile/thends"
+  quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
+  quoteAuthor = "Edward Snowden"
+  quoteArticle = "edward-snowden-mass-surveillance"
+
+[taxonomies]
+  category = "categories"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = "github"
+
+[menu]
+  [[menu.main]]
+    name = "About"
+    url = "/about"
+    weight = 1
+  [[menu.main]]
+    name = "Now"
+    url = "/now"
+    weight = 2
+  [[menu.main]]
+    name = "Blog"
+    url = "/blog"
+    weight = 3
+  [[menu.main]]
+    name = "Contact"
+    url = "/contact"
+    weight = 4
+
+[outputs]
+  home = ["HTML", "RSS"]
+  section = ["HTML", "RSS"]
