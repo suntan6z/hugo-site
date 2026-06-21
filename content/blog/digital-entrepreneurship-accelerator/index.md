@@ -11,7 +11,6 @@ partner_logo_url: "/images/erasmus/walktogetherlogo.png"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
-![View from Bansko, Bulgaria with mountains in the background](/images/erasmus/accelerator1.jpeg)
 
 So there I was, scrolling through Erasmus+ opportunities, when I spotted another project in Bulgaria. Did I hesitate? Not even for a second. I'd been there before and had a great time, plus the prices don't hurt when you're a student.
 
