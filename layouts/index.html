@@ -22,7 +22,7 @@
 
       <div class="hero-photo-wrap fade-up">
         <div class="hero-glow"></div>
-        <img src="/hero-portait.png" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
+        <img src="/hero-portrait.png" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
       </div>
     </div>
   </div>
@@ -82,7 +82,7 @@
       <!-- fade edges (desktop only) -->
       <div class="city-pills-fade-l" style="pointer-events:none;position:absolute;left:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to right,var(--background),transparent)"></div>
       <div class="city-pills-fade-r" style="pointer-events:none;position:absolute;right:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to left,var(--background),transparent)"></div>
-      <div id="city-pills-track" style="display:flex;gap:0.75rem;width:max-content;animation:pillsScroll 18s linear infinite;cursor:pointer" onmouseenter="this.style.animationPlayState='paused'" onmouseleave="this.style.animationPlayState='running'">
+      <div id="city-pills-track" style="display:flex;gap:0.75rem;width:max-content;cursor:pointer;will-change:transform;backface-visibility:hidden" onmouseenter="this.style.animationPlayState='paused'" onmouseleave="this.style.animationPlayState='running'">
         <!-- pills injected twice for seamless loop -->
       </div>
     </div>
@@ -187,10 +187,22 @@ function buildPills() {
     btn.onclick = () => selectCity(c.slug);
     return btn;
   };
-  // duplicate for seamless loop on desktop; single set on mobile
   const isMobile = window.innerWidth <= 640;
-  const pills = isMobile ? [...citiesData] : [...citiesData, ...citiesData];
-  pills.forEach(c => track.appendChild(makePill(c)));
+  if (isMobile) {
+    citiesData.forEach(c => track.appendChild(makePill(c)));
+    return;
+  }
+  // Desktop: inject first set, measure, inject second set, then animate
+  citiesData.forEach(c => track.appendChild(makePill(c)));
+  requestAnimationFrame(() => {
+    const halfW = track.scrollWidth; // width of one full set
+    citiesData.forEach(c => track.appendChild(makePill(c)));
+    // Inject keyframe with exact pixel distance to avoid sub-pixel stutter
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@keyframes pillsScrollExact { 0% { transform: translateX(0); } 100% { transform: translateX(-${halfW}px); } }`;
+    document.head.appendChild(styleEl);
+    track.style.animation = 'pillsScrollExact 18s linear infinite';
+  });
 }
 
 function setActivePill(slug) {
