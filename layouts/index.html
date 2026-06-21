@@ -161,14 +161,14 @@
 </section>
 
 <script>
-const galleryData = {{ site.Data.gallery_photos | jsonify | safeJS }};
+const galleryData = {{ hugo.Data.gallery_photos | jsonify | safeJS }};
 const citiesData = (function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-})({{ site.Data.gallery_cities | jsonify | safeJS }});
+})({{ hugo.Data.gallery_cities | jsonify | safeJS }});
 let currentCity = null;
 let lbPhotos = [];
 let lbIndex = 0;

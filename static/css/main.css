@@ -356,6 +356,7 @@ footer {
 }
 .footer-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
 .footer-brand p { color: var(--muted-foreground); font-size: 0.875rem; max-width: 22rem; margin-top: 0.75rem; }
+.footer-brand .logo { color: var(--foreground); font-size: 1.35rem; margin-top: 0; }
 .footer-nav { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.75rem; }
 .footer-nav a { font-size: 0.875rem; color: var(--muted-foreground); transition: color 0.2s; }
 .footer-nav a:hover { color: var(--primary); }

@@ -1,5 +1,5 @@
 baseURL = "https://lorenzo.loconsole.eu"
-languageCode = "en"
+locale = "en"
 title = "Lorenzo Loconsole"
 
 [params]
