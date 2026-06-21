@@ -4,6 +4,7 @@ date: 2026-02-13
 slug: "understanding-the-fediverse"
 category: "Technology"
 draft: false
+description: "A clear guide to the Fediverse — the decentralised social network where no algorithm owns your feed and no single company controls the conversation."
 ---
 
 ## A Strange Word for a Strange Idea

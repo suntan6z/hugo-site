@@ -4,6 +4,7 @@ date: 2020-11-22
 slug: "youth-in-contact"
 category: "Erasmus+"
 draft: false
+description: "Reflections on the Youth in Contact Erasmus+ exchange in Chérac, France — a project that brought together young people from across Europe to build intercultural bridges."
 partner_name: "Les Schini's"
 partner_url: "https://www.lesschinis.com"
 partner_logo_url: "/images/erasmus/lesschinislogo.png"

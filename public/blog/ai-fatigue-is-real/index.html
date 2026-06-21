@@ -1,103 +1,853 @@
-<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>AI Fatigue is Real | Lorenzo Loconsole</title><meta name=description content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."><meta name=author content="Lorenzo"><link rel=canonical href=https://lorenzo.loconsole.eu/blog/ai-fatigue-is-real/><meta property="og:title" content="AI Fatigue is Real"><meta property="og:description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."><meta property="og:url" content="https://lorenzo.loconsole.eu/blog/ai-fatigue-is-real/"><meta property="og:type" content="article"><meta name=twitter:card content="summary_large_image"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href=/css/main.css><link rel=alternate type=application/rss+xml title="Lorenzo Loconsole" href=/blog/feed.xml></head><body><header id=site-header><div class=header-inner><a href=/ class=logo>Lorenzo <span class=text-gradient>Loconsole</span></a><nav class=desktop-nav aria-label="Main navigation"><a href=/about class=nav-btn>About</a>
-<a href=/now class=nav-btn>Now</a>
-<a href=/blog class="nav-btn active">Blog</a>
-<a href=/contact class=nav-btn>Contact</a>
-<button class=icon-btn onclick=openSearch() title=Search aria-label=Search>
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-</button>
-<span class=lang-btn>EN</span></nav><button class=hamburger id=hamburger aria-label="Toggle menu" aria-expanded=false>
-<svg id="icon-menu" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-<svg id="icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><nav class=mobile-nav id=mobile-nav aria-label="Mobile navigation"><div class=mobile-nav-links><a href=/about class=mobile-nav-link>About</a>
-<a href=/now class=mobile-nav-link>Now</a>
-<a href=/blog class="mobile-nav-link active">Blog</a>
-<a href=/contact class=mobile-nav-link>Contact</a></div><div class=mobile-nav-actions><button class=icon-btn onclick='openSearch(),document.getElementById("hamburger").click()' title=Search aria-label=Search>
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-</button>
-<span class=lang-btn>EN</span></div></nav></header><div id=search-modal role=dialog aria-modal=true aria-label=Search style="display:none;position:fixed;inset:0;z-index:200;background:hsl(220 15% 15%/.6);backdrop-filter:blur(4px);padding:1rem;align-items:flex-start;justify-content:center"><div id=search-box style="max-width:660px;width:100%;margin-top:4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 20px 60px -10px hsl(220 15% 15%/.3);overflow:hidden;display:flex;flex-direction:column"><div style="display:flex;align-items:center;gap:.75rem;padding:.875rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted-foreground);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-<input id=search-input type=text placeholder="Search articles and pages…" oninput=runSearch(this.value) style="flex:1;background:0 0;border:none;outline:none;font-family:inherit;font-size:.95rem;color:var(--foreground)">
-<button id=search-filter-btn onclick=togglePanel() title="Advanced filters" style="display:flex;align-items:center;gap:.3rem;padding:.25rem .625rem;border-radius:.4rem;border:1px solid var(--border);background:0 0;color:var(--muted-foreground);font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0">
-<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-Filters <span id=filter-count-badge style="display:none;background:var(--primary);color:var(--primary-foreground);border-radius:2rem;padding:0 .35rem;font-size:.65rem;line-height:1.5"></span>
-</button>
-<kbd style="font-size:.7rem;color:var(--muted-foreground);border:1px solid var(--border);border-radius:.3rem;padding:.1rem .4rem;flex-shrink:0">Esc</kbd></div><div id=search-panel style="display:none;border-bottom:1px solid var(--border);padding:1rem;flex-direction:column;gap:.875rem;background:var(--background);flex-shrink:0"><div><p style=font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-foreground);margin-bottom:.5rem>Category</p><div id=fp-categories style=display:flex;gap:.4rem;flex-wrap:wrap></div></div><div><p style=font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-foreground);margin-bottom:.5rem>Published between</p><div style=display:flex;align-items:center;gap:.5rem;flex-wrap:wrap><select id=fp-year-from onchange=applyFilters() style="padding:.3rem .5rem;border-radius:.4rem;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:.8rem;cursor:pointer"><option value>Any year</option></select>
-<span style=font-size:.8rem;color:var(--muted-foreground)>→</span>
-<select id=fp-year-to onchange=applyFilters() style="padding:.3rem .5rem;border-radius:.4rem;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:.8rem;cursor:pointer"><option value>Any year</option></select></div></div><div><p style=font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-foreground);margin-bottom:.5rem>Read time</p><div style=display:flex;gap:.4rem;flex-wrap:wrap id=fp-readtime><button data-rt onclick='setReadTime("",this)' class="fp-rt-btn fp-rt-active">Any length</button>
-<button data-rt=short onclick='setReadTime("short",this)' class=fp-rt-btn>Under 5 min</button>
-<button data-rt=medium onclick='setReadTime("medium",this)' class=fp-rt-btn>5 – 15 min</button>
-<button data-rt=long onclick='setReadTime("long",this)' class=fp-rt-btn>15+ min</button></div></div><div style=display:flex;align-items:center;justify-content:space-between;padding-top:.25rem><span id=fp-summary style=font-size:.78rem;color:var(--muted-foreground)></span>
-<button onclick=clearFilters() style="font-size:.78rem;color:var(--primary);background:0 0;border:none;cursor:pointer;padding:0;text-decoration:underline">Clear all</button></div></div><div id=search-active-tags style="display:none;padding:.5rem 1rem;gap:.4rem;flex-wrap:wrap;border-bottom:1px solid var(--border);flex-shrink:0"></div><div id=search-results style=max-height:420px;overflow-y:auto;padding:.5rem><div id=search-pages-group style="display:flex;flex-direction:column;padding:.5rem 0"><p style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-foreground);padding:.25rem .75rem .5rem">Pages</p><a href=/about onclick=closeSearch() class=search-item style="display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;border-radius:.5rem;color:var(--foreground);font-size:.875rem;text-decoration:none;transition:background .12s" onmouseover='this.style.background="var(--accent)"' onmouseout='this.style.background=""'><span style=color:var(--muted-foreground);font-weight:500>#</span><span>About</span></a>
-<a href=/now onclick=closeSearch() class=search-item style="display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;border-radius:.5rem;color:var(--foreground);font-size:.875rem;text-decoration:none;transition:background .12s" onmouseover='this.style.background="var(--accent)"' onmouseout='this.style.background=""'><span style=color:var(--muted-foreground);font-weight:500>#</span><span>Now</span></a>
-<a href=/blog onclick=closeSearch() class=search-item style="display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;border-radius:.5rem;color:var(--foreground);font-size:.875rem;text-decoration:none;transition:background .12s" onmouseover='this.style.background="var(--accent)"' onmouseout='this.style.background=""'><span style=color:var(--muted-foreground);font-weight:500>#</span><span>Blog</span></a>
-<a href=/contact onclick=closeSearch() class=search-item style="display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;border-radius:.5rem;color:var(--foreground);font-size:.875rem;text-decoration:none;transition:background .12s" onmouseover='this.style.background="var(--accent)"' onmouseout='this.style.background=""'><span style=color:var(--muted-foreground);font-weight:500>#</span><span>Contact</span></a></div><div id=search-articles></div></div></div></div><script>const searchIndex=[{title:"Beyond Twitter and Facebook: Understanding the Fediverse",url:"https://lorenzo.loconsole.eu/blog/understanding-the-fediverse/",category:"Technology",tags:null,author:"Lorenzo Loconsole",date:"Feb 13, 2026",dateISO:"2026-02-13",year:"2026",wordCount:1899,excerpt:`
-The first time I encountered the word Fediverse, I genuinely did not know what to make of it. It kept appearing in corners of the internet I was not quite expecting: in recommendation threads, in comments under posts …`},{title:"AI Fatigue is Real",url:"https://lorenzo.loconsole.eu/blog/ai-fatigue-is-real/",category:"Technology",tags:null,author:"Lorenzo Loconsole",date:"Feb 12, 2026",dateISO:"2026-02-12",year:"2026",wordCount:1879,excerpt:`
-It arrived in my inbox like any other piece of corporate communication: a cheerful announcement from my bank informing me that they were rolling out a new AI-powered assistant. Available around the clock, faster than …`},{title:'I "Built" My First Home NAS',url:"https://lorenzo.loconsole.eu/blog/first-home-nas/",category:"Technology",tags:null,author:"Lorenzo Loconsole",date:"Feb 9, 2026",dateISO:"2026-02-09",year:"2026",wordCount:540,excerpt:"When I first stumbled upon a YouTube video of a tech reviewer talking about NAS, I was curious to finally understand what that meant. I’ve been hearing about it for a long time and I knew it was something that you need …"},{title:"What is Chat Control and Why Should You Care?",url:"https://lorenzo.loconsole.eu/blog/chat-control-eu/",category:"Cybersecurity",tags:null,author:"Lorenzo Loconsole",date:"Feb 8, 2026",dateISO:"2026-02-08",year:"2026",wordCount:3,excerpt:"Content coming soon."},{title:"Edward Snowden: The Whistleblower Who Exposed Mass Surveillance",url:"https://lorenzo.loconsole.eu/blog/edward-snowden-mass-surveillance/",category:"Cybersecurity",tags:null,author:"Lorenzo Loconsole",date:"Feb 5, 2026",dateISO:"2026-02-05",year:"2026",wordCount:1665,excerpt:`
-Edward Snowden was born on June 21, 1983, in Elizabeth City, North Carolina. Before becoming the world’s most famous whistleblower, he worked as a CIA employee and NSA contractor, managing computer systems for Dell and …`},{title:"Out the Shadow TC1: Dobczyce, Poland",url:"https://lorenzo.loconsole.eu/blog/out-the-shadow/",category:"Erasmus+",tags:null,author:"Lorenzo Loconsole",date:"Dec 20, 2024",dateISO:"2024-12-20",year:"2024",wordCount:1047,excerpt:`
-For those of you who already read my other article about the project “Breaking the Wall of Extremism,” you might already know that I am no expert in the theatre field. Nevertheless, this was about to be my second …`},{title:"Active Citizenship through Mythology: Pieria, Greece",url:"https://lorenzo.loconsole.eu/blog/active-citizenship-mythology/",category:"Erasmus+",tags:null,author:"Lorenzo Loconsole",date:"Nov 29, 2021",dateISO:"2021-11-29",year:"2021",wordCount:199,excerpt:`
-In September 2021, I did my first Erasmus+ youth exchange in Greece. It was called “Active Citizenship through Mythology” and it took place in Pieria from September 4th to 12th.
-The project was organized by EN.O Greece, …`},{title:"Digital Entrepreneurship Accelerator: Bansko, Bulgaria",url:"https://lorenzo.loconsole.eu/blog/digital-entrepreneurship-accelerator/",category:"Erasmus+",tags:null,author:"Lorenzo Loconsole",date:"Sep 10, 2021",dateISO:"2021-09-10",year:"2021",wordCount:1428,excerpt:`
-So there I was, scrolling through Erasmus+ opportunities, when I spotted another project in Bulgaria. Did I hesitate? Not even for a second. I’d been there before and had a great time, plus the prices don’t hurt when …`},{title:"Breaking the Wall of Extremism: Urdos, France",url:"https://lorenzo.loconsole.eu/blog/breaking-wall-extremism/",category:"Erasmus+",tags:null,author:"Lorenzo Loconsole",date:"Aug 4, 2021",dateISO:"2021-08-04",year:"2021",wordCount:956,excerpt:"When I first saw the call for participants for “Theatre: Breaking the Wall of Extremism,” my brain went into immediate conflict mode. On one hand: France. Beautiful, enchanting France, nestled in the Pyrenees mountains. …"},{title:"Youth in Contact: Chérac, France",url:"https://lorenzo.loconsole.eu/blog/youth-in-contact/",category:"Erasmus+",tags:null,author:"Lorenzo Loconsole",date:"Nov 22, 2020",dateISO:"2020-11-22",year:"2020",wordCount:669,excerpt:`
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Fatigue is Real | Lorenzo Loconsole</title>
+  <meta name="description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity." />
+  <meta name="author" content="Lorenzo" />
+  <link rel="canonical" href="http://localhost:1313/blog/ai-fatigue-is-real/" />
+  <meta property="og:title" content="AI Fatigue is Real" />
+  <meta property="og:description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity." />
+  <meta property="og:url" content="http://localhost:1313/blog/ai-fatigue-is-real/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="alternate" type="application/rss+xml" title="Lorenzo Loconsole" href="/blog/feed.xml" />
+</head>
+<body>
+  <header id="site-header">
+  <div class="header-inner">
+    <a href="/" class="logo">
+      Lorenzo <span class="text-gradient">Loconsole</span>
+    </a>
 
-We live in a society where verbal language is treated as the primary form of communication. As a result, the body is often ignored or silenced through stigma, taboo and socio-cultural conditioning. Youth in Contact was …`}];searchIndex.forEach(e=>{e.readMin=Math.max(1,Math.round(e.wordCount/200))});const allCategories=[...new Set(searchIndex.map(e=>e.category).filter(Boolean))].sort(),allYears=[...new Set(searchIndex.map(e=>e.year).filter(Boolean))].sort(),F={categories:[],yearFrom:"",yearTo:"",readTime:""};let panelOpen=!1;function activeFilterCount(){return(F.categories.length>0?1:0)+(F.yearFrom||F.yearTo?1:0)+(F.readTime?1:0)}function escRE(e){return e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function hl(e,t){return!t||!e?e||"":e.replace(new RegExp("("+escRE(t)+")","gi"),'<mark style="background:hsl(350 45% 40%/0.18);color:inherit;border-radius:2px;padding:0 2px">$1</mark>')}function snippet(e,t,n){if(n=n||90,!e)return"";if(!t)return e.slice(0,n*2);const s=e.toLowerCase().indexOf(t.toLowerCase());if(s===-1)return e.slice(0,n*2)+(e.length>n*2?"…":"");const o=Math.max(0,s-n),i=Math.min(e.length,s+t.length+n);return(o>0?"…":"")+e.slice(o,i)+(i<e.length?"…":"")}function scoreP(e,t){let n=0;return e.title.toLowerCase().includes(t)&&(n+=10),e.category&&e.category.toLowerCase().includes(t)&&(n+=6),e.author&&e.author.toLowerCase().includes(t)&&(n+=4),e.excerpt&&e.excerpt.toLowerCase().includes(t)&&(n+=2),n}function matchesFilters(e){return!(F.categories.length&&!F.categories.includes(e.category))&&!(F.yearFrom&&e.year<F.yearFrom)&&!(F.yearTo&&e.year>F.yearTo)&&!(F.readTime==="short"&&e.readMin>=5)&&!(F.readTime==="medium"&&(e.readMin<5||e.readMin>15))&&!(F.readTime==="long"&&e.readMin<=15)}function openSearch(){document.getElementById("search-modal").style.display="flex",setTimeout(()=>document.getElementById("search-input").focus(),30),document.getElementById("search-input").value="",Object.assign(F,{categories:[],yearFrom:"",yearTo:"",readTime:""}),panelOpen=!1,initPanel(),renderActiveTags(),renderResults("")}function closeSearch(){document.getElementById("search-modal").style.display="none"}function initPanel(){const n=document.getElementById("fp-categories");n.innerHTML=allCategories.map(e=>{const t=F.categories.includes(e);return`<button onclick="toggleCategory(${JSON.stringify(e)})"
-      class="fp-cat-btn${t?" fp-cat-active":""}"
-      style="padding:0.25rem 0.75rem;border-radius:2rem;border:1px solid ${t?"var(--primary)":"var(--border)"};
-      background:${t?"var(--primary)":"transparent"};color:${t?"var(--primary-foreground)":"var(--muted-foreground)"};
-      font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s">${e}</button>`}).join("");const e=document.getElementById("fp-year-from"),t=document.getElementById("fp-year-to");[e,t].forEach(e=>{const t=e.value;e.innerHTML='<option value="">Any year</option>'+allYears.map(e=>`<option value="${e}"${e===t?" selected":""}>${e}</option>`).join("")}),e.value=F.yearFrom,t.value=F.yearTo,document.querySelectorAll(".fp-rt-btn").forEach(e=>{const t=e.dataset.rt===F.readTime;e.style.cssText=`padding:0.25rem 0.75rem;border-radius:2rem;border:1px solid ${t?"var(--primary)":"var(--border)"};
-      background:${t?"var(--primary)":"transparent"};color:${t?"var(--primary-foreground)":"var(--muted-foreground)"};
-      font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s`}),updateFilterBadge(),updatePanelSummary()}function togglePanel(){panelOpen=!panelOpen;const t=document.getElementById("search-panel");t.style.display=panelOpen?"flex":"none";const e=document.getElementById("search-filter-btn");e.style.borderColor=panelOpen?"var(--primary)":"var(--border)",e.style.color=panelOpen?"var(--primary)":"var(--muted-foreground)",e.style.background=panelOpen?"hsl(350 45% 40%/0.08)":"transparent",panelOpen&&initPanel()}function toggleCategory(e){const t=F.categories.indexOf(e);t===-1?F.categories.push(e):F.categories.splice(t,1),initPanel(),renderActiveTags(),renderResults(document.getElementById("search-input").value)}function setReadTime(e){F.readTime=e,initPanel(),renderActiveTags(),renderResults(document.getElementById("search-input").value)}function applyFilters(){F.yearFrom=document.getElementById("fp-year-from").value,F.yearTo=document.getElementById("fp-year-to").value,updateFilterBadge(),renderActiveTags(),renderResults(document.getElementById("search-input").value)}function clearFilters(){Object.assign(F,{categories:[],yearFrom:"",yearTo:"",readTime:""}),initPanel(),renderActiveTags(),renderResults(document.getElementById("search-input").value)}function updateFilterBadge(){const e=activeFilterCount(),t=document.getElementById("filter-count-badge");t.textContent=e,t.style.display=e?"inline":"none"}function updatePanelSummary(){const e=activeFilterCount();document.getElementById("fp-summary").textContent=e?`${e} filter${e>1?"s":""} active`:"No filters active"}function renderActiveTags(){updateFilterBadge(),updatePanelSummary();const t=document.getElementById("search-active-tags"),e=[];F.categories.forEach(t=>e.push({label:`Category: ${t}`,clear:()=>{F.categories=F.categories.filter(e=>e!==t),applyFiltersFromState()}})),(F.yearFrom||F.yearTo)&&e.push({label:`Year: ${F.yearFrom||"any"} → ${F.yearTo||"any"}`,clear:()=>{F.yearFrom="",F.yearTo="",document.getElementById("fp-year-from").value="",document.getElementById("fp-year-to").value="",applyFiltersFromState()}}),F.readTime&&e.push({label:`Read: ${F.readTime==="short"?"< 5 min":F.readTime==="medium"?"5–15 min":"15+ min"}`,clear:()=>{F.readTime="",applyFiltersFromState()}}),!panelOpen&&e.length?(t.style.display="flex",t.innerHTML=e.map((e,t)=>`<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.6rem;border-radius:2rem;border:1px solid var(--primary);font-size:0.72rem;color:var(--primary);background:hsl(350 45% 40%/0.07)">
-      ${e.label}
-      <button onclick="_clearTag(${t})" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1;font-size:1rem">×</button>
-    </span>`).join(""),window._tagClears=e.map(e=>e.clear)):t.style.display="none"}window._clearTag=e=>{window._tagClears[e]()};function applyFiltersFromState(){initPanel(),renderActiveTags(),renderResults(document.getElementById("search-input").value)}function renderResults(e){const o=document.getElementById("search-articles"),r=document.getElementById("search-pages-group"),t=(e||"").trim(),i=t.toLowerCase(),s=activeFilterCount()>0,c=["about","now","blog","contact","privacy"],l=!s&&(!t||c.some(e=>e.includes(i)));r.style.display=l?"flex":"none";let n=searchIndex.filter(matchesFilters);if(t?n=n.map(e=>({...e,_score:scoreP(e,i)})).filter(e=>e._score>0).sort((e,t)=>t._score-e._score):n=[...n].sort((e,t)=>t.dateISO.localeCompare(e.dateISO)),!n.length){o.innerHTML=`<div style="padding:2rem 0.75rem;text-align:center">
+    
+    <nav class="desktop-nav" aria-label="Main navigation">
+      
+      <a href="/about" class="nav-btn">About</a>
+      
+      <a href="/now" class="nav-btn">Now</a>
+      
+      <a href="/blog" class="nav-btn active">Blog</a>
+      
+      <a href="/contact" class="nav-btn">Contact</a>
+      
+      
+      <button class="icon-btn" onclick="openSearch()" title="Search" aria-label="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      
+      <span class="lang-btn">EN</span>
+    </nav>
+
+    
+    <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+      <svg id="icon-menu" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <svg id="icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+    <div class="mobile-nav-links">
+      
+      <a href="/about" class="mobile-nav-link">About</a>
+      
+      <a href="/now" class="mobile-nav-link">Now</a>
+      
+      <a href="/blog" class="mobile-nav-link active">Blog</a>
+      
+      <a href="/contact" class="mobile-nav-link">Contact</a>
+      
+    </div>
+    <div class="mobile-nav-actions">
+      <button class="icon-btn" onclick="openSearch();document.getElementById('hamburger').click()" title="Search" aria-label="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <span class="lang-btn">EN</span>
+    </div>
+  </nav>
+</header>
+
+
+<div id="search-modal" role="dialog" aria-modal="true" aria-label="Search"
+  style="display:none;position:fixed;inset:0;z-index:200;background:hsl(220 15% 15%/0.6);backdrop-filter:blur(4px);padding:1rem;align-items:flex-start;justify-content:center">
+  <div id="search-box" style="max-width:660px;width:100%;margin-top:4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 20px 60px -10px hsl(220 15% 15%/0.3);overflow:hidden;display:flex;flex-direction:column">
+
+    
+    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.875rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted-foreground);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" type="text" placeholder="Search articles and pages…" oninput="runSearch(this.value)"
+        style="flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:0.95rem;color:var(--foreground)" />
+      <button id="search-filter-btn" onclick="togglePanel()" title="Advanced filters"
+        style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.625rem;border-radius:0.4rem;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s;flex-shrink:0">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filters <span id="filter-count-badge" style="display:none;background:var(--primary);color:var(--primary-foreground);border-radius:2rem;padding:0 0.35rem;font-size:0.65rem;line-height:1.5"></span>
+      </button>
+      <kbd style="font-size:0.7rem;color:var(--muted-foreground);border:1px solid var(--border);border-radius:0.3rem;padding:0.1rem 0.4rem;flex-shrink:0">Esc</kbd>
+    </div>
+
+    
+    <div id="search-panel" style="display:none;border-bottom:1px solid var(--border);padding:1rem;flex-direction:column;gap:0.875rem;background:var(--background);flex-shrink:0">
+
+      
+      <div>
+        <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted-foreground);margin-bottom:0.5rem">Category</p>
+        <div id="fp-categories" style="display:flex;gap:0.4rem;flex-wrap:wrap"></div>
+      </div>
+
+      
+      <div>
+        <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted-foreground);margin-bottom:0.5rem">Published between</p>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+          <select id="fp-year-from" onchange="applyFilters()" style="padding:0.3rem 0.5rem;border-radius:0.4rem;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:0.8rem;cursor:pointer">
+            <option value="">Any year</option>
+          </select>
+          <span style="font-size:0.8rem;color:var(--muted-foreground)">→</span>
+          <select id="fp-year-to" onchange="applyFilters()" style="padding:0.3rem 0.5rem;border-radius:0.4rem;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:0.8rem;cursor:pointer">
+            <option value="">Any year</option>
+          </select>
+        </div>
+      </div>
+
+      
+      <div>
+        <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted-foreground);margin-bottom:0.5rem">Read time</p>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap" id="fp-readtime">
+          <button data-rt="" onclick="setReadTime('',this)" class="fp-rt-btn fp-rt-active">Any length</button>
+          <button data-rt="short" onclick="setReadTime('short',this)" class="fp-rt-btn">Under 5 min</button>
+          <button data-rt="medium" onclick="setReadTime('medium',this)" class="fp-rt-btn">5 – 15 min</button>
+          <button data-rt="long" onclick="setReadTime('long',this)" class="fp-rt-btn">15+ min</button>
+        </div>
+      </div>
+
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:0.25rem">
+        <span id="fp-summary" style="font-size:0.78rem;color:var(--muted-foreground)"></span>
+        <button onclick="clearFilters()" style="font-size:0.78rem;color:var(--primary);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">Clear all</button>
+      </div>
+    </div>
+
+    
+    <div id="search-active-tags" style="display:none;padding:0.5rem 1rem;gap:0.4rem;flex-wrap:wrap;border-bottom:1px solid var(--border);flex-shrink:0"></div>
+
+    
+    <div id="search-results" style="max-height:420px;overflow-y:auto;padding:0.5rem">
+      <div id="search-pages-group" style="display:flex;flex-direction:column;padding:0.5rem 0">
+        <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-foreground);padding:0.25rem 0.75rem 0.5rem">Pages</p>
+        <a href="/about"   onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>About</span></a>
+        <a href="/now"     onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>Now</span></a>
+        <a href="/blog"    onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>Blog</span></a>
+        <a href="/contact" onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>Contact</span></a>
+      </div>
+      <div id="search-articles"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+
+const searchIndex = [
+  
+  {
+    title:     "Beyond Twitter and Facebook: Understanding the Fediverse",
+    url:       "http://localhost:1313/blog/understanding-the-fediverse/",
+    category:  "Technology",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Feb 13, 2026",
+    dateISO:   "2026-02-13",
+    year:      "2026",
+    wordCount:  1899 ,
+    excerpt:   "\nThe first time I encountered the word Fediverse, I genuinely did not know what to make of it. It kept appearing in corners of the internet I was not quite expecting: in recommendation threads, in comments under posts …"
+  },
+  
+  {
+    title:     "AI Fatigue is Real",
+    url:       "http://localhost:1313/blog/ai-fatigue-is-real/",
+    category:  "Technology",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Feb 12, 2026",
+    dateISO:   "2026-02-12",
+    year:      "2026",
+    wordCount:  1879 ,
+    excerpt:   "\nIt arrived in my inbox like any other piece of corporate communication: a cheerful announcement from my bank informing me that they were rolling out a new AI-powered assistant. Available around the clock, faster than …"
+  },
+  
+  {
+    title:     "I \"Built\" My First Home NAS",
+    url:       "http://localhost:1313/blog/first-home-nas/",
+    category:  "Technology",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Feb 9, 2026",
+    dateISO:   "2026-02-09",
+    year:      "2026",
+    wordCount:  540 ,
+    excerpt:   "When I first stumbled upon a YouTube video of a tech reviewer talking about NAS, I was curious to finally understand what that meant. I’ve been hearing about it for a long time and I knew it was something that you need …"
+  },
+  
+  {
+    title:     "What is Chat Control and Why Should You Care?",
+    url:       "http://localhost:1313/blog/chat-control-eu/",
+    category:  "Cybersecurity",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Feb 8, 2026",
+    dateISO:   "2026-02-08",
+    year:      "2026",
+    wordCount:  3 ,
+    excerpt:   "Content coming soon."
+  },
+  
+  {
+    title:     "Edward Snowden: The Whistleblower Who Exposed Mass Surveillance",
+    url:       "http://localhost:1313/blog/edward-snowden-mass-surveillance/",
+    category:  "Cybersecurity",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Feb 5, 2026",
+    dateISO:   "2026-02-05",
+    year:      "2026",
+    wordCount:  1665 ,
+    excerpt:   "\nEdward Snowden was born on June 21, 1983, in Elizabeth City, North Carolina. Before becoming the world’s most famous whistleblower, he worked as a CIA employee and NSA contractor, managing computer systems for Dell and …"
+  },
+  
+  {
+    title:     "Out the Shadow TC1: Dobczyce, Poland",
+    url:       "http://localhost:1313/blog/out-the-shadow/",
+    category:  "Erasmus+",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Dec 20, 2024",
+    dateISO:   "2024-12-20",
+    year:      "2024",
+    wordCount:  1047 ,
+    excerpt:   "\nFor those of you who already read my other article about the project “Breaking the Wall of Extremism,” you might already know that I am no expert in the theatre field. Nevertheless, this was about to be my second …"
+  },
+  
+  {
+    title:     "Active Citizenship through Mythology: Pieria, Greece",
+    url:       "http://localhost:1313/blog/active-citizenship-mythology/",
+    category:  "Erasmus+",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Nov 29, 2021",
+    dateISO:   "2021-11-29",
+    year:      "2021",
+    wordCount:  199 ,
+    excerpt:   "\nIn September 2021, I did my first Erasmus+ youth exchange in Greece. It was called “Active Citizenship through Mythology” and it took place in Pieria from September 4th to 12th.\nThe project was organized by EN.O Greece, …"
+  },
+  
+  {
+    title:     "Digital Entrepreneurship Accelerator: Bansko, Bulgaria",
+    url:       "http://localhost:1313/blog/digital-entrepreneurship-accelerator/",
+    category:  "Erasmus+",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Sep 10, 2021",
+    dateISO:   "2021-09-10",
+    year:      "2021",
+    wordCount:  1428 ,
+    excerpt:   "\nSo there I was, scrolling through Erasmus+ opportunities, when I spotted another project in Bulgaria. Did I hesitate? Not even for a second. I’d been there before and had a great time, plus the prices don’t hurt when …"
+  },
+  
+  {
+    title:     "Breaking the Wall of Extremism: Urdos, France",
+    url:       "http://localhost:1313/blog/breaking-wall-extremism/",
+    category:  "Erasmus+",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Aug 4, 2021",
+    dateISO:   "2021-08-04",
+    year:      "2021",
+    wordCount:  956 ,
+    excerpt:   "When I first saw the call for participants for “Theatre: Breaking the Wall of Extremism,” my brain went into immediate conflict mode. On one hand: France. Beautiful, enchanting France, nestled in the Pyrenees mountains. …"
+  },
+  
+  {
+    title:     "Youth in Contact: Chérac, France",
+    url:       "http://localhost:1313/blog/youth-in-contact/",
+    category:  "Erasmus+",
+    tags:      null,
+    author:    "Lorenzo Loconsole",
+    date:      "Nov 22, 2020",
+    dateISO:   "2020-11-22",
+    year:      "2020",
+    wordCount:  669 ,
+    excerpt:   "\n\nWe live in a society where verbal language is treated as the primary form of communication. As a result, the body is often ignored or silenced through stigma, taboo and socio-cultural conditioning. Youth in Contact was …"
+  },
+  
+];
+
+ 
+searchIndex.forEach(p => { p.readMin = Math.max(1, Math.round(p.wordCount / 200)); });
+
+
+
+const allCategories = [...new Set(searchIndex.map(p => p.category).filter(Boolean))].sort();
+const allYears      = [...new Set(searchIndex.map(p => p.year).filter(Boolean))].sort();
+
+const F = {               
+  categories: [],         
+  yearFrom:   '',
+  yearTo:     '',
+  readTime:   '',         
+};
+let panelOpen = false;
+
+function activeFilterCount() {
+  return (F.categories.length > 0 ? 1 : 0)
+       + (F.yearFrom || F.yearTo ? 1 : 0)
+       + (F.readTime ? 1 : 0);
+}
+
+
+
+function escRE(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function hl(text, q) {
+  if (!q || !text) return text || '';
+  return text.replace(new RegExp('(' + escRE(q) + ')', 'gi'),
+    '<mark style="background:hsl(350 45% 40%/0.18);color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
+}
+
+function snippet(text, q, r) {
+  r = r || 90;
+  if (!text) return '';
+  if (!q) return text.slice(0, r * 2);
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text.slice(0, r * 2) + (text.length > r * 2 ? '…' : '');
+  const s = Math.max(0, i - r), e = Math.min(text.length, i + q.length + r);
+  return (s > 0 ? '…' : '') + text.slice(s, e) + (e < text.length ? '…' : '');
+}
+
+function scoreP(p, ql) {
+  let s = 0;
+  if (p.title.toLowerCase().includes(ql)) s += 10;
+  if (p.category && p.category.toLowerCase().includes(ql)) s += 6;
+  if (p.author  && p.author.toLowerCase().includes(ql))   s += 4;
+  if (p.excerpt && p.excerpt.toLowerCase().includes(ql))   s += 2;
+  return s;
+}
+
+function matchesFilters(p) {
+  if (F.categories.length && !F.categories.includes(p.category)) return false;
+  if (F.yearFrom && p.year < F.yearFrom) return false;
+  if (F.yearTo   && p.year > F.yearTo)   return false;
+  if (F.readTime === 'short'  && p.readMin >= 5)  return false;
+  if (F.readTime === 'medium' && (p.readMin < 5 || p.readMin > 15)) return false;
+  if (F.readTime === 'long'   && p.readMin <= 15) return false;
+  return true;
+}
+
+
+
+function openSearch() {
+  document.getElementById('search-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('search-input').focus(), 30);
+  document.getElementById('search-input').value = '';
+  Object.assign(F, { categories: [], yearFrom: '', yearTo: '', readTime: '' });
+  panelOpen = false;
+  initPanel();
+  renderActiveTags();
+  renderResults('');
+}
+
+function closeSearch() {
+  document.getElementById('search-modal').style.display = 'none';
+}
+
+
+
+function initPanel() {
+   
+  const catEl = document.getElementById('fp-categories');
+  catEl.innerHTML = allCategories.map(c => {
+    const active = F.categories.includes(c);
+    return `<button onclick="toggleCategory(${JSON.stringify(c)})"
+      class="fp-cat-btn${active ? ' fp-cat-active' : ''}"
+      style="padding:0.25rem 0.75rem;border-radius:2rem;border:1px solid ${active ? 'var(--primary)' : 'var(--border)'};
+      background:${active ? 'var(--primary)' : 'transparent'};color:${active ? 'var(--primary-foreground)' : 'var(--muted-foreground)'};
+      font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s">${c}</button>`;
+  }).join('');
+
+   
+  const fromEl = document.getElementById('fp-year-from');
+  const toEl   = document.getElementById('fp-year-to');
+  [fromEl, toEl].forEach(el => {
+    const cur = el.value;
+    el.innerHTML = '<option value="">Any year</option>' +
+      allYears.map(y => `<option value="${y}"${y === cur ? ' selected' : ''}>${y}</option>`).join('');
+  });
+  fromEl.value = F.yearFrom;
+  toEl.value   = F.yearTo;
+
+   
+  document.querySelectorAll('.fp-rt-btn').forEach(btn => {
+    const active = btn.dataset.rt === F.readTime;
+    btn.style.cssText = `padding:0.25rem 0.75rem;border-radius:2rem;border:1px solid ${active ? 'var(--primary)' : 'var(--border)'};
+      background:${active ? 'var(--primary)' : 'transparent'};color:${active ? 'var(--primary-foreground)' : 'var(--muted-foreground)'};
+      font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s`;
+  });
+
+  updateFilterBadge();
+  updatePanelSummary();
+}
+
+function togglePanel() {
+  panelOpen = !panelOpen;
+  const panel = document.getElementById('search-panel');
+  panel.style.display = panelOpen ? 'flex' : 'none';
+  const btn = document.getElementById('search-filter-btn');
+  btn.style.borderColor  = panelOpen ? 'var(--primary)' : 'var(--border)';
+  btn.style.color        = panelOpen ? 'var(--primary)' : 'var(--muted-foreground)';
+  btn.style.background   = panelOpen ? 'hsl(350 45% 40%/0.08)' : 'transparent';
+  if (panelOpen) initPanel();
+}
+
+
+
+function toggleCategory(cat) {
+  const idx = F.categories.indexOf(cat);
+  if (idx === -1) F.categories.push(cat);
+  else F.categories.splice(idx, 1);
+  initPanel();
+  renderActiveTags();
+  renderResults(document.getElementById('search-input').value);
+}
+
+function setReadTime(val, btn) {
+  F.readTime = val;
+  initPanel();
+  renderActiveTags();
+  renderResults(document.getElementById('search-input').value);
+}
+
+function applyFilters() {
+  F.yearFrom = document.getElementById('fp-year-from').value;
+  F.yearTo   = document.getElementById('fp-year-to').value;
+  updateFilterBadge();
+  renderActiveTags();
+  renderResults(document.getElementById('search-input').value);
+}
+
+function clearFilters() {
+  Object.assign(F, { categories: [], yearFrom: '', yearTo: '', readTime: '' });
+  initPanel();
+  renderActiveTags();
+  renderResults(document.getElementById('search-input').value);
+}
+
+function updateFilterBadge() {
+  const n = activeFilterCount();
+  const badge = document.getElementById('filter-count-badge');
+  badge.textContent = n;
+  badge.style.display = n ? 'inline' : 'none';
+}
+
+function updatePanelSummary() {
+  const n = activeFilterCount();
+  document.getElementById('fp-summary').textContent =
+    n ? `${n} filter${n > 1 ? 's' : ''} active` : 'No filters active';
+}
+
+ 
+function renderActiveTags() {
+  updateFilterBadge();
+  updatePanelSummary();
+  const bar = document.getElementById('search-active-tags');
+  const tags = [];
+  F.categories.forEach(c => tags.push({ label: `Category: ${c}`, clear: () => { F.categories = F.categories.filter(x=>x!==c); applyFiltersFromState(); } }));
+  if (F.yearFrom || F.yearTo) tags.push({ label: `Year: ${F.yearFrom||'any'} → ${F.yearTo||'any'}`, clear: () => { F.yearFrom=''; F.yearTo=''; document.getElementById('fp-year-from').value=''; document.getElementById('fp-year-to').value=''; applyFiltersFromState(); } });
+  if (F.readTime) tags.push({ label: `Read: ${F.readTime==='short'?'< 5 min':F.readTime==='medium'?'5–15 min':'15+ min'}`, clear: () => { F.readTime=''; applyFiltersFromState(); } });
+  if (!panelOpen && tags.length) {
+    bar.style.display = 'flex';
+    bar.innerHTML = tags.map((t,i) => `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.6rem;border-radius:2rem;border:1px solid var(--primary);font-size:0.72rem;color:var(--primary);background:hsl(350 45% 40%/0.07)">
+      ${t.label}
+      <button onclick="_clearTag(${i})" style="background:none;border:none;cursor:pointer;color:var(--primary);padding:0;line-height:1;font-size:1rem">×</button>
+    </span>`).join('');
+    window._tagClears = tags.map(t => t.clear);
+  } else {
+    bar.style.display = 'none';
+  }
+}
+window._clearTag = (i) => { window._tagClears[i](); };
+
+function applyFiltersFromState() {
+  initPanel();
+  renderActiveTags();
+  renderResults(document.getElementById('search-input').value);
+}
+
+
+
+function renderResults(query) {
+  const articlesEl = document.getElementById('search-articles');
+  const pagesGroup = document.getElementById('search-pages-group');
+  const q  = (query || '').trim();
+  const ql = q.toLowerCase();
+  const hasFilters = activeFilterCount() > 0;
+
+   
+  const pageNames = ['about','now','blog','contact','privacy'];
+  const showPages = !hasFilters && (!q || pageNames.some(p => p.includes(ql)));
+  pagesGroup.style.display = showPages ? 'flex' : 'none';
+
+   
+  let results = searchIndex.filter(matchesFilters);
+
+   
+  if (q) {
+    results = results
+      .map(p => ({ ...p, _score: scoreP(p, ql) }))
+      .filter(p => p._score > 0)
+      .sort((a, b) => b._score - a._score);
+  } else {
+    results = [...results].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+  }
+
+   
+  if (!results.length) {
+    articlesEl.innerHTML = `<div style="padding:2rem 0.75rem;text-align:center">
       <p style="font-size:1.4rem;margin-bottom:0.5rem">🔍</p>
-      <p style="font-size:0.875rem;color:var(--muted-foreground)">No articles match${t?" <strong>"+t+"</strong>":""}${s?" with the current filters":""}.</p>
-      ${s?`<button onclick="clearFilters()" style="margin-top:0.75rem;font-size:0.8rem;color:var(--primary);background:none;border:none;cursor:pointer;text-decoration:underline">Clear all filters</button>`:""}
-    </div>`;return}const d=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.7"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,u=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.7"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,h=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted-foreground);flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,a=n.slice(0,8);o.innerHTML=`
+      <p style="font-size:0.875rem;color:var(--muted-foreground)">No articles match${q ? ' <strong>' + q + '</strong>' : ''}${hasFilters ? ' with the current filters' : ''}.</p>
+      ${hasFilters ? `<button onclick="clearFilters()" style="margin-top:0.75rem;font-size:0.8rem;color:var(--primary);background:none;border:none;cursor:pointer;text-decoration:underline">Clear all filters</button>` : ''}
+    </div>`;
+    return;
+  }
+
+  const calIcon   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.7"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  const clockIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.7"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  const fileIcon  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted-foreground);flex-shrink:0;margin-top:1px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
+  const shown = results.slice(0, 8);
+  articlesEl.innerHTML = `
     <div style="display:flex;flex-direction:column;padding:0.25rem 0">
       <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-foreground);padding:0.5rem 0.75rem 0.35rem">
-        Articles <span style="font-weight:400">(${a.length} of ${n.length})</span>
+        Articles <span style="font-weight:400">(${shown.length} of ${results.length})</span>
       </p>
-      ${a.map(e=>{const n=t?snippet(e.excerpt||"",t):(e.excerpt||"").slice(0,130);return`<a href="${e.url}" onclick="closeSearch()" style="display:flex;align-items:flex-start;gap:0.625rem;padding:0.55rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s"
+      ${shown.map(p => {
+        const snip = q ? snippet(p.excerpt || '', q) : (p.excerpt || '').slice(0, 130);
+        return `<a href="${p.url}" onclick="closeSearch()" style="display:flex;align-items:flex-start;gap:0.625rem;padding:0.55rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s"
           onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''">
-          ${h}
+          ${fileIcon}
           <div style="min-width:0;flex:1">
-            <div style="font-weight:600;line-height:1.3;margin-bottom:0.25rem">${hl(e.title,t)}</div>
-            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:${n?"0.25rem":"0"}">
-              ${e.category?`<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary)">${e.category}</span>`:""}
-              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${d} ${e.date}</span>
-              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${u} ${e.readMin} min read</span>
+            <div style="font-weight:600;line-height:1.3;margin-bottom:0.25rem">${hl(p.title, q)}</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:${snip?'0.25rem':'0'}">
+              ${p.category ? `<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary)">${p.category}</span>` : ''}
+              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${calIcon} ${p.date}</span>
+              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${clockIcon} ${p.readMin} min read</span>
             </div>
-            ${n?`<div style="font-size:0.78rem;color:var(--muted-foreground);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5">${hl(n,t)}</div>`:""}
+            ${snip ? `<div style="font-size:0.78rem;color:var(--muted-foreground);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5">${hl(snip, q)}</div>` : ''}
           </div>
-        </a>`}).join("")}
-      ${n.length>8?`<p style="font-size:0.75rem;color:var(--muted-foreground);padding:0.5rem 0.75rem;text-align:center;border-top:1px solid var(--border);margin-top:0.25rem">Showing 8 of ${n.length} — refine your search or filters to narrow down</p>`:""}
-    </div>`}function runSearch(e){renderResults(e)}document.addEventListener("keydown",e=>{(e.metaKey||e.ctrlKey)&&e.key==="k"&&(e.preventDefault(),openSearch()),e.key==="Escape"&&document.getElementById("search-modal").style.display==="flex"&&closeSearch()}),document.getElementById("search-modal").addEventListener("click",e=>{e.target===document.getElementById("search-modal")&&closeSearch()})</script><main><div id=reading-progress style="position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:100;transition:width .1s ease;width:0%"></div><div style=padding-top:4.5rem><div style="padding:3rem 0 2rem;background:var(--hero-gradient)"><div style="max-width:860px;margin:0 auto;padding:0 1.5rem"><a href=/blog class=back-link><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-Back to Blog</a><div style="display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin:1.5rem 0 1rem"><span class=category-badge style="font-size:.8rem;padding:.3rem .8rem">Technology</span>
-<span class=meta-item><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-Feb 12, 2026
-</span><span class=meta-item><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-9 min read
-</span><span class=meta-item><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-Lorenzo</span></div><h1 style=font-family:fraunces,serif;font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.2;color:var(--foreground)>AI Fatigue is Real</h1><div style=display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1.5rem><span style=font-size:.875rem;color:var(--muted-foreground);display:flex;align-items:center;gap:.375rem><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-Share
-</span><a href="https://x.com/intent/tweet?text=Check+this+out+!+AI+Fatigue+is+Real&url=https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F" target=_blank rel="noopener noreferrer" class=share-btn title="Share on X"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-</a><a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F" target=_blank rel="noopener noreferrer" class=share-btn title="Share on LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853.0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601.0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144.0-2.063-.926-2.063-2.065.0-1.138.92-2.063 2.063-2.063 1.14.0 2.064.925 2.064 2.063.0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225.0H1.771C.792.0.0.774.0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2.0 22.222.0h.003z"/></svg>
-</a><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F&quote=Check+this+out+!" target=_blank rel="noopener noreferrer" class=share-btn title="Share on Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312.0 2.686.235 2.686.235v2.953H15.83c-1.491.0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-</a><a href=https://www.instagram.com/ target=_blank rel="noopener noreferrer" class=share-btn title="Share on Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204.0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849.0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204.0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849.0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741.0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333.0 8.741.0 12s.014 3.668.072 4.948c.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24s3.668-.014 4.948-.072c4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259.0 12 0zm0 5.838a6.162 6.162.0 100 12.324 6.162 6.162.0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44.0 100 2.881 1.44 1.44.0 000-2.881z"/></svg>
-</a><a href="https://www.threads.net/intent/post?text=Check+this+out+!+AI+Fatigue+is+Real+https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F" target=_blank rel="noopener noreferrer" class=share-btn title="Share on Threads"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18.0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.18.408-2.285 1.33-3.11.88-.788 2.12-1.272 3.594-1.4.997-.087 1.98-.05 2.928.107-.09-.542-.27-1.006-.535-1.378-.473-.663-1.249-1.003-2.306-1.012h-.046c-.79.004-1.477.186-2.04.542L9.295 6.64c.845-.523 1.872-.803 3.052-.812h.074c1.667.014 2.95.6 3.81 1.741.715.949 1.12 2.18 1.204 3.66.424.154.823.34 1.193.564 1.16.7 2.035 1.69 2.533 2.862.784 1.847.85 4.576-1.286 6.669-1.835 1.793-4.092 2.593-7.287 2.616zm.384-10.279c-1.488.13-3.07.587-3.07 2.139.02.57.31 1.637 2.121 1.808 1.894-.103 2.787-1.147 2.949-3.947z"/></svg>
-</a><a href="https://bsky.app/intent/compose?text=Check+this+out+!+AI+Fatigue+is+Real+https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F" target=_blank rel="noopener noreferrer" class=share-btn title="Share on Bluesky"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908.0 3.08.0 3.768c0 .69.378 5.65.624 6.479.785 2.627 3.603 3.493 6.163 3.187-.04.078-.08.166-.12.253-2.812 5.033 2.51 8.312 5.333 5.617 2.823 2.695 8.145-.584 5.333-5.617-.04-.087-.08-.175-.12-.253 2.56.306 5.378-.56 6.163-3.187C23.622 9.418 24 4.458 24 3.768c0-.688-.139-1.86-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>
-</a><a href="https://mastodon.social/share?text=Check+this+out+!+AI+Fatigue+is+Real+https%3A%2F%2Florenzo.loconsole.eu%2Fblog%2Fai-fatigue-is-real%2F" target=_blank rel="noopener noreferrer" class=share-btn title="Share on Mastodon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792.0 11.813.0h-.03c-3.98.0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057.0 00.023-.043v-1.809a.052.052.0 00-.02-.041.053.053.0 00-.046-.01 20.282 20.282.0 01-4.709.545c-2.73.0-3.463-1.284-3.674-1.818a5.593 5.593.0 01-.319-1.433.053.053.0 01.066-.054c1.517.363 3.072.546 4.632.546.376.0.75.0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23.0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112.0-1.668.668-1.668 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311.0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13.0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
-</a><button onclick='copyPostLink(this,"https://lorenzo.loconsole.eu/blog/ai-fatigue-is-real/")' class=share-btn title="Copy link">
-<svg id="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button></div></div></div><article class=post-body id=post-body><h2 id=the-email-i-did-not-ask-for>The Email I Did Not Ask For</h2><p>It arrived in my inbox like any other piece of corporate communication: a cheerful announcement from my bank informing me that they were rolling out a new AI-powered assistant. Available around the clock, faster than any human agent, ready to answer every question I might ever have. The tone was breathlessly enthusiastic, as if the bank had just discovered fire.</p><p>I stared at the email for a moment. Then I felt something I have been feeling more and more often lately: a quiet, creeping exhaustion. Not at the technology itself, necessarily, but at the relentless pace at which it is being pushed into every corner of daily life, whether we want it there or not. There is a word for this feeling that is starting to circulate in conversations about technology: AI fatigue. It describes the weariness that sets in when a tool that was once exciting begins to feel ubiquitous, unavoidable, and at times, deeply unwelcome.</p><hr><h2 id=a-bank-that-once-felt-different>A Bank That Once Felt Different</h2><p>I chose this bank back in 2019. It was one of those modern, digital-first institutions that seemed to genuinely understand what people were looking for. No bureaucratic queues. No mandatory appointments with a branch manager. No stacks of paper to sign and return. It was built for people who were always on the move, who valued efficiency and clarity, and who perhaps liked the idea of a bank that felt a little less like a traditional bank.</p><p>At the time, it was also making serious inroads across several European countries, positioning itself as the bank for people who travel, who live across borders, who do not want to be tied to a single country&rsquo;s financial infrastructure. It offered genuinely useful features, many of them free, and it did so through a clean, intuitive app. For someone who had grown weary of the slowness and formality of conventional banking, it was a breath of fresh air.</p><p>But that email made me pause. Because thinking back on it now, I find myself wondering whether we have gone too far. The very qualities that made that bank appealing in the first place, its sense of responsiveness, its feeling that a real person was on the other end of the line, seem to be quietly disappearing. In their place is an assistant that gets a different name and a different profile photo each time you open a chat, as though the illusion of a human presence were somehow preferable to straightforward honesty about what the system actually is.</p><hr><h2 id=the-chatbot-that-would-not-step-aside>The Chatbot That Would Not Step Aside</h2><p>I have had reason to contact that bank&rsquo;s customer support more than once. A bug in the app that was preventing a transaction from going through. A payment that had been debited twice from my account. Situations that were not catastrophic, but that required a clear answer and a concrete resolution. Each time, the path to that resolution ran through the same obstacle: the AI agent.</p><p>What I discovered is that this agent is not simply a filter designed to route simple queries and pass complex ones to a human. It has been designed to act as a gatekeeper, one that has appointed itself the sole judge of whether your problem is serious enough to warrant a real person&rsquo;s attention. On several occasions, I found myself completely unable to escalate to a human agent because the system had decided, without any apparent means of appeal, that my issue did not require human intervention.</p><p>This is where the problem becomes genuinely serious. AI agents work well as a first line of response for straightforward, repetitive queries. If someone wants to know their account balance, how to change their PIN, or what the bank&rsquo;s opening hours are, a well-trained AI can handle that efficiently and accurately, drawing on a structured knowledge base to produce a reliable answer. These are what support teams call Level 1 requests, and automating them makes sense. It reduces waiting times, frees up human agents for more complex work, and provides users with instant answers to simple questions.</p><p>But the moment a situation moves beyond that structured, predictable territory, the AI&rsquo;s limitations become apparent very quickly. A payment debited twice involves checking transaction records, cross-referencing with a merchant, potentially initiating a dispute process, and communicating with the user about what happens next and when. A bug in the app may require a support agent to flag the issue to a technical team, log a ticket, and follow up. These are not tasks that fit neatly into a decision tree. They require judgement, flexibility, and accountability. And yet the system was designed in a way that prevented me from accessing the human agents who could have provided exactly that.</p><hr><h2 id=the-transparency-problem>The Transparency Problem</h2><p>There is something particularly troubling about AI agents that are designed to pass themselves off as human. Giving a chatbot a human name and a friendly profile photo is not a design flourish. It is a deliberate choice to obscure the nature of the interaction, and that matters.</p><p>When people communicate with a support agent, they make constant, often unconscious decisions based on their understanding of who they are speaking to. They decide how much detail to provide, how formally to phrase their request, how much to trust the response they receive. If they believe they are speaking with a person, those decisions are made on one set of assumptions. If they know they are speaking with a machine, they make them on another. Deliberately blurring that distinction does not serve the user. It serves the institution, by reducing the friction that might arise if users understood that their query was being handled by an algorithm.</p><p>Beyond the ethical dimension, there is the practical question of data. Every message sent to an AI agent is processed, stored, and in many cases used to improve the model&rsquo;s future performance. In the context of a bank, where conversations routinely involve account numbers, transaction details, personal circumstances, and financial concerns, this raises significant privacy questions. How long is that data retained? Who has access to it? Under what conditions can it be used for training? These are not hypothetical concerns. They are the kinds of questions that ought to appear in the enthusiastic announcement emails that banks send out when they roll out these systems. They rarely do.</p><hr><h2 id=summaries-instead-of-stories>Summaries Instead of Stories</h2><p>Banking is not the only place where AI fatigue is taking hold. Search engines are increasingly delivering AI-generated summaries at the very top of results pages. The idea is that instead of clicking through to a source, you can simply read a few sentences at the top of the page and move on with your day.</p><p>On the surface, this seems like a convenience. In practice, it is something closer to intellectual shortcutting, and it carries real risks that are rarely discussed openly.</p><p>The way a writer structures an argument is not incidental. It is part of the argument. The order in which information is presented, the qualifications that are introduced at particular moments, the context that builds over the course of a piece, these are the things that allow a reader to genuinely understand a topic rather than simply collect a data point about it. When that structure is collapsed into three sentences generated by an algorithm, what is left is a skeleton. It may be accurate in its bare facts, but it is stripped of the texture that makes those facts meaningful.</p><p>More concretely, AI-generated summaries are not always correct. These systems can misrepresent the conclusions of a study, omit crucial caveats, or conflate the positions of different sources. Because the summary appears at the top of the page in a clean, authoritative format, many readers accept it without question and never open the original article. The error is never caught. The misunderstanding travels.</p><p>There is also a structural consequence for the web itself. When users stop clicking through to original sources, those sources lose traffic, and with it, the advertising revenue or subscription income that sustains them. If AI summaries become the dominant way people consume information, the incentive to produce the in-depth reporting and analysis that these summaries are drawing from begins to erode. We risk creating a system that feeds on the depth and rigour of human-written content while simultaneously undermining the conditions that make such content economically viable to produce.</p><hr><h2 id=are-we-becoming-intellectually-lazy>Are We Becoming Intellectually Lazy?</h2><p>There is a more uncomfortable question sitting underneath all of this, one worth taking seriously: are we allowing these tools to gradually weaken our capacity for independent thought?</p><p>When every article can be summarised before we read it, when every customer service interaction is pre-filtered by an algorithm, when every decision can be informed by an AI assistant before we have had a chance to think it through ourselves, what happens to the cognitive habits we would otherwise be exercising? Reading a long article in full, sitting with complexity, forming a view before receiving a verdict, these are not trivial skills. They require practice. And like any skill that goes unpractised, they can atrophy.</p><p>We seem to be perpetually busy. Too busy, apparently, to read a full article, to navigate a bank&rsquo;s support system, to engage with a problem without AI assistance. But busy doing what, exactly? That is worth asking honestly. Because if the answer is that we are using AI to save time, it is worth asking what we are doing with that time and whether the trade-off is actually serving us.</p><p>The concern is not that AI assistance makes individual tasks easier. That is genuinely fine. The concern is what happens when AI assistance becomes the default mode for nearly all engagement with information and services, to the point where operating without it starts to feel unfamiliar. That shift, if it happens gradually enough, may not feel like a loss at all. It may simply feel like progress.</p><hr><h2 id=a-tool-not-a-replacement>A Tool, Not a Replacement</h2><p>None of this is an argument against artificial intelligence. These technologies, applied thoughtfully and with genuine transparency, can do real good. Automating repetitive tasks, making information more accessible, reducing friction in processes that were unnecessarily slow: these are legitimate and worthwhile goals. The problem is not the technology itself. The problem is the unexamined assumption that more AI, deployed everywhere, is inherently better than less.</p><p>When I think about my bank, I do not want it to roll back its digital ambitions. I want it to be honest with me about what I am interacting with. I want to be able to reach a human being when the situation requires one, without having to outwit a chatbot to do so. I want the institutions handling my financial life to treat my data and my time with the same care and seriousness that I bring to the relationship.</p><p>AI fatigue is not technophobia. It is not a rejection of progress. It is a reasonable response to the experience of watching a powerful set of tools being deployed without sufficient care for the people those tools are supposed to serve. We are not asking for less innovation. We are asking for more honesty, more transparency, and more genuine thought about where these systems belong and where, quite simply, they do not.</p><div style="margin-top:3rem;background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:2rem;box-shadow:0 4px 24px -6px hsl(220 15% 15%/8%)"><div style=display:flex;align-items:center;gap:.875rem;margin-bottom:1rem><div style=width:2.5rem;height:2.5rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)"><path d="M4 4h16c1.1.0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1.0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><h3 style=font-family:fraunces,serif;font-size:1.2rem;font-weight:600;margin:0>Subscribe to my Newsletter</h3></div><p style=font-size:.875rem;color:var(--muted-foreground);margin-bottom:1.5rem;line-height:1.6>Get notified when I publish new articles about technology, EU policy, and personal reflections. No spam, unsubscribe anytime.</p><div id=newsletter-subscribed style=display:none;align-items:center;gap:.5rem;color:var(--primary);font-weight:500><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-You're subscribed!</div><form id=newsletter-form style=display:flex;gap:.75rem;flex-wrap:wrap><div style=position:absolute;left:-9999px aria-hidden=true><input type=text id=nl-website name=website tabindex=-1 autocomplete=off></div><input type=email id=newsletter-email placeholder=your@email.com required style="flex:1;min-width:200px;padding:.65rem 1rem;border:1px solid var(--border);border-radius:.5rem;background:var(--background);font-family:inherit;font-size:.9rem;color:var(--foreground);outline:none">
-<button type=submit id=newsletter-btn class=btn-primary style=display:flex;align-items:center;gap:.5rem>
-Subscribe
-<svg id="nl-send-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></form></div></article><nav class=post-nav aria-label="Post navigation"><a href=https://lorenzo.loconsole.eu/blog/first-home-nas/ class="post-nav-link post-nav-prev"><span class=post-nav-label><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-Previous
-</span><span class=post-nav-title>I "Built" My First Home NAS</span>
-</a><a href=https://lorenzo.loconsole.eu/blog/understanding-the-fediverse/ class="post-nav-link post-nav-next"><span class=post-nav-label>Next
-<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-</span><span class=post-nav-title>Beyond Twitter and Facebook: Understanding the Fediverse</span></a></nav></div><script>const bar=document.getElementById("reading-progress"),body=document.getElementById("post-body");window.addEventListener("scroll",()=>{if(!body)return;const e=body.offsetHeight-window.innerHeight,t=Math.max(0,window.scrollY-body.offsetTop);bar.style.width=Math.min(100,t/e*100)+"%"});function copyPostLink(e,t){const n=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,s=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;navigator.clipboard.writeText(t).then(()=>{e.innerHTML=s,setTimeout(()=>{e.innerHTML=n},2e3)}).catch(()=>{const o=document.createElement("textarea");o.value=t,document.body.appendChild(o),o.select(),document.execCommand("copy"),document.body.removeChild(o),e.innerHTML=s,setTimeout(()=>{e.innerHTML=n},2e3)})}document.getElementById("newsletter-form")?.addEventListener("submit",async e=>{e.preventDefault();const t=document.getElementById("newsletter-btn"),n=document.getElementById("nl-send-icon");t.disabled=!0,t.childNodes[0].textContent="Subscribing… ";try{await fetch("https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/subscribe-newsletter",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk"},body:JSON.stringify({email:document.getElementById("newsletter-email").value,website:document.getElementById("nl-website").value})}),e.target.style.display="none";const t=document.getElementById("newsletter-subscribed");t.style.display="flex"}catch{t.disabled=!1,t.childNodes[0].textContent="Subscribe "}})</script></main><footer><div class=container><div class=footer-grid><div class=footer-brand><p class=logo>Lorenzo <span class=text-gradient>Loconsole</span></p><p>Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity.</p></div><div><p class=footer-h>Quick Links</p><ul class=footer-nav><li><a href=/>Home</a></li><li><a href=/about>About</a></li><li><a href=/now>Now</a></li><li><a href=/blog>Blog</a></li><li><a href=/contact>Contact</a></li><li><a href=/privacy-policy>Privacy Policy</a></li></ul></div><div><p class=footer-h>Connect</p><div class=social-row><a href=https://www.linkedin.com/in/lloconsole/ target=_blank rel="noopener noreferrer" class=social-icon title=LinkedIn onmouseover='this.style.backgroundColor="#0077B5",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853.0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601.0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144.0-2.063-.926-2.063-2.065.0-1.138.92-2.063 2.063-2.063 1.14.0 2.064.925 2.064 2.063.0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225.0H1.771C.792.0.0.774.0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2.0 22.222.0h.003z"/></svg>
-</a><a href=https://c.im/@lv target=_blank rel="me noopener noreferrer" class=social-icon title=Mastodon onmouseover='this.style.backgroundColor="#6364FF",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792.0 11.813.0h-.03c-3.98.0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057.0 00.023-.043v-1.809a.052.052.0 00-.02-.041.053.053.0 00-.046-.01 20.282 20.282.0 01-4.709.545c-2.73.0-3.463-1.284-3.674-1.818a5.593 5.593.0 01-.319-1.433.053.053.0 01.066-.054c1.517.363 3.072.546 4.632.546.376.0.75.0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23.0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112.0-1.668.668-1.668 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311.0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13.0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
-</a><a href=https://www.thunderbolt.com/ target=_blank rel="noopener noreferrer" class=social-icon title=Thunderbolt onmouseover='this.style.backgroundColor="#FF6B6B",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 512 512" fill="currentColor"><path d="M202.1 510.3c-1.8-.9-4.2-3.1-5.2-4.7-1.8-2.9-1.9-6.3-1.9-64.8.0-41.2-.4-62.6-1.1-64.5-2.4-6.4-8.9-10.1-15.7-8.8-3.2.6-9.2 6.1-44.7 41.5-44.5 44.4-44.1 44-51.8 40.9-4.3-1.7-5.6-2.7-7.4-6.3-1.4-2.8-1.6-13.5-1.6-101.6.0-54.2.3-100.7.7-103.4.9-6.1 4.5-15.1 8.4-20.8 1.6-2.4 50.7-52.1 109.1-110.5 102.2-102.2 106.4-106.2 110.6-106.8 5.5-.9 10.7 1.5 13.5 6 1.9 3.2 2 4.8 2 64.8.0 41.2.4 62.5 1.1 64.4 2.4 6.4 8.9 10.1 15.7 8.8 3.2-.6 9.2-6.1 44.2-41C401.5 80 419.8 62.6 421.5 62c5.8-2.2 13.3.8 16.2 6.4 1.4 2.7 1.6 13.3 1.5 102.1.0 54.4-.3 100.6-.5 102.5-1.2 8-5.2 17.3-10.3 23.6-1.8 2.2-50.5 51.3-108.3 109.1-106.7 106.7-106.4 106.4-113 106.3-.9.0-3.1-.8-5-1.7z"/></svg>
-</a><a href=https://t.me/loconsole_bot target=_blank rel="noopener noreferrer" class=social-icon title=Telegram onmouseover='this.style.backgroundColor="#269DD7",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944.0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056.0zm4.962 7.224c.1-.002.321.023.465.14a.506.506.0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-</a><a href=https://music.apple.com/profile/thends target=_blank rel="noopener noreferrer" class=social-icon title="Apple Music" onmouseover='this.style.backgroundColor="#FA243C",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 361 361" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M359.98 99.71c-.02-3.62-.06-7.24-.16-10.86-.21-7.89-.68-15.84-2.08-23.64-1.42-7.92-3.75-15.29-7.41-22.49-3.6-7.07-8.3-13.53-13.91-19.14s-12.08-10.31-19.15-13.91c-7.19-3.66-14.56-5.98-22.47-7.41-7.8-1.4-15.76-1.87-23.65-2.08-3.62-.1-7.24-.14-10.86-.16C255.99.0 251.69.0 247.39.0H112.61c-4.3.0-8.6.0-12.9.02-3.62.02-7.24.06-10.86.16C80.96.4 73 .86 65.2 2.27c-7.92 1.42-15.28 3.75-22.47 7.41-7.07 3.6-13.54 8.3-19.15 13.91s-10.31 12.07-13.91 19.14c-3.66 7.2-5.99 14.57-7.41 22.49-1.4 7.8-1.87 15.76-2.08 23.64-.1 3.62-.14 7.24-.16 10.86C0 104.01.0 108.31.0 112.61v134.77c0 4.3.0 8.6.02 12.9.02 3.62.06 7.24.16 10.86.21 7.89.68 15.84 2.08 23.64 1.42 7.92 3.75 15.29 7.41 22.49 3.6 7.07 8.3 13.53 13.91 19.14s12.08 10.31 19.15 13.91c7.19 3.66 14.56 5.98 22.47 7.41 7.8 1.4 15.76 1.87 23.65 2.08 3.62.1 7.24.14 10.86.16 4.3.03 8.6.02 12.9.02h134.77c4.3.0 8.6.0 12.9-.02 3.62-.02 7.24-.06 10.86-.16 7.89-.21 15.85-.68 23.65-2.08 7.92-1.42 15.28-3.74 22.47-7.41 7.07-3.6 13.54-8.3 19.15-13.91 5.61-5.61 10.31-12.07 13.91-19.14 3.66-7.2 5.99-14.57 7.41-22.49 1.4-7.8 1.87-15.76 2.08-23.64.1-3.62.14-7.24.16-10.86.03-4.3.02-8.6.02-12.9V112.61C360 108.31 360 104.01 359.98 99.71zM263.54 234.26c0 4.56-.04 8.7-1 13.26-.93 4.43-2.63 8.6-5.24 12.35-2.61 3.74-5.95 6.81-9.85 9.11-3.95 2.33-8.08 3.66-12.5 4.55-8.3 1.67-13.97 2.05-19.31.98-5.14-1.03-9.5-3.4-12.99-6.6-5.17-4.74-8.39-11.14-9.09-17.82-.82-7.84 1.79-16.21 7.67-22.38 2.97-3.11 6.7-5.57 11.68-7.51 5.21-2.02 10.96-3.23 19.8-5.01 2.33-.47 4.66-.94 6.99-1.41 3.06-.62 5.69-1.4 7.81-3.99 2.13-2.61 2.17-5.78 2.17-8.92v-79.29c0-6.07-2.72-7.72-8.52-6.61-4.14.81-93.09 18.75-93.09 18.75-5.02 1.21-6.78 2.85-6.78 9.08v116.15c0 4.56-.24 8.7-1.19 13.26-.93 4.43-2.63 8.6-5.24 12.35-2.61 3.74-5.95 6.81-9.85 9.11-3.95 2.33-8.08 3.72-12.5 4.61-8.3 1.67-13.97 2.05-19.31.98-5.14-1.03-9.5-3.47-12.99-6.66-5.17-4.74-8.17-11.14-8.88-17.82-.82-7.84 1.57-16.21 7.46-22.38 2.97-3.11 6.7-5.57 11.68-7.51 5.21-2.02 10.96-3.23 19.8-5.01 2.33-.47 4.66-.94 6.99-1.41 3.06-.62 5.69-1.4 7.81-3.99s2.37-5.64 2.37-8.76c0-24.6.0-133.92.0-133.92.0-1.8.15-3.02.24-3.62.43-2.82 1.56-5.24 3.6-6.95 1.7-1.42 3.88-2.41 6.67-3l.04-.01 107-21.59c.93-.19 8.66-1.56 9.53-1.64 5.78-.5 9.03 3.3 9.03 9.46V234.26z"/></svg>
-</a><a href=/blog/feed.xml class=social-icon title="RSS Feed" onmouseover='this.style.backgroundColor="#FFA500",this.style.color="white"' onmouseout='this.style.backgroundColor="",this.style.color=""'><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.503 20.752C6.503 22.546 5.047 24 3.252 24c-1.796.0-3.252-1.454-3.252-3.248s1.456-3.248 3.252-3.248c1.795.0 3.251 1.454 3.251 3.248zM0 8.18v4.811c6.05.062 10.96 4.966 11.022 11.009h4.817C15.777 15.258 8.741 8.217.0 8.18zM0 0v4.819c12.032.062 21.823 9.851 21.884 21.88H26.7c-.062-14.724-11.978-26.647-26.7-26.699z"/></svg></a></div></div></div><div class=footer-bottom><p>© 2026 Lorenzo Loconsole. All rights reserved. · Powered by <a href=https://gohugo.io target=_blank rel="noopener noreferrer" class=hugo-credit>Hugo</a></p></div></div></footer><script src=/js/main.js></script></body></html>
+        </a>`;
+      }).join('')}
+      ${results.length > 8 ? `<p style="font-size:0.75rem;color:var(--muted-foreground);padding:0.5rem 0.75rem;text-align:center;border-top:1px solid var(--border);margin-top:0.25rem">Showing 8 of ${results.length} — refine your search or filters to narrow down</p>` : ''}
+    </div>`;
+}
+
+function runSearch(query) {
+  renderResults(query);
+}
+
+
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+  if (e.key === 'Escape' && document.getElementById('search-modal').style.display === 'flex') closeSearch();
+});
+document.getElementById('search-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('search-modal')) closeSearch();
+});
+</script>
+
+  <main>
+<div id="reading-progress" style="position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:100;transition:width 0.1s ease;width:0%"></div>
+
+<div style="padding-top:4.5rem">
+  
+  <div style="padding:3rem 0 2rem;background:var(--hero-gradient)">
+    <div style="max-width:860px;margin:0 auto;padding:0 1.5rem">
+      <a href="/blog" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Blog
+      </a>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin:1.5rem 0 1rem">
+        <span class="category-badge" style="font-size:0.8rem;padding:0.3rem 0.8rem">Technology</span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Feb 12, 2026
+        </span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          9 min read
+        </span>
+        <span class="meta-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Lorenzo
+        </span>
+      </div>
+
+      <h1 style="font-family:'Fraunces',serif;font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.2;color:var(--foreground)">AI Fatigue is Real</h1>
+
+      
+
+      
+
+      
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:1.5rem">
+        <span style="font-size:0.875rem;color:var(--muted-foreground);display:flex;align-items:center;gap:0.375rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </span>
+        
+        <a href="https://x.com/intent/tweet?text=Check+this+out+!+AI&#43;Fatigue&#43;is&#43;Real&url=http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on X">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        
+        <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F&quote=Check+this+out+!" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        
+        <a href="https://www.threads.net/intent/post?text=Check+this+out+!+AI&#43;Fatigue&#43;is&#43;Real+http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Threads">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.18.408-2.285 1.33-3.11.88-.788 2.12-1.272 3.594-1.4.997-.087 1.98-.05 2.928.107-.09-.542-.27-1.006-.535-1.378-.473-.663-1.249-1.003-2.306-1.012h-.046c-.79.004-1.477.186-2.04.542l-1.047-1.698c.845-.523 1.872-.803 3.052-.812h.074c1.667.014 2.95.6 3.81 1.741.715.949 1.12 2.18 1.204 3.66.424.154.823.34 1.193.564 1.16.7 2.035 1.69 2.533 2.862.784 1.847.85 4.576-1.286 6.669-1.835 1.793-4.092 2.593-7.287 2.616zM12.57 13.721c-1.488.13-3.07.587-3.07 2.139.02.57.31 1.637 2.121 1.808 1.894-.103 2.787-1.147 2.949-3.947z"/></svg>
+        </a>
+        
+        <a href="https://bsky.app/intent/compose?text=Check+this+out+!+AI&#43;Fatigue&#43;is&#43;Real+http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Bluesky">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.785 2.627 3.603 3.493 6.163 3.187-.04.078-.08.166-.12.253-2.812 5.033 2.51 8.312 5.333 5.617 2.823 2.695 8.145-.584 5.333-5.617-.04-.087-.08-.175-.12-.253 2.56.306 5.378-.56 6.163-3.187C23.622 9.418 24 4.458 24 3.768c0-.688-.139-1.86-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>
+        </a>
+        
+        <a href="https://mastodon.social/share?text=Check+this+out+!+AI&#43;Fatigue&#43;is&#43;Real+http%3A%2F%2Flocalhost%3A1313%2Fblog%2Fai-fatigue-is-real%2F" target="_blank" rel="noopener noreferrer" class="share-btn" title="Share on Mastodon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.668 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
+        </a>
+        
+        <button onclick="copyPostLink(this, 'http:\/\/localhost:1313\/blog\/ai-fatigue-is-real\/')" class="share-btn" title="Copy link">
+          <svg id="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+
+      
+      
+
+      
+    </div>
+  </div>
+
+  
+  <article class="post-body" id="post-body">
+    <h2 id="the-email-i-did-not-ask-for">The Email I Did Not Ask For</h2>
+<p>It arrived in my inbox like any other piece of corporate communication: a cheerful announcement from my bank informing me that they were rolling out a new AI-powered assistant. Available around the clock, faster than any human agent, ready to answer every question I might ever have. The tone was breathlessly enthusiastic, as if the bank had just discovered fire.</p>
+<p>I stared at the email for a moment. Then I felt something I have been feeling more and more often lately: a quiet, creeping exhaustion. Not at the technology itself, necessarily, but at the relentless pace at which it is being pushed into every corner of daily life, whether we want it there or not. There is a word for this feeling that is starting to circulate in conversations about technology: AI fatigue. It describes the weariness that sets in when a tool that was once exciting begins to feel ubiquitous, unavoidable, and at times, deeply unwelcome.</p>
+<hr>
+<h2 id="a-bank-that-once-felt-different">A Bank That Once Felt Different</h2>
+<p>I chose this bank back in 2019. It was one of those modern, digital-first institutions that seemed to genuinely understand what people were looking for. No bureaucratic queues. No mandatory appointments with a branch manager. No stacks of paper to sign and return. It was built for people who were always on the move, who valued efficiency and clarity, and who perhaps liked the idea of a bank that felt a little less like a traditional bank.</p>
+<p>At the time, it was also making serious inroads across several European countries, positioning itself as the bank for people who travel, who live across borders, who do not want to be tied to a single country&rsquo;s financial infrastructure. It offered genuinely useful features, many of them free, and it did so through a clean, intuitive app. For someone who had grown weary of the slowness and formality of conventional banking, it was a breath of fresh air.</p>
+<p>But that email made me pause. Because thinking back on it now, I find myself wondering whether we have gone too far. The very qualities that made that bank appealing in the first place, its sense of responsiveness, its feeling that a real person was on the other end of the line, seem to be quietly disappearing. In their place is an assistant that gets a different name and a different profile photo each time you open a chat, as though the illusion of a human presence were somehow preferable to straightforward honesty about what the system actually is.</p>
+<hr>
+<h2 id="the-chatbot-that-would-not-step-aside">The Chatbot That Would Not Step Aside</h2>
+<p>I have had reason to contact that bank&rsquo;s customer support more than once. A bug in the app that was preventing a transaction from going through. A payment that had been debited twice from my account. Situations that were not catastrophic, but that required a clear answer and a concrete resolution. Each time, the path to that resolution ran through the same obstacle: the AI agent.</p>
+<p>What I discovered is that this agent is not simply a filter designed to route simple queries and pass complex ones to a human. It has been designed to act as a gatekeeper, one that has appointed itself the sole judge of whether your problem is serious enough to warrant a real person&rsquo;s attention. On several occasions, I found myself completely unable to escalate to a human agent because the system had decided, without any apparent means of appeal, that my issue did not require human intervention.</p>
+<p>This is where the problem becomes genuinely serious. AI agents work well as a first line of response for straightforward, repetitive queries. If someone wants to know their account balance, how to change their PIN, or what the bank&rsquo;s opening hours are, a well-trained AI can handle that efficiently and accurately, drawing on a structured knowledge base to produce a reliable answer. These are what support teams call Level 1 requests, and automating them makes sense. It reduces waiting times, frees up human agents for more complex work, and provides users with instant answers to simple questions.</p>
+<p>But the moment a situation moves beyond that structured, predictable territory, the AI&rsquo;s limitations become apparent very quickly. A payment debited twice involves checking transaction records, cross-referencing with a merchant, potentially initiating a dispute process, and communicating with the user about what happens next and when. A bug in the app may require a support agent to flag the issue to a technical team, log a ticket, and follow up. These are not tasks that fit neatly into a decision tree. They require judgement, flexibility, and accountability. And yet the system was designed in a way that prevented me from accessing the human agents who could have provided exactly that.</p>
+<hr>
+<h2 id="the-transparency-problem">The Transparency Problem</h2>
+<p>There is something particularly troubling about AI agents that are designed to pass themselves off as human. Giving a chatbot a human name and a friendly profile photo is not a design flourish. It is a deliberate choice to obscure the nature of the interaction, and that matters.</p>
+<p>When people communicate with a support agent, they make constant, often unconscious decisions based on their understanding of who they are speaking to. They decide how much detail to provide, how formally to phrase their request, how much to trust the response they receive. If they believe they are speaking with a person, those decisions are made on one set of assumptions. If they know they are speaking with a machine, they make them on another. Deliberately blurring that distinction does not serve the user. It serves the institution, by reducing the friction that might arise if users understood that their query was being handled by an algorithm.</p>
+<p>Beyond the ethical dimension, there is the practical question of data. Every message sent to an AI agent is processed, stored, and in many cases used to improve the model&rsquo;s future performance. In the context of a bank, where conversations routinely involve account numbers, transaction details, personal circumstances, and financial concerns, this raises significant privacy questions. How long is that data retained? Who has access to it? Under what conditions can it be used for training? These are not hypothetical concerns. They are the kinds of questions that ought to appear in the enthusiastic announcement emails that banks send out when they roll out these systems. They rarely do.</p>
+<hr>
+<h2 id="summaries-instead-of-stories">Summaries Instead of Stories</h2>
+<p>Banking is not the only place where AI fatigue is taking hold. Search engines are increasingly delivering AI-generated summaries at the very top of results pages. The idea is that instead of clicking through to a source, you can simply read a few sentences at the top of the page and move on with your day.</p>
+<p>On the surface, this seems like a convenience. In practice, it is something closer to intellectual shortcutting, and it carries real risks that are rarely discussed openly.</p>
+<p>The way a writer structures an argument is not incidental. It is part of the argument. The order in which information is presented, the qualifications that are introduced at particular moments, the context that builds over the course of a piece, these are the things that allow a reader to genuinely understand a topic rather than simply collect a data point about it. When that structure is collapsed into three sentences generated by an algorithm, what is left is a skeleton. It may be accurate in its bare facts, but it is stripped of the texture that makes those facts meaningful.</p>
+<p>More concretely, AI-generated summaries are not always correct. These systems can misrepresent the conclusions of a study, omit crucial caveats, or conflate the positions of different sources. Because the summary appears at the top of the page in a clean, authoritative format, many readers accept it without question and never open the original article. The error is never caught. The misunderstanding travels.</p>
+<p>There is also a structural consequence for the web itself. When users stop clicking through to original sources, those sources lose traffic, and with it, the advertising revenue or subscription income that sustains them. If AI summaries become the dominant way people consume information, the incentive to produce the in-depth reporting and analysis that these summaries are drawing from begins to erode. We risk creating a system that feeds on the depth and rigour of human-written content while simultaneously undermining the conditions that make such content economically viable to produce.</p>
+<hr>
+<h2 id="are-we-becoming-intellectually-lazy">Are We Becoming Intellectually Lazy?</h2>
+<p>There is a more uncomfortable question sitting underneath all of this, one worth taking seriously: are we allowing these tools to gradually weaken our capacity for independent thought?</p>
+<p>When every article can be summarised before we read it, when every customer service interaction is pre-filtered by an algorithm, when every decision can be informed by an AI assistant before we have had a chance to think it through ourselves, what happens to the cognitive habits we would otherwise be exercising? Reading a long article in full, sitting with complexity, forming a view before receiving a verdict, these are not trivial skills. They require practice. And like any skill that goes unpractised, they can atrophy.</p>
+<p>We seem to be perpetually busy. Too busy, apparently, to read a full article, to navigate a bank&rsquo;s support system, to engage with a problem without AI assistance. But busy doing what, exactly? That is worth asking honestly. Because if the answer is that we are using AI to save time, it is worth asking what we are doing with that time and whether the trade-off is actually serving us.</p>
+<p>The concern is not that AI assistance makes individual tasks easier. That is genuinely fine. The concern is what happens when AI assistance becomes the default mode for nearly all engagement with information and services, to the point where operating without it starts to feel unfamiliar. That shift, if it happens gradually enough, may not feel like a loss at all. It may simply feel like progress.</p>
+<hr>
+<h2 id="a-tool-not-a-replacement">A Tool, Not a Replacement</h2>
+<p>None of this is an argument against artificial intelligence. These technologies, applied thoughtfully and with genuine transparency, can do real good. Automating repetitive tasks, making information more accessible, reducing friction in processes that were unnecessarily slow: these are legitimate and worthwhile goals. The problem is not the technology itself. The problem is the unexamined assumption that more AI, deployed everywhere, is inherently better than less.</p>
+<p>When I think about my bank, I do not want it to roll back its digital ambitions. I want it to be honest with me about what I am interacting with. I want to be able to reach a human being when the situation requires one, without having to outwit a chatbot to do so. I want the institutions handling my financial life to treat my data and my time with the same care and seriousness that I bring to the relationship.</p>
+<p>AI fatigue is not technophobia. It is not a rejection of progress. It is a reasonable response to the experience of watching a powerful set of tools being deployed without sufficient care for the people those tools are supposed to serve. We are not asking for less innovation. We are asking for more honesty, more transparency, and more genuine thought about where these systems belong and where, quite simply, they do not.</p>
+
+
+    
+    <div style="margin-top:3rem;background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:2rem;box-shadow:0 4px 24px -6px hsl(220 15% 15%/0.08)">
+      <div style="display:flex;align-items:center;gap:0.875rem;margin-bottom:1rem">
+        <div style="width:2.5rem;height:2.5rem;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h3 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:600;margin:0">Subscribe to my Newsletter</h3>
+      </div>
+      <p style="font-size:0.875rem;color:var(--muted-foreground);margin-bottom:1.5rem;line-height:1.6">Get notified when I publish new articles about technology, EU policy, and personal reflections. No spam, unsubscribe anytime.</p>
+      <div id="newsletter-subscribed" style="display:none;align-items:center;gap:0.5rem;color:var(--primary);font-weight:500">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        You're subscribed!
+      </div>
+      <form id="newsletter-form" style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <input type="text" id="nl-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+        <input type="email" id="newsletter-email" placeholder="your@email.com" required
+          style="flex:1;min-width:200px;padding:0.65rem 1rem;border:1px solid var(--border);border-radius:0.5rem;background:var(--background);font-family:inherit;font-size:0.9rem;color:var(--foreground);outline:none" />
+        <button type="submit" id="newsletter-btn" class="btn-primary" style="display:flex;align-items:center;gap:0.5rem">
+          Subscribe
+          <svg id="nl-send-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </div>
+  </article>
+
+  
+  <nav class="post-nav" aria-label="Post navigation">
+    
+    <a href="http://localhost:1313/blog/first-home-nas/" class="post-nav-link post-nav-prev">
+      <span class="post-nav-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous
+      </span>
+      <span class="post-nav-title">I &#34;Built&#34; My First Home NAS</span>
+    </a>
+    
+    
+    <a href="http://localhost:1313/blog/understanding-the-fediverse/" class="post-nav-link post-nav-next">
+      <span class="post-nav-label">
+        Next
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+      <span class="post-nav-title">Beyond Twitter and Facebook: Understanding the Fediverse</span>
+    </a>
+    
+  </nav>
+</div>
+
+<script>
+const bar = document.getElementById('reading-progress');
+const body = document.getElementById('post-body');
+window.addEventListener('scroll', () => {
+  if (!body) return;
+  const total = body.offsetHeight - window.innerHeight;
+  const scrolled = Math.max(0, window.scrollY - body.offsetTop);
+  bar.style.width = Math.min(100, (scrolled / total) * 100) + '%';
+});
+
+function copyPostLink(btn, url) {
+  const copyIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.innerHTML = checkIcon;
+    setTimeout(() => { btn.innerHTML = copyIcon; }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    btn.innerHTML = checkIcon;
+    setTimeout(() => { btn.innerHTML = copyIcon; }, 2000);
+  });
+}
+
+document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn  = document.getElementById('newsletter-btn');
+  const icon = document.getElementById('nl-send-icon');
+  btn.disabled = true;
+  btn.childNodes[0].textContent = 'Subscribing… ';
+  try {
+    await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/subscribe-newsletter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk' },
+      body: JSON.stringify({
+        email:   document.getElementById('newsletter-email').value,
+        website: document.getElementById('nl-website').value
+      })
+    });
+    e.target.style.display = 'none';
+    const ok = document.getElementById('newsletter-subscribed');
+    ok.style.display = 'flex';
+  } catch {
+    btn.disabled = false;
+    btn.childNodes[0].textContent = 'Subscribe ';
+  }
+});
+</script>
+</main>
+  <footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <p class="logo">Lorenzo <span class="text-gradient">Loconsole</span></p>
+        <p>Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity.</p>
+      </div>
+
+      <div>
+        <p class="footer-h">Quick Links</p>
+        <ul class="footer-nav">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/now">Now</a></li>
+          <li><a href="/blog">Blog</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy-policy">Privacy Policy</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <p class="footer-h">Connect</p>
+        <div class="connect-row">
+          
+          <a href="https://www.linkedin.com/in/lloconsole/" target="_blank" rel="noopener noreferrer" class="connect-btn" title="LinkedIn" onmouseover="this.style.backgroundColor='#0077B5';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </a>
+          
+          <a href="https://c.im/@lv" target="_blank" rel="me noopener noreferrer" class="connect-btn" title="Mastodon" onmouseover="this.style.backgroundColor='#6364FF';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.668 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
+          </a>
+          
+          <a href="https://www.thunderbolt.com/" target="_blank" rel="noopener noreferrer" class="connect-btn" title="Thunderbolt" onmouseover="this.style.backgroundColor='#FF6B6B';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 512 512" fill="currentColor"><path d="M202.1 510.3c-1.8-0.9-4.2-3.1-5.2-4.7-1.8-2.9-1.9-6.3-1.9-64.8 0-41.2-0.4-62.6-1.1-64.5-2.4-6.4-8.9-10.1-15.7-8.8-3.2 0.6-9.2 6.1-44.7 41.5-44.5 44.4-44.1 44-51.8 40.9-4.3-1.7-5.6-2.7-7.4-6.3-1.4-2.8-1.6-13.5-1.6-101.6 0-54.2 0.3-100.7 0.7-103.4 0.9-6.1 4.5-15.1 8.4-20.8 1.6-2.4 50.7-52.1 109.1-110.5 102.2-102.2 106.4-106.2 110.6-106.8 5.5-0.9 10.7 1.5 13.5 6 1.9 3.2 2 4.8 2 64.8 0 41.2 0.4 62.5 1.1 64.4 2.4 6.4 8.9 10.1 15.7 8.8 3.2-0.6 9.2-6.1 44.2-41 23.5-23.5 41.8-40.9 43.5-41.5 5.8-2.2 13.3 0.8 16.2 6.4 1.4 2.7 1.6 13.3 1.5 102.1 0 54.4-0.3 100.6-0.5 102.5-1.2 8-5.2 17.3-10.3 23.6-1.8 2.2-50.5 51.3-108.3 109.1-106.7 106.7-106.4 106.4-113 106.3-0.9 0-3.1-0.8-5-1.7z"/></svg>
+          </a>
+          
+          <a href="https://t.me/loconsole_bot" target="_blank" rel="noopener noreferrer" class="connect-btn" title="Telegram" onmouseover="this.style.backgroundColor='#269DD7';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          </a>
+          
+          <a href="https://music.apple.com/profile/thends" target="_blank" rel="noopener noreferrer" class="connect-btn" title="Apple Music" onmouseover="this.style.backgroundColor='#FA243C';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 361 361" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M359.98,99.71c-0.02-3.62-0.06-7.24-0.16-10.86c-0.21-7.89-0.68-15.84-2.08-23.64c-1.42-7.92-3.75-15.29-7.41-22.49c-3.6-7.07-8.3-13.53-13.91-19.14c-5.61-5.61-12.08-10.31-19.15-13.91c-7.19-3.66-14.56-5.98-22.47-7.41c-7.8-1.4-15.76-1.87-23.65-2.08c-3.62-0.1-7.24-0.14-10.86-0.16C255.99,0,251.69,0,247.39,0H112.61c-4.3,0-8.6,0-12.9,0.02c-3.62,0.02-7.24,0.06-10.86,0.16C80.96,0.4,73,0.86,65.2,2.27c-7.92,1.42-15.28,3.75-22.47,7.41c-7.07,3.6-13.54,8.3-19.15,13.91c-5.61,5.61-10.31,12.07-13.91,19.14c-3.66,7.2-5.99,14.57-7.41,22.49c-1.4,7.8-1.87,15.76-2.08,23.64c-0.1,3.62-0.14,7.24-0.16,10.86C0,104.01,0,108.31,0,112.61v134.77c0,4.3,0,8.6,0.02,12.9c0.02,3.62,0.06,7.24,0.16,10.86c0.21,7.89,0.68,15.84,2.08,23.64c1.42,7.92,3.75,15.29,7.41,22.49c3.6,7.07,8.3,13.53,13.91,19.14c5.61,5.61,12.08,10.31,19.15,13.91c7.19,3.66,14.56,5.98,22.47,7.41c7.8,1.4,15.76,1.87,23.65,2.08c3.62,0.1,7.24,0.14,10.86,0.16c4.3,0.03,8.6,0.02,12.9,0.02h134.77c4.3,0,8.6,0,12.9-0.02c3.62-0.02,7.24-0.06,10.86-0.16c7.89-0.21,15.85-0.68,23.65-2.08c7.92-1.42,15.28-3.74,22.47-7.41c7.07-3.6,13.54-8.3,19.15-13.91c5.61-5.61,10.31-12.07,13.91-19.14c3.66-7.2,5.99-14.57,7.41-22.49c1.4-7.8,1.87-15.76,2.08-23.64c0.1-3.62,0.14-7.24,0.16-10.86c0.03-4.3,0.02-8.6,0.02-12.9V112.61C360,108.31,360,104.01,359.98,99.71z M263.54,234.26c0,4.56-0.04,8.7-1,13.26c-0.93,4.43-2.63,8.6-5.24,12.35c-2.61,3.74-5.95,6.81-9.85,9.11c-3.95,2.33-8.08,3.66-12.5,4.55c-8.3,1.67-13.97,2.05-19.31,0.98c-5.14-1.03-9.5-3.4-12.99-6.6c-5.17-4.74-8.39-11.14-9.09-17.82c-0.82-7.84,1.79-16.21,7.67-22.38c2.97-3.11,6.7-5.57,11.68-7.51c5.21-2.02,10.96-3.23,19.8-5.01c2.33-0.47,4.66-0.94,6.99-1.41c3.06-0.62,5.69-1.4,7.81-3.99c2.13-2.61,2.17-5.78,2.17-8.92l0-79.29c0-6.07-2.72-7.72-8.52-6.61c-4.14,0.81-93.09,18.75-93.09,18.75c-5.02,1.21-6.78,2.85-6.78,9.08l0,116.15c0,4.56-0.24,8.7-1.19,13.26c-0.93,4.43-2.63,8.6-5.24,12.35c-2.61,3.74-5.95,6.81-9.85,9.11c-3.95,2.33-8.08,3.72-12.5,4.61c-8.3,1.67-13.97,2.05-19.31,0.98c-5.14-1.03-9.5-3.47-12.99-6.66c-5.17-4.74-8.17-11.14-8.88-17.82c-0.82-7.84,1.57-16.21,7.46-22.38c2.97-3.11,6.7-5.57,11.68-7.51c5.21-2.02,10.96-3.23,19.8-5.01c2.33-0.47,4.66-0.94,6.99-1.41c3.06-0.62,5.69-1.4,7.81-3.99c2.12-2.59,2.37-5.64,2.37-8.76c0-24.6,0-133.92,0-133.92c0-1.8,0.15-3.02,0.24-3.62c0.43-2.82,1.56-5.24,3.6-6.95c1.7-1.42,3.88-2.41,6.67-3l0.04-0.01l107-21.59c0.93-0.19,8.66-1.56,9.53-1.64c5.78-0.5,9.03,3.3,9.03,9.46V234.26z"/></svg>
+          </a>
+          
+          <a href="/blog/feed.xml" class="connect-btn" title="RSS Feed" onmouseover="this.style.backgroundColor='#FFA500';this.style.color='white'" onmouseout="this.style.backgroundColor='';this.style.color=''">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.503 20.752c0 1.794-1.456 3.248-3.251 3.248-1.796 0-3.252-1.454-3.252-3.248 0-1.794 1.456-3.248 3.252-3.248 1.795 0 3.251 1.454 3.251 3.248zm-6.503-12.572v4.811c6.05.062 10.96 4.966 11.022 11.009h4.817c-.062-8.742-7.098-15.783-15.839-15.82zm0-8.18v4.819c12.032.062 21.823 9.851 21.884 21.88h4.816c-.062-14.724-11.978-26.647-26.7-26.699z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 Lorenzo Loconsole. All rights reserved. · Powered by <a href="https://gohugo.io" target="_blank" rel="noopener noreferrer" class="hugo-credit">Hugo</a></p>
+    </div>
+  </div>
+</footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>
