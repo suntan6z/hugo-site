@@ -388,15 +388,15 @@ footer {
 .footer-nav a { font-size: 0.875rem; color: var(--muted-foreground); transition: color 0.2s; }
 .footer-nav a:hover { color: var(--primary); }
 .footer-h { font-weight: 600; color: var(--foreground); font-size: 0.95rem; }
-.social-row { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.75rem; }
-.social-icon {
+.connect-row { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.75rem; }
+.connect-btn {
   width: 40px; height: 40px;
   border-radius: 10px;
   display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0;
   background: var(--muted); color: var(--muted-foreground);
   transition: all 0.3s;
 }
-.social-icon:hover { transform: translateY(-2px); }
+.connect-btn:hover { transform: translateY(-2px); }
 .footer-bottom { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; }
 .footer-bottom p { font-size: 0.875rem; color: var(--muted-foreground); }
 .hugo-credit { color: inherit; font-weight: 500; text-decoration: none; transition: color 0.2s; }
