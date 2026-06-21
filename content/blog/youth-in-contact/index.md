@@ -2,7 +2,6 @@
 title: "Youth in Contact: Chérac, France"
 date: 2020-11-22
 slug: "youth-in-contact"
-featured_image: "/images/erasmus/youthciphoto1.jpg"
 category: "Erasmus+"
 draft: false
 partner_name: "Les Schini's"
@@ -11,6 +10,8 @@ partner_logo_url: "/images/erasmus/lesschinislogo.png"
 project_url: "https://youthincontact.wixsite.com/project"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
+
+![Youth in Contact venue - a beautiful French building in Chérac](/images/erasmus/youthciphoto1.jpg)
 
 
 ## Introduction: why this mattered

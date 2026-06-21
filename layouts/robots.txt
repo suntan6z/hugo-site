@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /privacy-policy/
+Disallow: /categories/
+
+Sitemap: {{ .Site.BaseURL }}sitemap.xml

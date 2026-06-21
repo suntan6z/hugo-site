@@ -1,14 +1,11 @@
 [
-  {
-    "name": "Paris",
-    "slug": "paris",
-    "flag": "\ud83c\uddeb\ud83c\uddf7",
-    "display_order": 1
-  },
-  {
-    "name": "Bari",
-    "slug": "bari",
-    "flag": "\ud83c\uddee\ud83c\uddf9",
-    "display_order": 2
-  }
+  { "name": "Paris",             "slug": "paris",     "flag": "🇫🇷" },
+  { "name": "Bari",              "slug": "bari",      "flag": "🇮🇹" },
+  { "name": "Barcelona",         "slug": "barcelona", "flag": "🇪🇸" },
+  { "name": "Amsterdam",         "slug": "amsterdam", "flag": "🇳🇱" },
+  { "name": "Warsaw",            "slug": "warsaw",    "flag": "🇵🇱" },
+  { "name": "Valletta",          "slug": "valletta",  "flag": "🇲🇹" },
+  { "name": "Tirana",            "slug": "tirana",    "flag": "🇦🇱" },
+  { "name": "Sofia",             "slug": "sofia",     "flag": "🇧🇬" },
+  { "name": "Câmara de Lobos",   "slug": "camara-de-lobos", "flag": "🇵🇹" }
 ]
