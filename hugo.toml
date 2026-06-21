@@ -5,7 +5,7 @@ title = "Lorenzo Loconsole"
 [params]
   author = "Lorenzo"
   description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
-  heroPhoto = "/hero-portait.png"
+  heroPhoto = "/hero-portrait.png"
   resumeUrl = "/cv-fr.pdf"
   email = "lorenzo@loconsole.eu"
   location = "France, Europe 🇪🇺"
