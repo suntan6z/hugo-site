@@ -458,8 +458,9 @@ footer {
 .contact-method p { font-size: 0.875rem; color: var(--muted-foreground); }
 
 /* Animations */
-.fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
-.fade-up.visible { opacity: 1; transform: translateY(0); }
+/* Fade-up only activates when JS is available; bots/no-JS see content immediately */
+.js .fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.js .fade-up.visible { opacity: 1; transform: translateY(0); }
 
 /* Reading progress bar */
 #reading-progress {

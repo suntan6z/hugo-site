@@ -4,4 +4,4 @@ Allow: /
 Disallow: /privacy-policy/
 Disallow: /categories/
 
-Sitemap: https://lorenzo.loconsole.eu/sitemap.xml
+Sitemap: http://localhost:1313/sitemap.xml

@@ -4,6 +4,7 @@ date: 2021-08-04
 slug: "breaking-wall-extremism"
 category: "Erasmus+"
 draft: false
+description: "How a theatre project in the French Pyrenees taught me that confronting extremism starts with uncomfortable conversations — and a lot of improvisation."
 partner_name: "Association La Villa"
 partner_url: "https://la-villa.org"
 partner_logo_url: "/images/erasmus/lavillalogo.png"
