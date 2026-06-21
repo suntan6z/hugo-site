@@ -2,6 +2,7 @@
 title: "Out the Shadow TC1: Dobczyce, Poland"
 date: 2024-12-20
 slug: "out-the-shadow"
+featured_image: "/images/erasmus/otstc1-1.jpg"
 category: "Erasmus+"
 draft: false
 partner_name: "Fundacja Innowacyjnej Edukacji"
