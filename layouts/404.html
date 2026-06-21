@@ -1,18 +1,96 @@
-{{ define "main" }}
-<div style="min-height:calc(100vh - 4rem);display:flex;align-items:center;justify-content:center;padding:4rem 1.5rem">
-  <div id="not-found-wrap" style="display:flex;flex-direction:column;align-items:center;gap:2rem;max-width:900px;width:100%">
-    <div style="flex-shrink:0">
-      <img src="/img/404page.png" alt="404" style="width:min(280px,80vw);height:auto;filter:drop-shadow(0 8px 24px hsl(220 15% 15% / 0.12))" />
-    </div>
-    <div style="text-align:center;max-width:28rem">
-      <h2 style="font-family:'Fraunces',serif;font-size:clamp(1.5rem,3.5vw,2rem);font-weight:600;color:var(--accent-foreground);margin-bottom:1rem">
-        <em>Magnifique!</em> You have discovered my secret <u>404</u> collection!
-      </h2>
-      <p style="color:var(--muted-foreground);font-size:1rem;line-height:1.75;margin-bottom:2rem">
-        It is a rare find, <em>n'est-ce pas?</em> Truly a work of art. But alas, even the most beautiful errors must come to an end. <em>Sacré bleu!</em> Click the button below and pretend you saw nothing. <em>Au revoir!</em>
-      </p>
-      <a href="/" style="display:inline-flex;align-items:center;padding:0.75rem 2rem;background:var(--primary);color:var(--primary-foreground);border-radius:2rem;font-weight:500;font-size:1rem;transition:opacity 0.2s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Return to Home</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — {{ .Site.Title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --background: hsl(30, 25%, 97%);
+      --foreground: hsl(220, 15%, 15%);
+      --primary: hsl(350, 45%, 40%);
+      --primary-foreground: hsl(30, 25%, 97%);
+      --muted-foreground: hsl(220, 10%, 45%);
+      --accent-foreground: hsl(350, 45%, 35%);
+    }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.5rem;
+      max-width: 860px;
+      width: 100%;
+      text-align: center;
+    }
+    img {
+      width: min(260px, 75vw);
+      height: auto;
+      filter: drop-shadow(0 8px 24px hsl(220 15% 15% / 0.12));
+    }
+    h2 {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 600;
+      color: var(--accent-foreground);
+      line-height: 1.25;
+      margin-bottom: 1rem;
+    }
+    p {
+      color: var(--muted-foreground);
+      font-size: 1rem;
+      line-height: 1.75;
+      margin-bottom: 2rem;
+      max-width: 28rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    a.btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-radius: 2rem;
+      font-weight: 500;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    a.btn:hover { opacity: 0.88; }
+    @media (min-width: 640px) {
+      .wrap {
+        flex-direction: row;
+        text-align: left;
+        gap: 4rem;
+      }
+      img { flex-shrink: 0; }
+      p { margin-left: 0; margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="/img/404page.png" alt="404 illustration" />
+    <div>
+      <h2><em>Magnifique!</em> You have discovered my secret <u>404</u> collection!</h2>
+      <p>It is a rare find, <em>n'est-ce pas?</em> Truly a work of art. But alas, even the most beautiful errors must come to an end. <em>Sacré bleu!</em> Click the button below and pretend you saw nothing. <em>Au revoir!</em></p>
+      <a href="/" class="btn">Return to Home</a>
     </div>
   </div>
-</div>
-{{ end }}
+</body>
+</html>
