@@ -111,7 +111,11 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
 
 /* Mobile menu */
 .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 0.5rem; color: var(--foreground); }
-.mobile-nav { display: none; flex-direction: column; gap: 0.5rem; padding: 1rem 0; }
+.mobile-nav { display: none; flex-direction: column; gap: 0.75rem; padding: 0.875rem 1rem; border-top: 1px solid var(--border); }
+.mobile-nav-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.mobile-nav-link { font-size: 0.9rem; font-weight: 500; color: var(--muted-foreground); padding: 0.25rem 0.625rem; border-radius: 0.4rem; transition: color 0.2s, background 0.2s; }
+.mobile-nav-link:hover, .mobile-nav-link.active { color: var(--primary); background: var(--accent); }
+.mobile-nav-actions { display: flex; align-items: center; gap: 0.5rem; padding-top: 0.25rem; border-top: 1px solid var(--border); }
 .mobile-nav.open { display: flex; }
 
 /* Hero section */
