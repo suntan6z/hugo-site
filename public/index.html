@@ -5,15 +5,67 @@
   <meta charset="UTF-8" />
   <script>document.documentElement.classList.add('js')</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity.</title>
+
+  
+  <title>Home | Lorenzo Loconsole</title>
+
+  
   <meta name="description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity." />
   <meta name="author" content="Lorenzo" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch.png" />
   <link rel="canonical" href="http://localhost:1313/" />
-  <meta property="og:title" content="Lorenzo Loconsole" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+  
+  <meta property="og:site_name" content="Lorenzo Loconsole" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Home | Lorenzo Loconsole" />
   <meta property="og:description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity." />
   <meta property="og:url" content="http://localhost:1313/" />
+  <meta property="og:image" content="http://localhost:1313/hero-portrait.png" />
+  <meta property="og:image:width" content="320" />
+  <meta property="og:image:height" content="420" />
+  
   <meta property="og:type" content="website" />
+
+  
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Home | Lorenzo Loconsole" />
+  <meta name="twitter:description" content="Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity." />
+  <meta name="twitter:image" content="http://localhost:1313/hero-portrait.png" />
+
+  
+  <link rel="preload" as="image" href="/hero-portrait.png" fetchpriority="high" />
+
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "url": "http:\/\/localhost:1313\/",
+        "name": "\"Lorenzo Loconsole\"",
+        "description": "\"Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity.\"",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "Person",
+        "name": "Lorenzo Loconsole",
+        "url": "http:\/\/localhost:1313\/",
+        "image": "http:\/\/localhost:1313\/hero-portrait.png",
+        "sameAs": [
+          "\"https://www.linkedin.com/in/lloconsole/\"",
+          "\"https://c.im/@lv\""
+        ],
+        "jobTitle": "Tech Advocate & Developer"
+      }
+    ]
+  }
+  </script>
+
+  
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/css/main.css" />
@@ -138,7 +190,7 @@
 
     
     <div id="search-results" style="max-height:420px;overflow-y:auto;padding:0.5rem">
-      <div id="search-pages-group" style="display:flex;flex-direction:column;padding:0.5rem 0">
+      <div id="search-pages-group" aria-hidden="true" style="display:flex;flex-direction:column;padding:0.5rem 0">
         <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-foreground);padding:0.25rem 0.75rem 0.5rem">Pages</p>
         <a href="/about"   onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>About</span></a>
         <a href="/now"     onclick="closeSearch()" class="search-item" style="display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"><span style="color:var(--muted-foreground);font-weight:500">#</span><span>Now</span></a>
@@ -679,7 +731,7 @@ document.getElementById('search-modal').addEventListener('click', e => {
       <button onclick="lbNav(-1)" style="position:absolute;left:1rem;background:none;border:none;color:white;cursor:pointer;opacity:0.8">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <img id="lightbox-img" src="" alt="" style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:0.5rem" onclick="event.stopPropagation()" />
+      <img id="lightbox-img" src="" alt="Gallery photo" style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:0.5rem" onclick="event.stopPropagation()" />
       <button onclick="lbNav(1)" style="position:absolute;right:1rem;background:none;border:none;color:white;cursor:pointer;opacity:0.8">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
@@ -713,7 +765,7 @@ document.getElementById('search-modal').addEventListener('click', e => {
               
             </div>
             <h3>Beyond Twitter and Facebook: Understanding the Fediverse</h3>
-            <p class="article-excerpt"> The first time I encountered the word Fediverse, I genuinely did not know what to make of it. It kept appearing in corners of the internet I was not quite …</p>
+            <p class="article-excerpt">A clear guide to the Fediverse — the decentralised social network where no algorithm owns your feed and no single company controls the conversation.</p>
           </div>
           
         </div>
@@ -731,7 +783,7 @@ document.getElementById('search-modal').addEventListener('click', e => {
               
             </div>
             <h3>AI Fatigue is Real</h3>
-            <p class="article-excerpt"> It arrived in my inbox like any other piece of corporate communication: a cheerful announcement from my bank informing me that they were rolling out a new …</p>
+            <p class="article-excerpt">A reflection on AI fatigue — the quiet exhaustion that sets in when artificial intelligence is pushed into every corner of daily life, whether we want it there …</p>
           </div>
           
         </div>
@@ -749,7 +801,7 @@ document.getElementById('search-modal').addEventListener('click', e => {
               
             </div>
             <h3>I &#34;Built&#34; My First Home NAS</h3>
-            <p class="article-excerpt">When I first stumbled upon a YouTube video of a tech reviewer talking about NAS, I was curious to finally understand what that meant. I&rsquo;ve been hearing …</p>
+            <p class="article-excerpt">How I set up my first home NAS with the Ugreen DXP2800, discovered self-hosting with Jellyfin, and took a step toward reclaiming ownership of my digital life.</p>
           </div>
           
         </div>
@@ -767,8 +819,7 @@ document.getElementById('search-modal').addEventListener('click', e => {
               
             </div>
             <h3>What is Chat Control and Why Should You Care?</h3>
-            <p class="article-excerpt">Content coming soon.
-</p>
+            <p class="article-excerpt">An explainer on Chat Control — the controversial EU proposal to mass-scan private messages, and why it poses a serious threat to digital privacy and end-to-end …</p>
           </div>
           
         </div>
