@@ -164,7 +164,7 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--primary); color: var(--primary-foreground);
-  border-radius: 2rem; font-weight: 500;
+  border-radius: 0.5rem; font-weight: 500;
   transition: opacity 0.2s;
   cursor: pointer; border: none;
 }
@@ -388,15 +388,15 @@ footer {
 .footer-nav a { font-size: 0.875rem; color: var(--muted-foreground); transition: color 0.2s; }
 .footer-nav a:hover { color: var(--primary); }
 .footer-h { font-weight: 600; color: var(--foreground); font-size: 0.95rem; }
-.social-row { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.75rem; }
-.social-icon {
+.connect-row { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.75rem; }
+.connect-btn {
   width: 40px; height: 40px;
   border-radius: 10px;
   display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex-shrink: 0;
   background: var(--muted); color: var(--muted-foreground);
   transition: all 0.3s;
 }
-.social-icon:hover { transform: translateY(-2px); }
+.connect-btn:hover { transform: translateY(-2px); }
 .footer-bottom { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; }
 .footer-bottom p { font-size: 0.875rem; color: var(--muted-foreground); }
 .hugo-credit { color: inherit; font-weight: 500; text-decoration: none; transition: color 0.2s; }
@@ -535,6 +535,22 @@ footer {
   .form-row { grid-template-columns: 1fr; }
   .post-nav { grid-template-columns: 1fr; }
   .skills-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Blog list — filter bar scrolls horizontally */
+  .filter-btns {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+  .filter-btns::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; }
+
+  /* Article cards — stack vertically, hide thumb */
+  .article-card-inner { flex-direction: column; }
+  .article-thumb { display: none; }
+  .article-card h3 { font-size: 1.05rem; }
 }
 
 /* Icon button (search) */
@@ -591,3 +607,24 @@ mark.search-hl { background: hsl(350 45% 40% / 0.2); color: var(--foreground); b
 
 /* Hide scrollbar on gallery strip */
 #gallery-strip::-webkit-scrollbar { display: none; }
+
+/* City pills — desktop: animated scroll; mobile: swipeable row */
+.city-pills-wrap { overflow: hidden; }
+#city-pills-track::-webkit-scrollbar { display: none; }
+
+@media (max-width: 640px) {
+  .city-pills-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .city-pills-fade-l,
+  .city-pills-fade-r { display: none; }
+  #city-pills-track {
+    animation: none !important;
+    width: max-content;
+    touch-action: pan-x;
+    padding-bottom: 0.25rem;
+  }
+}
