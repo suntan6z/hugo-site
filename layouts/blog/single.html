@@ -4,19 +4,11 @@
 <div style="padding-top:4.5rem">
   <!-- Post header -->
   <div style="padding:3rem 0 2rem;background:var(--hero-gradient)">
-    <div style="max-width:700px;margin:0 auto;padding:0 1.5rem">
+    <div style="max-width:860px;margin:0 auto;padding:0 1.5rem">
       <a href="/blog" class="back-link">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Blog
       </a>
-
-      {{ if .Params.project_url }}
-      <a href="{{ .Params.project_url }}" target="_blank" rel="noopener noreferrer"
-         style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:1rem;font-size:0.875rem;color:var(--primary);text-decoration:none"
-         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-        🔗 Project website
-      </a>
-      {{ end }}
 
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin:1.5rem 0 1rem">
         <span class="category-badge" style="font-size:0.8rem;padding:0.3rem 0.8rem">{{ .Params.category }}</span>
@@ -35,6 +27,14 @@
       </div>
 
       <h1 style="font-family:'Fraunces',serif;font-size:clamp(1.75rem,4vw,2.75rem);line-height:1.2;color:var(--foreground)">{{ .Title }}</h1>
+
+      {{ if .Params.project_url }}
+      <a href="{{ .Params.project_url }}" target="_blank" rel="noopener noreferrer"
+         style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.75rem;font-size:0.875rem;color:var(--primary);text-decoration:none"
+         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+        🔗 Project website
+      </a>
+      {{ end }}
 
       {{ if .Params.excerpt }}
       <p style="color:var(--muted-foreground);margin-top:1rem;font-size:1.05rem;line-height:1.75">{{ .Params.excerpt }}</p>
@@ -118,16 +118,6 @@
   <article class="post-body" id="post-body">
     {{ .Content }}
 
-    <!-- Share (bottom) -->
-    <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border)">
-      <p style="font-size:0.875rem;color:var(--muted-foreground);margin-bottom:0.75rem">Share this article</p>
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-        <a href="https://mastodon.social/share?text=Check+this+out+!+{{ .Title | urlquery }}+{{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">Mastodon</a>
-        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ .Permalink | urlquery }}" target="_blank" rel="noopener noreferrer" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">LinkedIn</a>
-        <button onclick="navigator.clipboard.writeText('{{ .Permalink }}').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='Copy link'},2000)})" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;cursor:pointer;font-family:inherit">Copy link</button>
-      </div>
-    </div>
-
     <!-- Newsletter -->
     <div style="margin-top:3rem;background:var(--card);border:1px solid var(--border);border-radius:1rem;padding:2rem;box-shadow:0 4px 24px -6px hsl(220 15% 15%/0.08)">
       <div style="display:flex;align-items:center;gap:0.875rem;margin-bottom:1rem">
@@ -159,10 +149,22 @@
   <!-- Prev / Next -->
   <nav class="post-nav" aria-label="Post navigation">
     {{ with .PrevInSection }}
-    <a href="{{ .Permalink }}" class="post-nav-link">← Previous<span>{{ .Title }}</span></a>
+    <a href="{{ .Permalink }}" class="post-nav-link post-nav-prev">
+      <span class="post-nav-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous
+      </span>
+      <span class="post-nav-title">{{ .Title }}</span>
+    </a>
     {{ else }}<div></div>{{ end }}
     {{ with .NextInSection }}
-    <a href="{{ .Permalink }}" class="post-nav-link" style="text-align:right">Next →<span>{{ .Title }}</span></a>
+    <a href="{{ .Permalink }}" class="post-nav-link post-nav-next">
+      <span class="post-nav-label">
+        Next
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+      <span class="post-nav-title">{{ .Title }}</span>
+    </a>
     {{ else }}<div></div>{{ end }}
   </nav>
 </div>
@@ -201,7 +203,7 @@ document.getElementById('newsletter-form')?.addEventListener('submit', async (e)
   try {
     await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/subscribe-newsletter', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk' },
       body: JSON.stringify({
         email:   document.getElementById('newsletter-email').value,
         website: document.getElementById('nl-website').value

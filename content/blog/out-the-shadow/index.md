@@ -2,7 +2,6 @@
 title: "Out the Shadow TC1: Dobczyce, Poland"
 date: 2024-12-20
 slug: "out-the-shadow"
-featured_image: "/images/erasmus/otstc1-1.jpg"
 category: "Erasmus+"
 draft: false
 partner_name: "Fundacja Innowacyjnej Edukacji"
@@ -12,6 +11,8 @@ project_url: "https://www.outtheshadow.eu"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
+
+![Out the Shadow TC1 - group circle session in Dobczyce](/images/erasmus/otstc1-1.jpg)
 
 For those of you who already read my other article about the project "Breaking the Wall of Extremism," you might already know that I am no expert in the theatre field. Nevertheless, this was about to be my second project in this area, so I started to feel a little more comfortable with myself and with the environment I knew I'd be facing. However, this time there was something different: it was about Black Light Theatre.
 
