@@ -126,8 +126,8 @@
 </section>
 
 <script>
-const galleryData = {{ (hugo.Data).gallery_photos | jsonify | safeJS }};
-const citiesData = {{ (hugo.Data).gallery_cities | jsonify | safeJS }};
+const galleryData = {{ site.Data.gallery_photos | jsonify | safeJS }};
+const citiesData = {{ site.Data.gallery_cities | jsonify | safeJS }};
 let currentCity = null;
 let lbPhotos = [];
 let lbIndex = 0;
