@@ -47,3 +47,84 @@ if (heroPhoto) {
     heroPhoto.style.transform = '';
   });
 }
+
+/* ── Contact page (only runs when the contact form is present) ── */
+if (document.getElementById('contact-form')) {
+  // Local time
+  function updateTime() {
+    const el = document.getElementById('local-time');
+    if (!el) return;
+    el.textContent = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }) + ' (Paris)';
+  }
+  updateTime();
+  setInterval(updateTime, 1000);
+
+  // Show custom subject field
+  document.getElementById('subject')?.addEventListener('change', function () {
+    document.getElementById('custom-subject-wrap').style.display = this.value === 'other' ? 'block' : 'none';
+  });
+
+  // Char counter
+  document.getElementById('message')?.addEventListener('input', function () {
+    document.getElementById('char-count').textContent = `${this.value.length} / 500`;
+  });
+
+  // Form validation + submit
+  document.getElementById('contact-form')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    let valid = true;
+
+    const fields = [
+      { id: 'firstName', errorId: 'firstName-error', msg: 'First name must be at least 3 characters.', check: v => v.length >= 3 },
+      { id: 'lastName', errorId: 'lastName-error', msg: 'Last name must be at least 3 characters.', check: v => v.length >= 3 },
+      { id: 'email', errorId: 'email-error', msg: 'Please enter a valid email.', check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+      { id: 'subject', errorId: 'subject-error', msg: 'Please select a subject.', check: v => v !== '' },
+      { id: 'message', errorId: 'message-error', msg: 'Message must be at least 50 characters (max 500).', check: v => v.length >= 50 && v.length <= 500 },
+    ];
+
+    fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      const err = document.getElementById(f.errorId);
+      if (!f.check(el.value.trim())) {
+        err.textContent = f.msg;
+        err.style.display = 'block';
+        el.style.borderColor = 'var(--primary)';
+        valid = false;
+      } else {
+        err.style.display = 'none';
+        el.style.borderColor = '';
+      }
+    });
+
+    if (!valid) return;
+
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/send-contact-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk' },
+        body: JSON.stringify({
+          name: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          subject: document.getElementById('subject').value,
+          message: document.getElementById('message').value,
+        })
+      });
+
+      if (res.ok) {
+        document.getElementById('contact-form').style.display = 'none';
+        document.getElementById('form-success').style.display = 'block';
+      } else {
+        throw new Error('Failed');
+      }
+    } catch {
+      btn.textContent = 'Send Message';
+      btn.disabled = false;
+      alert('Failed to send message. Please try again or email me directly at lorenzo@loconsole.eu');
+    }
+  });
+}

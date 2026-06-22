@@ -487,6 +487,7 @@ footer {
 @media (min-width: 1024px) {
   .hero-photo { width: 22rem; height: 28rem; }
   .articles-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .about-grid { grid-template-columns: 1fr 1fr; }
   nav .hamburger { display: none; }
 }
 @media (max-width: 1023px) {

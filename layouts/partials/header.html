@@ -1,7 +1,7 @@
 <header id="site-header">
   <div class="header-inner">
-    <a href="/" class="logo" aria-label="Lorenzo Loconsole — Home" style="overflow:hidden;height:2.8rem;display:flex;align-items:flex-start">
-      <img src="/logo.svg" alt="Lorenzo Loconsole" style="height:8rem;width:auto;display:block;margin-top:-2.5rem" />
+    <a href="/" class="logo" aria-label="Lorenzo Loconsole — Home" style="overflow:hidden;height:3.2rem;display:flex;align-items:flex-start">
+      <img src="/logo.svg" alt="Lorenzo Loconsole" style="height:9.2rem;width:auto;display:block;margin-top:-2.9rem" />
     </a>
 
     <!-- Desktop nav -->
@@ -126,6 +126,7 @@ const searchIndex = [
   {
     title:     {{ .Title | jsonify | safeJS }},
     url:       {{ .Permalink | jsonify | safeJS }},
+    type:      "article",
     category:  {{ .Params.category | jsonify | safeJS }},
     tags:      {{ .Params.tags | jsonify | safeJS }},
     author:    {{ .Params.author | default "Lorenzo Loconsole" | jsonify | safeJS }},
@@ -133,13 +134,87 @@ const searchIndex = [
     dateISO:   {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
     year:      {{ .Date.Format "2006" | jsonify | safeJS }},
     wordCount: {{ .WordCount }},
-    excerpt:   {{ .Summary | replaceRE "<h[1-6][^>]*>.*?</h[1-6]>" "" | replaceRE "<[^>]+>" "" | htmlUnescape | plainify | truncate 220 | jsonify | safeJS }}
+    excerpt:   {{ .Summary | replaceRE "<h[1-6][^>]*>.*?</h[1-6]>" "" | replaceRE "<[^>]+>" "" | htmlUnescape | plainify | truncate 220 | jsonify | safeJS }},
+    body:      {{ .Plain | htmlUnescape | truncate 8000 "" | jsonify | safeJS }}
+  },
+  {{ end }}
+  {{ range where .Site.RegularPages "Section" "ne" "blog" }}
+  {
+    title:     {{ .Title | jsonify | safeJS }},
+    url:       {{ .Permalink | jsonify | safeJS }},
+    type:      "page",
+    category:  "Page",
+    tags:      "",
+    author:    "Lorenzo Loconsole",
+    date:      "",
+    dateISO:   "",
+    year:      "",
+    wordCount: {{ .WordCount }},
+    excerpt:   {{ .Summary | plainify | truncate 220 | jsonify | safeJS }},
+    body:      {{ .Plain | htmlUnescape | truncate 8000 "" | jsonify | safeJS }}
   },
   {{ end }}
 ];
 
 /* read time in minutes from word count */
 searchIndex.forEach(p => { p.readMin = Math.max(1, Math.round(p.wordCount / 200)); });
+
+/* ═══════════════════════════════════════════════════
+   SPELL-CORRECTION  ("did you mean …")
+═══════════════════════════════════════════════════ */
+/* vocabulary: every word >= 4 chars from titles, categories and bodies, with frequency */
+const searchVocab = (() => {
+  const freq = new Map();
+  searchIndex.forEach(p => {
+    const text = ((p.title || '') + ' ' + (p.category || '') + ' ' + (p.body || '')).toLowerCase();
+    (text.match(/[a-zà-ÿ0-9]+/g) || []).forEach(w => {
+      if (w.length >= 4) freq.set(w, (freq.get(w) || 0) + 1);
+    });
+  });
+  return freq;
+})();
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  let curr = new Array(n + 1);
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+/* return a corrected query string if any term looks misspelled, else null */
+function didYouMean(query) {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  let changed = false;
+  const fixed = terms.map(t => {
+    if (t.length < 4 || searchVocab.has(t)) return t;
+    const maxD = t.length <= 5 ? 1 : 2;
+    let best = null, bestD = Infinity, bestF = 0;
+    for (const [w, f] of searchVocab) {
+      if (Math.abs(w.length - t.length) > maxD) continue;
+      const d = levenshtein(t, w);
+      if (d < bestD || (d === bestD && f > bestF)) { bestD = d; best = w; bestF = f; }
+    }
+    if (best && bestD <= maxD) { changed = true; return best; }
+    return t;
+  });
+  return changed ? fixed.join(' ') : null;
+}
+
+function applySuggestion(s) {
+  const input = document.getElementById('search-input');
+  input.value = s;
+  renderResults(s);
+}
 
 /* ═══════════════════════════════════════════════════
    FILTER STATE
@@ -168,7 +243,9 @@ function escRE(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 function hl(text, q) {
   if (!q || !text) return text || '';
-  return text.replace(new RegExp('(' + escRE(q) + ')', 'gi'),
+  const terms = q.split(/\s+/).filter(Boolean).map(escRE);
+  if (!terms.length) return text;
+  return text.replace(new RegExp('(' + terms.join('|') + ')', 'gi'),
     '<mark style="background:hsl(350 45% 40%/0.18);color:inherit;border-radius:2px;padding:0 2px">$1</mark>');
 }
 
@@ -182,12 +259,34 @@ function snippet(text, q, r) {
   return (s > 0 ? '…' : '') + text.slice(s, e) + (e < text.length ? '…' : '');
 }
 
+/* pick the best text source (excerpt, else body) and centre the snippet on a matching term */
+function bestSnippet(p, q) {
+  const terms = q.split(/\s+/).filter(Boolean);
+  const inExcerpt = terms.find(t => (p.excerpt || '').toLowerCase().includes(t.toLowerCase()));
+  if (inExcerpt) return snippet(p.excerpt, inExcerpt);
+  const inBody = terms.find(t => (p.body || '').toLowerCase().includes(t.toLowerCase()));
+  if (inBody) return snippet(p.body, inBody);
+  return (p.excerpt || p.body || '').slice(0, 180);
+}
+
 function scoreP(p, ql) {
+  const terms = ql.split(/\s+/).filter(Boolean);
+  if (!terms.length) return 0;
+  const title = (p.title || '').toLowerCase();
+  const cat   = (p.category || '').toLowerCase();
+  const auth  = (p.author || '').toLowerCase();
+  const exc   = (p.excerpt || '').toLowerCase();
+  const body  = (p.body || '').toLowerCase();
   let s = 0;
-  if (p.title.toLowerCase().includes(ql)) s += 10;
-  if (p.category && p.category.toLowerCase().includes(ql)) s += 6;
-  if (p.author  && p.author.toLowerCase().includes(ql))   s += 4;
-  if (p.excerpt && p.excerpt.toLowerCase().includes(ql))   s += 2;
+  for (const t of terms) {
+    const inAny = title.includes(t) || cat.includes(t) || auth.includes(t) || exc.includes(t) || body.includes(t);
+    if (!inAny) return 0;           // every term must appear somewhere (AND search)
+    if (title.includes(t)) s += 12;
+    if (cat.includes(t))   s += 6;
+    if (auth.includes(t))  s += 3;
+    if (exc.includes(t))   s += 4;
+    if (body.includes(t))  s += 2;
+  }
   return s;
 }
 
@@ -353,10 +452,8 @@ function renderResults(query) {
   const ql = q.toLowerCase();
   const hasFilters = activeFilterCount() > 0;
 
-  /* Pages group — hide when any filter is active */
-  const pageNames = ['about','now','blog','contact','privacy'];
-  const showPages = !hasFilters && (!q || pageNames.some(p => p.includes(ql)));
-  pagesGroup.style.display = showPages ? 'flex' : 'none';
+  /* Static Pages quick-links only show in the no-query nav state */
+  pagesGroup.style.display = (!hasFilters && !q) ? 'flex' : 'none';
 
   /* Filter pass */
   let results = searchIndex.filter(matchesFilters);
@@ -368,14 +465,18 @@ function renderResults(query) {
       .filter(p => p._score > 0)
       .sort((a, b) => b._score - a._score);
   } else {
-    results = [...results].sort((a, b) => b.dateISO.localeCompare(a.dateISO));
+    results = results
+      .filter(p => p.type === 'article')
+      .sort((a, b) => b.dateISO.localeCompare(a.dateISO));
   }
 
-  /* Empty state */
+  /* Empty state — offer a spelling suggestion when nothing matches */
   if (!results.length) {
+    const suggestion = q ? didYouMean(q) : null;
     articlesEl.innerHTML = `<div style="padding:2rem 0.75rem;text-align:center">
       <p style="font-size:1.4rem;margin-bottom:0.5rem">🔍</p>
-      <p style="font-size:0.875rem;color:var(--muted-foreground)">No articles match${q ? ' <strong>' + q + '</strong>' : ''}${hasFilters ? ' with the current filters' : ''}.</p>
+      <p style="font-size:0.875rem;color:var(--muted-foreground)">No results match${q ? ' <strong>' + q + '</strong>' : ''}${hasFilters ? ' with the current filters' : ''}.</p>
+      ${suggestion ? `<p style="font-size:0.9rem;color:var(--foreground);margin-top:0.75rem">Did you mean <button onclick="applySuggestion('${suggestion}')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-weight:600;font-style:italic;padding:0;font-size:0.9rem">${suggestion}</button>?</p>` : ''}
       ${hasFilters ? `<button onclick="clearFilters()" style="margin-top:0.75rem;font-size:0.8rem;color:var(--primary);background:none;border:none;cursor:pointer;text-decoration:underline">Clear all filters</button>` : ''}
     </div>`;
     return;
@@ -389,10 +490,10 @@ function renderResults(query) {
   articlesEl.innerHTML = `
     <div style="display:flex;flex-direction:column;padding:0.25rem 0">
       <p style="font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-foreground);padding:0.5rem 0.75rem 0.35rem">
-        Articles <span style="font-weight:400">(${shown.length} of ${results.length})</span>
+        ${q ? 'Results' : 'Recent articles'} <span style="font-weight:400">(${shown.length} of ${results.length})</span>
       </p>
       ${shown.map(p => {
-        const snip = q ? snippet(p.excerpt || '', q) : (p.excerpt || '').slice(0, 130);
+        const snip = q ? bestSnippet(p, q) : (p.excerpt || '').slice(0, 130);
         return `<a href="${p.url}" onclick="closeSearch()" style="display:flex;align-items:flex-start;gap:0.625rem;padding:0.55rem 0.75rem;border-radius:0.5rem;color:var(--foreground);font-size:0.875rem;text-decoration:none;transition:background 0.12s"
           onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''">
           ${fileIcon}
@@ -400,8 +501,8 @@ function renderResults(query) {
             <div style="font-weight:600;line-height:1.3;margin-bottom:0.25rem">${hl(p.title, q)}</div>
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:${snip?'0.25rem':'0'}">
               ${p.category ? `<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary)">${p.category}</span>` : ''}
-              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${calIcon} ${p.date}</span>
-              <span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${clockIcon} ${p.readMin} min read</span>
+              ${p.date ? `<span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${calIcon} ${p.date}</span>` : ''}
+              ${p.type === 'article' ? `<span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${clockIcon} ${p.readMin} min read</span>` : ''}
             </div>
             ${snip ? `<div style="font-size:0.78rem;color:var(--muted-foreground);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5">${hl(snip, q)}</div>` : ''}
           </div>
