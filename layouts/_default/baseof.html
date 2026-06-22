@@ -5,6 +5,11 @@
   <script>document.documentElement.classList.add('js')</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  {{- /* Hero image: optimised WebP for on-page use, JPEG for social sharing */ -}}
+  {{- $heroSrc := resources.Get "hero-portrait.png" -}}
+  {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
+  {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
+
   <!-- Title -->
   <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
 
@@ -23,9 +28,9 @@
   <meta property="og:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta property="og:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta property="og:url" content="{{ .Permalink }}" />
-  <meta property="og:image" content="{{ .Site.BaseURL }}{{ .Site.Params.heroPhoto }}" />
-  <meta property="og:image:width" content="320" />
-  <meta property="og:image:height" content="420" />
+  <meta property="og:image" content="{{ $heroOg.Permalink }}" />
+  <meta property="og:image:width" content="{{ $heroOg.Width }}" />
+  <meta property="og:image:height" content="{{ $heroOg.Height }}" />
   {{ if and .IsPage (eq .Section "blog") -}}
   <meta property="og:type" content="article" />
   <meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}" />
@@ -40,11 +45,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta name="twitter:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
-  <meta name="twitter:image" content="{{ .Site.BaseURL }}{{ .Site.Params.heroPhoto }}" />
+  <meta name="twitter:image" content="{{ $heroOg.Permalink }}" />
 
   <!-- Preload hero image on homepage for LCP -->
   {{ if .IsHome -}}
-  <link rel="preload" as="image" href="/{{ .Site.Params.heroPhoto }}" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/webp" href="{{ $heroWebp.RelPermalink }}" fetchpriority="high" />
   {{- end }}
 
   <!-- JSON-LD structured data -->
@@ -64,7 +69,7 @@
         "@type": "Person",
         "name": "Lorenzo Loconsole",
         "url": "{{ .Site.BaseURL }}",
-        "image": "{{ .Site.BaseURL }}{{ .Site.Params.heroPhoto }}",
+        "image": "{{ $heroOg.Permalink }}",
         "sameAs": [
           {{ .Site.Params.linkedin | jsonify }},
           {{ .Site.Params.mastodon | jsonify }}
@@ -109,9 +114,9 @@
   </script>
   {{- end }}
 
-  <!-- Fonts & styles -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Self-hosted fonts (no third-party requests) -->
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/dmsans-400-normal-latin.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/fraunces-600-normal-latin.woff2" crossorigin />
   <link rel="stylesheet" href="/css/main.css" />
   <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" href="/blog/feed.xml" />
 </head>

@@ -22,7 +22,8 @@
 
       <div class="hero-photo-wrap fade-up">
         <div class="hero-glow"></div>
-        <img src="/hero-portrait.png" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
+        {{ $hero := (resources.Get "hero-portrait.png").Resize "640x webp q82" }}
+        <img src="{{ $hero.RelPermalink }}" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
       </div>
     </div>
   </div>
