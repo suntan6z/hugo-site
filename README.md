@@ -1,83 +1,220 @@
 # Lorenzo Loconsole — Hugo Site
 
-Personal website built with [Hugo](https://gohugo.io/), hosted on [StaticHost.eu](https://www.statichost.eu).  
-Converted from the original Lovable/React project.
+Personal website built with [Hugo](https://gohugo.io/), hosted on [StaticHost.eu](https://www.statichost.eu).
+Live at **[lorenzo.loconsole.eu](https://lorenzo.loconsole.eu)**.
 
 ---
 
 ## Local development
 
 ```bash
-# Install Hugo (requires v0.147.0+)
+# Install Hugo — requires v0.158.0+ (the site uses `locale` and `hugo.Data`)
 brew install hugo
 
-# Run the dev server
+# Run the dev server with live reload
 hugo server
 
 # Open http://localhost:1313
 ```
 
-## Build for production
-
-```bash
-hugo --minify
-```
-
-The output goes into `public/` — upload that folder to StaticHost.eu (or point their build pipeline at this repo with the command above).
+A production build is generated with `hugo --minify`, but you normally don't run this
+by hand — see deployment below.
 
 ---
 
-## Before going live — checklist
+## Deployment
 
-- [ ] **Hero photo**: `static/hero-portait.png` is already in place. Replace it if you have a new one (keep the same filename, or update `heroPhoto` in `hugo.toml`).
-- [ ] **CV/Résumé**: add `cvloconsole-fr.pdf` to `static/` so the résumé link works.
-- [ ] **Contact form backend**: the contact form in `layouts/_default/contact.html` still has a `YOUR_SUPABASE_URL` placeholder. Replace it with your actual endpoint (Supabase, Resend, Formspree, or any other service).
-- [ ] **Newsletter form**: same — `layouts/blog/single.html` has a `YOUR_SUPABASE_URL` placeholder for the newsletter subscription endpoint.
-- [ ] **Gallery photos**: `data/gallery_photos.json` is currently a placeholder. Fill it in with your actual photo URLs.
-- [ ] **Google Search Console**: once live, go to [search.google.com/search-console](https://search.google.com/search-console), verify ownership, and submit `/sitemap.xml`.
+**Push to `main` and you're done.** StaticHost.eu watches the GitHub repo, runs
+`hugo --minify` on its own servers, and serves the result.
+
+```bash
+git add -A
+git commit -m "Describe your change"
+git push
+```
+
+> ⚠️ **Do not commit the `public/` folder.** It is in `.gitignore` on purpose —
+> StaticHost regenerates it on every deploy. Tracking it causes build conflicts.
+> The git repo holds **source only** (content, layouts, static assets, config).
+
+---
+
+## Adding a blog article
+
+Each article is a folder under `content/blog/` containing an `index.md`:
+
+```bash
+hugo new blog/my-article-slug/index.md
+```
+
+This uses `archetypes/blog.md` and starts the article as `draft: true`. Edit the
+frontmatter, write the body in Markdown, then set `draft: false` to publish.
+
+### Frontmatter
+
+```yaml
+---
+title: "My Article Title"
+date: 2026-06-21
+slug: "my-article-slug"
+category: "Technology"        # see valid categories below
+description: "One-sentence summary — used for SEO, the blog listing, and social cards."
+draft: false
+---
+```
+
+**Valid `category` values** (these match the filter buttons on `/blog`):
+`Technology`, `Cybersecurity`, `Personal`, `Erasmus+`.
+Using `"Erasmus+"` also triggers the EU partner strip (see below).
+
+### The lead / thumbnail image
+
+Put the main image as the **first Markdown image in the body** — the blog listing
+automatically uses it as the thumbnail:
+
+```markdown
+![Descriptive alt text](/images/blog/my-image.jpg)
+```
+
+Optionally, you can instead set it explicitly in frontmatter. This is **required**
+if you want the article to show a thumbnail in the homepage "Latest articles" grid:
+
+```yaml
+featured_image: "/images/blog/my-image.jpg"
+```
+
+Store article images in `static/images/` and reference them as `/images/...`.
+
+### Erasmus+ articles — extra frontmatter
+
+Articles with `category: "Erasmus+"` show a partner strip (partner logo + EU
+co-funded badge) at the top of the article. Add:
+
+```yaml
+partner_name: "Les Schini's"
+partner_url: "https://www.lesschinis.com"
+partner_logo_url: "/images/erasmus/lesschinislogo.png"
+project_url: "https://youthincontact.wixsite.com/project"   # optional — shows a "Project website" link
+eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
+```
+
+Partner logos live in `static/images/erasmus/`.
+
+---
+
+## The photo gallery
+
+The homepage gallery is driven entirely by **two JSON files** plus image folders.
+
+### How it's organised
+
+```
+data/
+  gallery_cities.json        → the city filter tabs (name, slug, flag)
+  gallery_photos.json        → one entry per photo (city, image_url, caption, alt_text)
+
+static/gallery/
+  paris/   1.jpg 2.jpg …      → photo files, one folder per city
+  bari/    1.jpg 2.jpg …
+```
+
+The `city` value in a photo entry must match a `slug` in `gallery_cities.json` —
+that's how the filter tabs know which photos to show. A city listed without any
+photos shows a friendly "Photos coming soon" placeholder.
+
+### Adding photos for a city
+
+1. **Drop the files** into `static/gallery/<city-slug>/`, named `1.jpg`, `2.jpg`, …
+   (e.g. `static/gallery/barcelona/1.jpg`).
+
+2. **Make sure the city exists** in `data/gallery_cities.json`. If it's new, add a line:
+
+   ```json
+   { "name": "Barcelona", "slug": "barcelona", "flag": "🇪🇸" }
+   ```
+
+3. **Add each photo** to `data/gallery_photos.json`:
+
+   ```json
+   { "city": "barcelona", "image_url": "/gallery/barcelona/1.jpg", "caption": "Sagrada Família", "alt_text": "Detailed description for accessibility and SEO" },
+   { "city": "barcelona", "image_url": "/gallery/barcelona/2.jpg", "caption": "Gothic Quarter",   "alt_text": "…" }
+   ```
+
+That's it — no template changes needed.
+
+---
+
+## Updating site-wide settings
+
+Edit `hugo.toml`:
+
+| Key | What it controls |
+|-----|-----------------|
+| `title` | Site title (used in `<title>`, footer, structured data) |
+| `params.description` | Default meta description |
+| `params.email` | Email address shown on the Contact page |
+| `params.linkedin` / `params.mastodon` / `params.telegram` / `params.appleMusic` | Footer social links |
+| `params.heroPhoto` | Path to the homepage hero image |
+| `params.resumeUrl` | Path to the downloadable CV |
+| `params.quote` / `params.quoteAuthor` / `params.quoteArticle` | Quote shown on the homepage and the article it links to |
+| `menu.main` | Navigation items and their order |
+
+Static pages (`About`, `Now`, `Contact`, `Privacy Policy`) are edited via their
+Markdown files in `content/` and their layouts in `layouts/_default/`.
+
+---
+
+## Forms
+
+Both forms POST to Supabase Edge Functions (the anon key in the markup is public by
+design and safe to expose):
+
+- **Contact form** — `layouts/_default/contact.html`
+- **Newsletter signup** — `layouts/blog/single.html`
+
+To change the backend, update the `fetch(...)` URL and `Authorization` header in
+those files.
 
 ---
 
 ## Project structure
 
 ```
-hugo.toml                  → site config (title, social links, params)
+hugo.toml                  → site config (title, social links, params, menu)
 
 content/
-  about.md                 → About page (layout handled by layouts/_default/about.html)
-  now.md                   → Now page
-  contact.md               → Contact page
-  privacy-policy.md        → Privacy Policy page
-  blog/
-    <slug>/
-      index.md             → one file per article (title, date, category, featured image, body)
+  about.md, now.md, contact.md, privacy-policy.md   → static pages
+  blog/<slug>/index.md     → one folder per article
 
 data/
-  gallery_cities.json      → city labels for the photo gallery
-  gallery_photos.json      → photo URLs for the gallery (fill this in)
+  gallery_cities.json      → gallery city tabs
+  gallery_photos.json      → gallery photo entries
 
 static/
   css/main.css             → all styles
-  js/main.js               → interactions (mobile menu, gallery, etc.)
-  hero-portait.png         → homepage hero photo
-  img/
-    404page.png            → illustrated character on the 404 page
-    contact-chill.gif      → animated GIF on the Contact page
-    erasmus/
-      eufundedlogo.png     → EU co-funded badge for Erasmus+ articles
+  js/main.js               → mobile menu, fade-in animations, hero tilt
+  hero-portrait.png        → homepage hero photo
+  cv-fr.pdf                → downloadable CV (params.resumeUrl)
+  favicon.ico, favicon.svg → favicons
+  apple-touch.png          → iOS home-screen icon
+  logo.svg                 → brand logo (navbar)
+  gallery/<city>/*.jpg     → gallery photos
+  images/
+    404page.png            → illustration on the 404 page
+    contact-chill.gif      → animation on the Contact page
+    erasmus/               → Erasmus+ partner logos + EU badge
+    blog/                  → article images (create this folder when you add your first)
 
 layouts/
-  index.html               → homepage
+  index.html               → homepage (hero, quote, gallery, latest articles)
   404.html                 → custom 404 page
   _default/
-    baseof.html            → base template (wraps every page)
-    about.html             → About page layout
-    now.html               → Now page layout
-    contact.html           → Contact page layout
-    privacy-policy.html    → Privacy Policy layout
+    baseof.html            → base template + all SEO/meta/structured data
+    about.html, now.html, contact.html, privacy-policy.html
+    rss.xml                → custom RSS feed
   blog/
-    list.html              → blog index (/blog)
-    single.html            → individual article
+    list.html              → blog index (/blog) with category filters
+    single.html            → individual article (share buttons, newsletter, partner strip)
   partials/
     header.html            → navigation + search modal
     footer.html            → footer with social links
@@ -85,52 +222,11 @@ layouts/
 
 ---
 
-## Adding a blog article
+## SEO notes
 
-Create a new folder under `content/blog/` with an `index.md` inside:
-
-```bash
-hugo new blog/my-article-slug/index.md
-```
-
-Minimal frontmatter:
-
-```yaml
----
-title: "My Article Title"
-date: 2026-06-21
-description: "One-sentence summary shown in the blog listing."
-category: "Tech"          # shown as a tag; use "Erasmus+" to trigger the EU partner strip
-featured_image: "/img/blog/my-image.jpg"
-excerpt: "Longer teaser shown under the title on the article page."
----
-```
-
-### Erasmus+ articles — extra frontmatter
-
-Articles with `category: "Erasmus+"` automatically show a partner strip at the bottom of the article. Add these fields:
-
-```yaml
-partner_name: "Association La Villa"
-partner_url: "https://la-villa.org/"
-partner_logo_url: "/img/partners/la-villa.png"
-eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
-```
-
----
-
-## Updating site-wide settings
-
-Edit `hugo.toml` to change:
-
-| Key | What it controls |
-|-----|-----------------|
-| `params.email` | Email address shown in the footer |
-| `params.linkedin` | LinkedIn profile URL |
-| `params.mastodon` | Mastodon profile URL |
-| `params.telegram` | Telegram link |
-| `params.appleMusic` | Apple Music profile URL |
-| `params.heroPhoto` | Path to the homepage hero image |
-| `params.resumeUrl` | Path to the downloadable CV |
-| `params.quote` / `params.quoteAuthor` | Quote shown on the homepage |
-| `menu.main` | Navigation items and their order |
+- `baseof.html` outputs canonical URLs, Open Graph + Twitter cards, JSON-LD
+  structured data (`Person`/`WebSite` on the homepage, `BlogPosting` on articles),
+  and favicon links.
+- Sitemap is at `/sitemap.xml`, RSS at `/blog/feed.xml`, robots at `/robots.txt`.
+- After deploying, submit the sitemap in
+  [Google Search Console](https://search.google.com/search-console).
