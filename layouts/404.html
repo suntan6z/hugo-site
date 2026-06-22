@@ -4,10 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>404 — {{ .Site.Title }}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
+    /* Self-hosted fonts (subset used on this page) */
+    @font-face { font-family: 'DM Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/dmsans-400-normal-latin.woff2) format('woff2'); }
+    @font-face { font-family: 'DM Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/dmsans-500-normal-latin.woff2) format('woff2'); }
+    @font-face { font-family: 'DM Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/dmsans-600-normal-latin.woff2) format('woff2'); }
+    @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/fraunces-400-normal-latin.woff2) format('woff2'); }
+    @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/fraunces-600-normal-latin.woff2) format('woff2'); }
+    @font-face { font-family: 'Fraunces'; font-style: italic; font-weight: 400; font-display: swap; src: url(/fonts/fraunces-400-italic-latin.woff2) format('woff2'); }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --background: hsl(30, 25%, 97%);
