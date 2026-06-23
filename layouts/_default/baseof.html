@@ -119,6 +119,13 @@
   <link rel="preload" as="font" type="font/woff2" href="/fonts/fraunces-600-normal-latin.woff2" crossorigin />
   <link rel="stylesheet" href="/css/main.css" />
   <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" href="/blog/feed.xml" />
+  {{- if and (not hugo.IsServer) .Site.Params.litlyxProjectId }}
+  <script defer src="/js/litlyx.js"
+    data-project="{{ .Site.Params.litlyxProjectId }}"
+    data-host="{{ .Site.Params.litlyxBrokerHost }}"
+    data-port="3001"
+    data-secure="true"></script>
+  {{- end }}
 </head>
 <body>
   {{ partial "header.html" . }}
