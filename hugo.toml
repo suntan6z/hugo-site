@@ -15,6 +15,8 @@ title = "Lorenzo Loconsole"
   quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
   quoteAuthor = "Edward Snowden"
   quoteArticle = "edward-snowden-mass-surveillance"
+  litlyxProjectId  = "6a39d3a301a7b289aa1d5f0b"
+  litlyxBrokerHost = "analytics.loconsole.eu"
 
 [taxonomies]
   category = "categories"

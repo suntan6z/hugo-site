@@ -57,9 +57,21 @@ url: "/privacy-policy"
           </ul>
         </section>
         <section>
+          <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Analytics</h2>
+          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">This website uses <strong style="color:var(--foreground)">Litlyx</strong>, a self-hosted, cookieless analytics platform. Litlyx records page views and basic technical data (page URL, referrer, browser type, country) to help me understand how visitors use the site.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Key facts about this analytics setup:</p>
+          <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem;margin-bottom:0.75rem">
+            <li><strong style="color:var(--foreground)">Self-hosted</strong> — all data is stored on my own personal infrastructure in the EU. No data is sent to or shared with any third-party analytics company.</li>
+            <li><strong style="color:var(--foreground)">Cookieless</strong> — Litlyx does not set any cookies and does not fingerprint your device.</li>
+            <li><strong style="color:var(--foreground)">No cross-site tracking</strong> — data collected here is never used to track you across other websites.</li>
+            <li><strong style="color:var(--foreground)">Aggregated only</strong> — data is used in aggregate to understand traffic patterns, not to identify individual visitors.</li>
+          </ul>
+          <p style="color:var(--muted-foreground);line-height:1.8">The legal basis for this processing is my legitimate interest under Article 6(1)(f) GDPR in understanding how my website is used so I can improve it.</p>
+        </section>
+        <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">What I Don't Do</h2>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
-            <li>I do <strong style="color:var(--foreground)">not</strong> use analytics or tracking tools beyond what is necessary for basic website functionality</li>
+            <li>I do <strong style="color:var(--foreground)">not</strong> use third-party analytics or advertising trackers — analytics are self-hosted on my own infrastructure</li>
             <li>I do <strong style="color:var(--foreground)">not</strong> sell, rent, or share your data with third parties for marketing purposes</li>
             <li>I do <strong style="color:var(--foreground)">not</strong> use your data for any purpose beyond what is described in this privacy policy</li>
             <li>I do <strong style="color:var(--foreground)">not</strong> engage in profiling or automated decision-making</li>
