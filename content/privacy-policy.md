@@ -12,13 +12,13 @@ url: "/privacy-policy"
           <h1 style="font-family:'Fraunces',serif;font-size:clamp(2rem,5vw,3rem);font-weight:700">Privacy <span class="text-gradient">Policy</span></h1>
         </div>
         <p style="color:var(--muted-foreground);max-width:38rem;margin:0 auto">Your privacy matters. This policy explains what data I collect and how I use it.</p>
-        <p style="font-size:0.875rem;color:var(--muted-foreground);margin-top:1rem">Last updated: February 15, 2026</p>
+        <p style="font-size:0.875rem;color:var(--muted-foreground);margin-top:1rem">Last updated: June 23, 2026</p>
       </div>
       <div style="max-width:48rem;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;display:flex;flex-direction:column;gap:2.5rem">
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Introduction</h2>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Thank you for visiting my personal website. I am committed to protecting your privacy and being transparent about the minimal data I collect. This website operates on a simple principle: collect only what is absolutely necessary to provide my services, and never use your data for tracking, advertising, or any purpose beyond what you explicitly consented to.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">You can browse this website without providing personal data. However, if you choose to subscribe to my newsletter, contact me via my contact form, or leave comments on blog posts, processing of personal data becomes necessary. This privacy policy explains the nature, scope, and purpose of the personal data I collect, use, and process.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8">You can browse this website without providing personal data. However, if you choose to subscribe to my newsletter or contact me via my contact form, processing of personal data becomes necessary. This privacy policy explains the nature, scope, and purpose of the personal data I collect, use, and process.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Data Controller</h2>
@@ -41,16 +41,14 @@ url: "/privacy-policy"
           <p style="color:var(--muted-foreground);line-height:1.8">You can unsubscribe at any time using the link provided in each newsletter, or by contacting me at <a href="mailto:privacy@loconsole.eu" style="color:var(--primary)">privacy@loconsole.eu</a>. For more information, see <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">Resend's privacy policy</a>.</p>
           <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.5rem">C. Contact Form</h3>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">If you contact me via the contact form, the personal data you transmit (name, email, subject, and message) is stored. The legal basis is either your consent (Article 6(1)(a) GDPR) or the necessity to respond to your pre-contractual inquiry (Article 6(1)(b) GDPR).</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">I retain contact form messages until your inquiry is resolved or for a maximum of 2 years, whichever comes first. There is no transfer of this personal data to third parties.</p>
-          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.5rem">D. Blog Comments (Disqus)</h3>
-          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">I use Disqus, a third-party service, to power comments on my blog. Disqus may use cookies and collect data for advertising and analytics purposes, and may track your browsing activity across websites for personalized advertising.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">The legal basis is your consent under Article 6(1)(a) GDPR, provided through the cookie consent banner. Disqus comments only load after you explicitly consent to targeting/advertising cookies. For more information, see <a href="https://help.disqus.com/en/articles/1717103-disqus-privacy-policy" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">Disqus Privacy Policy</a>.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">I retain contact form messages until your inquiry is resolved or for a maximum of 2 years, whichever comes first.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8">Your submission is relayed via a <strong style="color:var(--foreground)">Supabase Edge Function</strong> (a serverless compute layer) to <strong style="color:var(--foreground)">Resend</strong>, which delivers it to my inbox as an email. Supabase does not persistently store your message — it acts solely as a relay. Resend processes it for email delivery and is subject to their privacy policy.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">How I Use Your Data</h2>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">I process your personal data only for the specific purposes for which you provided it, and only on the following legal bases:</p>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
-            <li><strong style="color:var(--foreground)">Consent (Article 6(1)(a) GDPR)</strong> — When you subscribe to my newsletter or accept cookies for Disqus comments. You can withdraw this consent at any time.</li>
+            <li><strong style="color:var(--foreground)">Consent (Article 6(1)(a) GDPR)</strong> — When you subscribe to my newsletter. You can withdraw this consent at any time.</li>
             <li><strong style="color:var(--foreground)">Contractual necessity (Article 6(1)(b) GDPR)</strong> — If processing is necessary to respond to your contact form inquiry.</li>
             <li><strong style="color:var(--foreground)">Legal obligation (Article 6(1)(c) GDPR)</strong> — If I am required by law to process or retain certain data.</li>
             <li><strong style="color:var(--foreground)">Legitimate interests (Article 6(1)(f) GDPR)</strong> — For server log data collection necessary for website security and functionality.</li>
@@ -75,20 +73,17 @@ url: "/privacy-policy"
             <li>I do <strong style="color:var(--foreground)">not</strong> sell, rent, or share your data with third parties for marketing purposes</li>
             <li>I do <strong style="color:var(--foreground)">not</strong> use your data for any purpose beyond what is described in this privacy policy</li>
             <li>I do <strong style="color:var(--foreground)">not</strong> engage in profiling or automated decision-making</li>
-            <li>I do <strong style="color:var(--foreground)">not</strong> display advertisements or participate in advertising networks (except for Disqus-related advertising, which you can opt out of)</li>
+            <li>I do <strong style="color:var(--foreground)">not</strong> display advertisements or participate in advertising networks</li>
+            <li>I do <strong style="color:var(--foreground)">not</strong> use cookies, and there are no third-party comment, advertising, or font services loaded on this site</li>
           </ul>
         </section>
         <section>
-          <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Cookies and Third-Party Services</h2>
-          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Cookies are small text files stored on your computer by websites you visit. They allow the website to recognize your browser and remember certain information.</p>
-          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.25rem">A. Essential Cookies</h3>
-          <p style="color:var(--muted-foreground);line-height:1.8">Based on my legitimate interests under Article 6(1)(f) GDPR, I use essential cookies that are strictly necessary for the website to function properly (e.g., storing your cookie preferences). These cannot be disabled.</p>
-          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.25rem">B. Third-Party/Targeting Cookies (Disqus)</h3>
-          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Based on your consent under Article 6(1)(a) GDPR, Disqus sets cookies for comments and advertising purposes. These are only loaded with your explicit consent through the cookie consent banner and may track your browsing activity across websites for personalized advertising.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">You can change your cookie preferences at any time by clearing your browser data and revisiting the site. You may also prevent cookies through your browser settings, though this may limit functionality.</p>
-          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.25rem">C. Google Fonts</h3>
-          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">This website uses Google Fonts. When you visit, your browser loads font files from Google's servers, which receives technical information including your IP address and browser details.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">The legal basis is my legitimate interest (Article 6(1)(f) GDPR) in providing a visually consistent website. For more information, see <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">Google's Privacy Policy</a>.</p>
+          <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Cookies, Local Storage, and Fonts</h2>
+          <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">This website does <strong style="color:var(--foreground)">not use cookies</strong> of any kind — no essential cookies, no analytics cookies, and no advertising or tracking cookies. Because nothing requires consent, there is no cookie banner.</p>
+          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.25rem">A. Local Storage</h3>
+          <p style="color:var(--muted-foreground);line-height:1.8">The only thing this website stores in your browser is a small "theme" value in local storage, which remembers whether you chose light or dark mode. This value stays on your device, is never transmitted to me or any third party, and you can clear it at any time through your browser settings.</p>
+          <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.25rem">B. Self-Hosted Fonts</h3>
+          <p style="color:var(--muted-foreground);line-height:1.8">All fonts are self-hosted on this website's own server. Your browser does <strong style="color:var(--foreground)">not</strong> connect to Google Fonts or any other third-party font provider, so no font-related data (such as your IP address) is shared with external companies.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Your Rights Under GDPR</h2>
@@ -111,7 +106,6 @@ url: "/privacy-policy"
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
             <li><strong style="color:var(--foreground)">Newsletter subscriptions</strong> — Retained until you unsubscribe or request deletion.</li>
             <li><strong style="color:var(--foreground)">Contact form messages</strong> — Retained until inquiry is resolved or for a maximum of 2 years, whichever comes first.</li>
-            <li><strong style="color:var(--foreground)">Comments (Disqus)</strong> — Managed by Disqus according to their retention policies.</li>
             <li><strong style="color:var(--foreground)">Server log files</strong> — Anonymized data managed by StaticHost.eu according to their retention policies.</li>
           </ul>
         </section>
@@ -125,9 +119,8 @@ url: "/privacy-policy"
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Some third-party service providers may process data outside the European Economic Area (EEA). Appropriate safeguards are in place:</p>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
             <li><strong style="color:var(--foreground)">StaticHost.eu</strong> — EU-based hosting provider.</li>
-            <li><strong style="color:var(--foreground)">Google (Google Fonts)</strong> — May process data in the US; relies on standard contractual clauses and the EU-U.S. Data Privacy Framework.</li>
-            <li><strong style="color:var(--foreground)">Disqus</strong> — May process data in the US; uses standard contractual clauses.</li>
-            <li><strong style="color:var(--foreground)">Resend</strong> — Implements appropriate safeguards for international data transfers.</li>
+            <li><strong style="color:var(--foreground)">Supabase</strong> — Serverless relay for contact form submissions; acts as a transit layer only, does not store message content.</li>
+            <li><strong style="color:var(--foreground)">Resend</strong> — Email delivery for contact form messages and newsletter; implements appropriate safeguards for international data transfers.</li>
           </ul>
         </section>
         <section>

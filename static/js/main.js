@@ -1,3 +1,26 @@
+// Dark mode toggle — the initial theme is set in <head> before paint to avoid flash
+const themeToggles = document.querySelectorAll('.theme-icon-btn');
+if (themeToggles.length) {
+  const root = document.documentElement;
+  let themeTimer;
+  const syncAria = () => {
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    themeToggles.forEach(btn => btn.setAttribute('aria-checked', isDark));
+  };
+  syncAria();
+  themeToggles.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.classList.add('theme-transition');
+      root.setAttribute('data-theme', next);
+      syncAria();
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      clearTimeout(themeTimer);
+      themeTimer = setTimeout(() => root.classList.remove('theme-transition'), 500);
+    });
+  });
+}
+
 // Mobile nav toggle
 const hamburger = document.getElementById('hamburger');
 const mobileNav = document.getElementById('mobile-nav');

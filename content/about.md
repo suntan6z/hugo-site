@@ -73,7 +73,7 @@ url: "/about"
       </div>
     </div>
   </section>
-  <section style="padding:5rem 0;background:hsl(30 15% 92% / 0.3)">
+  <section style="padding:5rem 0;background:var(--section-tint)">
     <div class="container">
       <div style="display:grid;gap:3rem;align-items:center" class="about-grid">
         <div class="fade-up">
