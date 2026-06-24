@@ -7,12 +7,12 @@ draft: false
 description: "Reflections on the Youth in Contact Erasmus+ exchange in Chérac, France — a project that brought together young people from across Europe to build intercultural bridges."
 partner_name: "Les Schini's"
 partner_url: "https://www.lesschinis.com"
-partner_logo_url: "/images/erasmus/lesschinislogo.png"
+partner_logo_url: "lesschinislogo.png"
 project_url: "https://youthincontact.wixsite.com/project"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
-![Youth in Contact venue - a beautiful French building in Chérac](/images/erasmus/youthciphoto1.jpg)
+![Youth in Contact venue - a beautiful French building in Chérac](youthciphoto1.jpg)
 
 
 ## Introduction: why this mattered
@@ -29,7 +29,7 @@ CI breaks traditional hierarchies found in dance. It includes people of differen
 
 Psychological studies underline the importance of physical contact for mental health and identity development. When societies normalize disconnection from the body, consequences such as dissociation and depersonalization can emerge. CI works as a tool to restore bodily awareness and rebuild human connection through non-verbal communication.
 
-![Participants in a workshop session during Youth in Contact](/images/erasmus/youthciphoto2.jpg)
+![Participants in a workshop session during Youth in Contact](youthciphoto2.jpg)
 
 ## Project overview
 
@@ -67,4 +67,4 @@ Youth in Contact was more than a dance project. It offered practical tools for l
 
 If you ever have the opportunity to take part in a project like this, take it. Expect discomfort, growth and genuine connection. Relearning how to relate to others through the body is an experience that stays with you long after it ends.
 
-![Group photo of Youth in Contact participants in Chérac, France](/images/erasmus/youthciphoto3.jpg)
+![Group photo of Youth in Contact participants in Chérac, France](youthciphoto3.jpg)
