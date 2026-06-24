@@ -7,7 +7,7 @@ draft: false
 description: "A personal account of my first Erasmus+ youth exchange in Pieria, Greece — exploring active citizenship through mythology and cross-cultural dialogue with young Europeans."
 partner_name: "ΕΝ.Ο GREECE"
 partner_url: "https://enogreece.org/"
-partner_logo_url: "/images/erasmus/enologo.png"
+partner_logo_url: "enologo.png"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 

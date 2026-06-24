@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   {{- /* Hero image: optimised WebP for on-page use, JPEG for social sharing */ -}}
-  {{- $heroSrc := resources.Get "hero-portrait.png" -}}
+  {{- $heroSrc := resources.Get "hero.webp" -}}
   {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
   {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
 

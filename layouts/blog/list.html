@@ -42,8 +42,15 @@
           </div>
           {{ $thumb := .Params.featured_image }}
           {{ if not $thumb }}
-            {{ $match := index (findRE `src="(/[^"]+)"` .Content 1) 0 }}
-            {{ if $match }}{{ $thumb = $match | replaceRE `src="([^"]+)"` "$1" }}{{ end }}
+            {{ $permalink := .RelPermalink }}
+            {{ with findRE `src="[^"]+"` .Content 1 }}
+              {{ $src := index . 0 | replaceRE `src="([^"]+)"` "$1" }}
+              {{ if or (hasPrefix $src "http") (hasPrefix $src "/") }}
+                {{ $thumb = $src }}
+              {{ else }}
+                {{ $thumb = printf "%s%s" $permalink $src }}
+              {{ end }}
+            {{ end }}
           {{ end }}
           {{ if $thumb }}
           <div class="article-thumb">

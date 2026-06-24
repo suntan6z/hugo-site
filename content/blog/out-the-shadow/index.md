@@ -7,13 +7,13 @@ draft: false
 description: "My experience at the Out the Shadow Erasmus+ training course in Dobczyce, Poland — a Black Light Theatre project exploring mental health and self-expression."
 partner_name: "Fundacja Innowacyjnej Edukacji"
 partner_url: "https://www.fundacjainnowacyjnejedukacji.eu"
-partner_logo_url: "/images/erasmus/fundacjalogo.png"
+partner_logo_url: "fundacjalogo.png"
 project_url: "https://www.outtheshadow.eu"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
 
-![Out the Shadow TC1 - group circle session in Dobczyce](/images/erasmus/otstc1-1.jpg)
+![Out the Shadow TC1 - group circle session in Dobczyce](otstc1-1.jpg)
 
 For those of you who already read my other article about the project "Breaking the Wall of Extremism," you might already know that I am no expert in the theatre field. Nevertheless, this was about to be my second project in this area, so I started to feel a little more comfortable with myself and with the environment I knew I'd be facing. However, this time there was something different: it was about Black Light Theatre.
 
@@ -23,7 +23,7 @@ When this project was proposed by my NGO, I immediately expressed my interest in
 
 I had already spent a little time in Poland before, in the capital for a New Year's party a few years back with some friends, and I loved every single moment of it. It was magical. The people were polite but at the same time not boring, they knew how to have fun. The streets were clean, and going around the city felt very safe. So I told myself that visiting another city that wasn't the capital would be even better. Maybe even more authentic, you know?
 
-![The venue surroundings in Dobczyce, Poland](/images/erasmus/otstc1-2.jpg)
+![The venue surroundings in Dobczyce, Poland](otstc1-2.jpg)
 
 Since this was my second time in Poland, I decided to learn some basic Polish. Even though it's a very difficult language (seriously, I can't write down how to spell the things I learned like "good morning," "how are you," or "goodbye"), at least I know how to pronounce them. And let me tell you, people smile at me when I say these phrases instead of immediately hitting them with an English "hello" or starting to order in English right away. There's something people really appreciate when you make an effort to learn their local language. This was super helpful because in a little village, not everybody spoke English, so sometimes I had to make myself understood. Though this wasn't very complicated because, as many people know, Italians are basically masters of communication. Even when we don't speak your language, we always find a way to make you understand what we're trying to say. Hand gestures are a universal language, right? So that wasn't really a big deal for me.
 
@@ -31,7 +31,7 @@ Getting to this little city, Dobczyce, was easier than expected. I landed in Kra
 
 This experimentation was particularly insightful, thanks in part to the broad knowledge of the trainers. They were not only knowledgeable in the field of BLT (Black Light Theatre) but also in many other areas. Both of them are actual actors, so they really know what they're doing. They were able to let us experiment a little with other methodologies as well. I remember we did some shadow theatre, and that was fun too. Basically, we got to play around with different techniques, which kept things interesting.
 
-![Black Light Theatre performance with glowing hands](/images/erasmus/otstc1-3.jpg)
+![Black Light Theatre performance with glowing hands](otstc1-3.jpg)
 
 The hotel where we stayed was basically in the middle of nowhere, and I'm not saying this as a bad thing. I actually enjoyed it because it really allowed me, and I think many other people, to disconnect from that frantic city lifestyle. You know, the kind of lifestyle I lead when I'm back in Paris. Being in the middle of nature, surrounded by beautiful trees with no noises from ambulances or cars rushing through the city, was honestly something I appreciated a lot. It's weird how sometimes doing absolutely nothing in the middle of nowhere can feel like doing everything, if that makes sense.
 
@@ -43,4 +43,4 @@ Going back to the project itself, we had one main goal from the start, which was
 
 I'm really grateful for having been able to participate in this project. Since this is an ongoing thing with multiple mobilities expected to be hosted in the following years, I really hope to be able to participate in the next ones as well. Fingers crossed they accept me again, because I'm definitely ready for round two.
 
-![Out the Shadow TC1 - full group photo](/images/erasmus/otstc1-4.jpg)
+![Out the Shadow TC1 - full group photo](otstc1-4.jpg)
