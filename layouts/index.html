@@ -1,7 +1,7 @@
 {{ define "main" }}
 
 <!-- Hero Section -->
-<section class="hero hero-bg" style="padding-top:5rem">
+<section class="hero hero-bg">
   <div class="container">
     <div class="hero-grid">
       <div class="fade-up" style="position:relative;z-index:1">
@@ -22,7 +22,7 @@
 
       <div class="hero-photo-wrap fade-up">
         <div class="hero-glow"></div>
-        {{ $hero := (resources.Get "hero-portrait.png").Resize "640x webp q82" }}
+        {{ $hero := (resources.Get "hero.webp").Resize "640x webp q82" }}
         <img src="{{ $hero.RelPermalink }}" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
       </div>
     </div>
