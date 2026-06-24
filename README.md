@@ -104,28 +104,34 @@ Partner logos live in `static/images/erasmus/`.
 
 ## The photo gallery
 
-The homepage gallery is driven entirely by **two JSON files** plus image folders.
+The homepage gallery auto-discovers photos from `assets/gallery/<city-slug>/` at
+build time — just drop image files into a city's folder and they show up, no
+JSON editing required. `data/gallery_photos.json` is now optional and only used
+to override the caption/alt text of specific photos.
 
 ### How it's organised
 
 ```
 data/
   gallery_cities.json        → the city filter tabs (name, slug, flag)
-  gallery_photos.json        → one entry per photo (city, image_url, caption, alt_text)
+  gallery_photos.json        → optional caption/alt_text overrides, keyed by image_url
 
-static/gallery/
+assets/gallery/
   paris/   1.jpg 2.jpg …      → photo files, one folder per city
   bari/    1.jpg 2.jpg …
 ```
 
-The `city` value in a photo entry must match a `slug` in `gallery_cities.json` —
-that's how the filter tabs know which photos to show. A city listed without any
-photos shows a friendly "Photos coming soon" placeholder.
+The folder name must match a `slug` in `gallery_cities.json` — that's how the
+filter tabs know which photos to show. A city listed without any photos shows a
+friendly "Photos coming soon" placeholder.
 
 ### Adding photos for a city
 
-1. **Drop the files** into `static/gallery/<city-slug>/`, named `1.jpg`, `2.jpg`, …
-   (e.g. `static/gallery/barcelona/1.jpg`).
+1. **Drop the files** into `assets/gallery/<city-slug>/` (e.g.
+   `assets/gallery/barcelona/1.jpg`). Any common image extension works
+   (`.jpg`, `.jpeg`, `.png`). Numbering them `1.jpg`, `2.jpg`, … controls the
+   display order; files without a leading number are shown after the numbered
+   ones.
 
 2. **Make sure the city exists** in `data/gallery_cities.json`. If it's new, add a line:
 
@@ -133,14 +139,17 @@ photos shows a friendly "Photos coming soon" placeholder.
    { "name": "Barcelona", "slug": "barcelona", "flag": "🇪🇸" }
    ```
 
-3. **Add each photo** to `data/gallery_photos.json`:
+That's it — the photos appear automatically on the next build, with no template
+or data-file changes needed.
+
+3. *(Optional)* To give a specific photo a caption or custom alt text, add an
+   entry to `data/gallery_photos.json` keyed by its `image_url`:
 
    ```json
-   { "city": "barcelona", "image_url": "/gallery/barcelona/1.jpg", "caption": "Sagrada Família", "alt_text": "Detailed description for accessibility and SEO" },
-   { "city": "barcelona", "image_url": "/gallery/barcelona/2.jpg", "caption": "Gothic Quarter",   "alt_text": "…" }
+   { "city": "barcelona", "image_url": "/gallery/barcelona/1.jpg", "caption": "Sagrada Família", "alt_text": "Detailed description for accessibility and SEO" }
    ```
 
-That's it — no template changes needed.
+   Photos without a matching entry get a generic alt text and no caption.
 
 ---
 
@@ -188,7 +197,7 @@ content/
 
 data/
   gallery_cities.json      → gallery city tabs
-  gallery_photos.json      → gallery photo entries
+  gallery_photos.json      → optional caption/alt_text overrides for gallery photos
 
 static/
   css/main.css             → all styles
