@@ -2,6 +2,11 @@ baseURL = "https://lorenzo.loconsole.eu"
 languageCode = "en"
 title = "Lorenzo Loconsole"
 
+# Categories are only a frontmatter label for the JS blog filter, not browsable
+# taxonomy term pages — disable taxonomy/term generation so Hugo doesn't emit
+# phantom /categories/ pages (and the "no layout for kind taxonomy" build warning).
+disableKinds = ["taxonomy", "term"]
+
 [params]
   author = "Lorenzo"
   description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
