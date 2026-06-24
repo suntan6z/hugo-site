@@ -6,7 +6,7 @@ url: "/about"
 <div style="padding-top:4rem">
   <section class="page-hero">
     <div class="container">
-      <div style="display:grid;gap:3rem;align-items:start" class="about-grid">
+      <div style="max-width:52rem;margin:0 auto">
         <div class="fade-up">
           <h1>About <span class="text-gradient">Me</span></h1>
           <div class="prose" style="margin-top:1.5rem">
@@ -21,23 +21,6 @@ url: "/about"
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               Based in France
             </p>
-          </div>
-        </div>
-        <div class="fade-up" style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:2rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
-          <div style="text-align:center">
-            <div style="font-size:3rem">🍕</div>
-            <h3 style="font-family:'Fraunces',serif;margin-top:0.5rem">Bari, Italy</h3>
-            <p style="font-size:0.8rem;color:var(--muted-foreground)">Where it all started</p>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:0.25rem;color:var(--muted-foreground)">
-            <div style="width:2px;height:1.5rem;background:var(--border)"></div>
-            <span style="font-size:1.5rem;transform:rotate(90deg)">✈️</span>
-            <div style="width:2px;height:1.5rem;background:var(--border)"></div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:3rem">🥖</div>
-            <h3 style="font-family:'Fraunces',serif;margin-top:0.5rem">Paris, France</h3>
-            <p style="font-size:0.8rem;color:var(--muted-foreground)">Where life goes on</p>
           </div>
         </div>
       </div>

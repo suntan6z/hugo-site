@@ -58,19 +58,6 @@ if (fadeEls.length) {
   fadeEls.forEach(el => observer.observe(el));
 }
 
-// Parallax tilt on hero photo
-const heroPhoto = document.querySelector('.hero-photo');
-if (heroPhoto) {
-  document.addEventListener('mousemove', (e) => {
-    const x = (e.clientX / window.innerWidth - 0.5) * 8;
-    const y = (e.clientY / window.innerHeight - 0.5) * 8;
-    heroPhoto.style.transform = `perspective(600px) rotateY(${x}deg) rotateX(${-y}deg)`;
-  });
-  document.addEventListener('mouseleave', () => {
-    heroPhoto.style.transform = '';
-  });
-}
-
 /* ── Contact page (only runs when the contact form is present) ── */
 if (document.getElementById('contact-form')) {
   // Local time

@@ -7,12 +7,12 @@ draft: false
 description: "My experience at the Digital Entrepreneurship Accelerator Erasmus+ project in Bansko, Bulgaria — building digital skills and startup ideas with young Europeans."
 partner_name: "Association Walktogether"
 partner_url: "https://walktogethereu.com/"
-partner_logo_url: "/images/erasmus/walktogetherlogo.png"
+partner_logo_url: "walktogetherlogo.png"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
 
-![View from Bansko, Bulgaria with mountains in the background](/images/erasmus/accelerator1.jpeg)
+![View from Bansko, Bulgaria with mountains in the background](accelerator1.jpeg)
 
 So there I was, scrolling through Erasmus+ opportunities, when I spotted another project in Bulgaria. Did I hesitate? Not even for a second. I'd been there before and had a great time, plus the prices don't hurt when you're a student.
 
@@ -50,7 +50,7 @@ I loved this. Sometimes you think of something you want to tell someone, but the
 
 It was such a simple idea, but it created this ongoing conversation between all of us that ran parallel to everything else we were doing. Plus, it gave us these little keepsakes, actual tangible things we could take home. In a world where everything's digital, getting a handwritten note from someone feels kind of special.
 
-![The Post Office wall with paper mailboxes for each participant](/images/erasmus/accelerator2.jpeg)
+![The Post Office wall with paper mailboxes for each participant](accelerator2.jpeg)
 
 ## Food, Glorious Food
 
@@ -76,7 +76,7 @@ People wrote what they thought about you, suggestions for improvement, encouragi
 
 I still have some of those notes, and reading them again brings back all these memories. There's something special about having physical proof that people noticed you, appreciated you, or thought you had potential. Way better than a LinkedIn recommendation, if you ask me.
 
-![Handwritten feedback notes from participants with kind messages](/images/erasmus/accelerator3.jpeg)
+![Handwritten feedback notes from participants with kind messages](accelerator3.jpeg)
 
 ## Would I Do It Again?
 

@@ -7,6 +7,19 @@ title = "Lorenzo Loconsole"
 # phantom /categories/ pages (and the "no layout for kind taxonomy" build warning).
 disableKinds = ["taxonomy", "term"]
 
+# Single asset directory: `static/` was merged into `assets/`. Mounting `assets`
+# to both the `assets` and `static` targets lets the same folder serve Hugo Pipes
+# resources (resources.Get, e.g. the hero image) AND files copied verbatim to the
+# site root (CSS, JS, fonts, favicon, /images, /gallery, …). Other roots (content,
+# layouts, data, i18n, archetypes) keep their default mounts.
+[module]
+  [[module.mounts]]
+    source = "assets"
+    target = "assets"
+  [[module.mounts]]
+    source = "assets"
+    target = "static"
+
 [params]
   author = "Lorenzo"
   description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."

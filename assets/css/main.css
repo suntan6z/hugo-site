@@ -269,7 +269,7 @@ h1,h2,h3,h4,h5,h6 {
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; height: auto; }
 
-.container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
+.container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 2rem; box-sizing: border-box; }
 
 /* Text gradient */
 .text-gradient {
@@ -301,7 +301,7 @@ img { max-width: 100%; height: auto; }
   padding: 0.5rem 1.25rem;
   font-weight: 500;
   color: var(--foreground);
-  border: 2px solid hsl(220 15% 15% / 0.2);
+  border: 2px solid var(--border);
   border-radius: 2rem;
   transition: all 0.3s ease;
   font-size: 0.95rem;
@@ -351,27 +351,28 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
 .hero {
   min-height: 90vh;
   display: flex;
-  align-items: center;
-  padding: 6rem 0 4rem;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8rem 0 4rem;
   position: relative;
   overflow: hidden;
 }
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3rem;
+  gap: 3.5rem;
   align-items: center;
 }
 .hero-photo-wrap { position: relative; display: flex; justify-content: center; }
 .hero-photo {
-  width: 18rem;
-  height: 24rem;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: min(20rem, 100%);
+  max-height: calc(100svh - 14rem);
   border-radius: 1rem;
   box-shadow: 0 20px 60px -10px hsl(220 15% 15% / 0.25);
   position: relative;
   z-index: 1;
-  transition: transform 0.1s ease;
 }
 .hero-glow {
   position: absolute;
@@ -386,7 +387,7 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   50% { opacity: 0.7; transform: scale(1.05); }
 }
 .hero h1 { font-size: clamp(2.25rem, 5vw, 4rem); line-height: 1.15; margin-bottom: 1.5rem; }
-.hero p { font-size: 1.1rem; color: var(--muted-foreground); max-width: 36rem; line-height: 1.75; margin-bottom: 2rem; }
+.hero p { font-size: 1.1rem; color: var(--muted-foreground); max-width: 42rem; line-height: 1.75; margin-bottom: 2rem; }
 
 /* Buttons */
 .btn-primary {
@@ -726,8 +727,9 @@ footer {
 
 /* Responsive */
 @media (min-width: 768px) {
-  .hero-grid { grid-template-columns: 1fr 1fr; }
-  .hero-photo { width: 22rem; height: 22rem; }
+  .hero-grid { grid-template-columns: 1.1fr 0.9fr; }
+  .hero-photo-wrap { justify-content: flex-end; }
+  .hero-photo { max-width: min(24rem, 100%); }
   .articles-2col { grid-template-columns: 1fr 1fr; }
   .footer-grid { grid-template-columns: 1fr 1fr 1fr; }
   .contact-grid { grid-template-columns: 1fr 1fr; }
@@ -735,7 +737,7 @@ footer {
   .skills-grid { grid-template-columns: repeat(4, 1fr); }
 }
 @media (min-width: 1024px) {
-  .hero-photo { width: 22rem; height: 28rem; }
+  .hero-photo { max-width: min(30rem, 100%); }
   .articles-grid { grid-template-columns: 1fr 1fr 1fr; }
   .about-grid { grid-template-columns: 1fr 1fr; }
   nav .hamburger { display: none; }
