@@ -20,7 +20,7 @@
   {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
 
   <!-- Title -->
-  <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+  <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else if gt (len .Title) 40 }}{{ .Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
 
   <!-- Google Search Console verification -->
   <meta name="google-site-verification" content="PiwICYDMI_zA_6e-3RhXYrGPLPZsQ5my4SENB306raQ" />

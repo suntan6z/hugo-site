@@ -461,6 +461,7 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   background: var(--accent); color: var(--accent-foreground);
 }
 .meta-item { font-size: 0.75rem; color: var(--muted-foreground); display: flex; align-items: center; gap: 0.25rem; }
+.article-card h2,
 .article-card h3 {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1rem; font-weight: 600;
@@ -469,6 +470,7 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   line-height: 1.35;
   transition: color 0.2s;
 }
+.article-card:hover h2,
 .article-card:hover h3 { color: var(--primary); }
 .article-excerpt {
   font-size: 0.875rem;
@@ -765,6 +767,7 @@ footer {
   /* Article cards — stack vertically, hide thumb */
   .article-card-inner { flex-direction: column; }
   .article-thumb { display: none; }
+  .article-card h2,
   .article-card h3 { font-size: 1.05rem; }
 }
 
