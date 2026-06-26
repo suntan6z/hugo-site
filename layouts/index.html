@@ -192,6 +192,9 @@
   {{ end }}
 {{ end }}
 {{ $photos = sort $photos "sortkey" }}
+<style>
+@keyframes gallerySpin { to { transform: rotate(360deg); } }
+</style>
 <script>
 const galleryData = {{ $photos | jsonify | safeJS }};
 const citiesData = (function shuffle(a) {
@@ -274,8 +277,11 @@ function renderStrip(slug) {
   next.style.display = 'flex';
   strip.innerHTML = lbPhotos.map((p, i) => `
     <div onclick="openLightbox(${i})" style="flex-shrink:0;scroll-snap-align:start;cursor:pointer;width:min(17rem,72vw)">
-      <div style="border-radius:0.75rem;overflow:hidden;height:min(22rem,60vw)">
-        <img src="${p.image_url}" alt="${p.alt_text||p.caption||''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform=''" />
+      <div style="position:relative;border-radius:0.75rem;overflow:hidden;height:min(22rem,60vw);background:var(--card)">
+        <div class="gallery-spinner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+          <span style="width:1.75rem;height:1.75rem;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:gallerySpin 0.8s linear infinite"></span>
+        </div>
+        <img src="${p.image_url}" alt="${p.alt_text||p.caption||''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s,opacity 0.3s;opacity:0" onload="this.style.opacity=1;this.previousElementSibling.remove()" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform=''" />
       </div>
       ${p.caption ? `<p style="font-size:0.75rem;color:var(--muted-foreground);text-align:center;margin-top:0.4rem;line-height:1.3">${p.caption}</p>` : ''}
     </div>
