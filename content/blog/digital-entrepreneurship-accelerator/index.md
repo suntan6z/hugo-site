@@ -4,7 +4,7 @@ date: 2021-09-10
 slug: "digital-entrepreneurship-accelerator"
 category: "Erasmus+"
 draft: false
-description: "My experience at the Digital Entrepreneurship Accelerator Erasmus+ project in Bansko, Bulgaria — building digital skills and startup ideas with young Europeans."
+description: "My experience at the Digital Entrepreneurship Accelerator Erasmus+ project in Bansko, Bulgaria — building digital and startup skills with young Europeans."
 partner_name: "Association Walktogether"
 partner_url: "https://walktogethereu.com/"
 partner_logo_url: "walktogetherlogo.png"
