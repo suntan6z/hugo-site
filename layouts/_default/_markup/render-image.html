@@ -1,0 +1,19 @@
+{{- /*
+  Image render hook: add intrinsic width/height (prevents layout shift / CLS),
+  loading="lazy" and decoding="async" to content images. Page-bundle images are
+  resolved as page resources so real pixel dimensions are emitted; external or
+  root-relative images fall back to a plain lazy-loaded <img>.
+*/ -}}
+{{- $dest := .Destination -}}
+{{- $alt := .PlainText -}}
+{{- $img := "" -}}
+{{- if not (or (hasPrefix $dest "http") (hasPrefix $dest "//") (hasPrefix $dest "/")) -}}
+  {{- with .Page.Resources.GetMatch $dest -}}
+    {{- $img = . -}}
+  {{- end -}}
+{{- end -}}
+{{- if and $img (gt $img.Width 0) (gt $img.Height 0) -}}
+<img src="{{ $img.RelPermalink }}" alt="{{ $alt }}" width="{{ $img.Width }}" height="{{ $img.Height }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }} />
+{{- else -}}
+<img src="{{ $dest | safeURL }}" alt="{{ $alt }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }} />
+{{- end -}}

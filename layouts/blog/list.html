@@ -37,7 +37,7 @@
                 {{ if .Params.read_time }}{{ .Params.read_time }}{{ else }}{{ .ReadingTime }} min read{{ end }}
               </span>
             </div>
-            <h3>{{ .Title }}</h3>
+            <h2>{{ .Title }}</h2>
             <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
           {{ $thumb := .Params.featured_image }}
