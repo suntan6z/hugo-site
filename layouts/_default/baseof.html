@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   {{- /* Hero image: optimised WebP for on-page use, JPEG for social sharing */ -}}
-  {{- $heroSrc := resources.Get "hero.webp" -}}
+  {{- $heroSrc := resources.Get "img/hero.webp" -}}
   {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
   {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
 
@@ -54,9 +54,8 @@
   <!-- Core meta -->
   <meta name="description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta name="author" content="{{ .Site.Params.author }}" />
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/apple-touch.png" />
+  <link rel="icon" type="image/png" href="/img/favicon.png" />
+  <link rel="apple-touch-icon" href="/img/apple-touch.png" />
   <link rel="canonical" href="{{ .Permalink }}" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
