@@ -23,14 +23,16 @@ assets/                    → mounted to BOTH the `assets` and `static` Hugo ta
   css/main.css             → all styles
   js/main.js               → mobile menu, fade-in animations, search, contact form submit
   js/litlyx.js             → self-hosted analytics snippet
-  hero.webp / hero.jpeg    → homepage hero photo (processed via resources.Get/.Resize)
-  logo.svg                 → brand logo (navbar + footer)
   cv-fr.pdf                → downloadable CV (params.resumeUrl)
-  favicon.svg, apple-touch.png
-  404page.png              → illustration on the 404 page
-  contact-chill.gif        → animation on the Contact page
-  eufunded.png             → shared EU-funding badge for Erasmus+ articles
   _headers                 → security headers (CSP, etc.), read by StaticHost
+  img/                     → all site images
+    hero.webp              → homepage hero photo (processed via resources.Get/.Resize)
+    logo.svg               → brand logo (navbar + footer)
+    favicon.png            → browser tab icon
+    apple-touch.png        → iOS home-screen icon (180×180)
+    404page.png            → illustration on the 404 page
+    contact-chill.gif      → animation on the Contact page
+    eufunded.png           → shared EU-funding badge for Erasmus+ articles
 
 layouts/
   index.html               → homepage (hero, quote, gallery, latest articles)
