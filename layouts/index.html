@@ -170,25 +170,25 @@
   {{ $cityNames = merge $cityNames (dict .slug .name) }}
 {{ end }}
 {{ $photos := slice }}
-{{ range resources.Match "gallery/*/*.{jpg,jpeg,png,JPG,JPEG,PNG}" }}
-  {{ $relPath := strings.TrimPrefix "/gallery/" .Name }}
-  {{ $parts := split $relPath "/" }}
-  {{ if eq (len $parts) 2 }}
-    {{ $city := index $parts 0 }}
-    {{ $filename := index $parts 1 }}
-    {{ $imageURL := .RelPermalink }}
-    {{ $digits := findRE "^[0-9]+" $filename }}
-    {{ $num := 999999 }}
-    {{ if gt (len $digits) 0 }}{{ $num = int (index $digits 0) }}{{ end }}
-    {{ $sortkey := printf "%s_%06d_%s" $city $num $filename }}
-    {{ $override := index $captionOverrides $imageURL }}
-    {{ $caption := "" }}
-    {{ $altText := printf "%s photo" (or (index $cityNames $city) (title $city)) }}
-    {{ if $override }}
-      {{ with $override.caption }}{{ $caption = . }}{{ end }}
-      {{ with $override.alt_text }}{{ $altText = . }}{{ end }}
+{{ range .Site.Data.gallery_cities }}
+  {{ $city := .slug }}
+  {{ with $.Site.GetPage (printf "/gallery/%s" $city) }}
+    {{ range .Resources.ByType "image" }}
+      {{ $filename := .Name }}
+      {{ $imageURL := .RelPermalink }}
+      {{ $digits := findRE "^[0-9]+" $filename }}
+      {{ $num := 999999 }}
+      {{ if gt (len $digits) 0 }}{{ $num = int (index $digits 0) }}{{ end }}
+      {{ $sortkey := printf "%s_%06d_%s" $city $num $filename }}
+      {{ $override := index $captionOverrides $imageURL }}
+      {{ $caption := "" }}
+      {{ $altText := printf "%s photo" (or (index $cityNames $city) (title $city)) }}
+      {{ if $override }}
+        {{ with $override.caption }}{{ $caption = . }}{{ end }}
+        {{ with $override.alt_text }}{{ $altText = . }}{{ end }}
+      {{ end }}
+      {{ $photos = $photos | append (dict "city" $city "image_url" $imageURL "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
     {{ end }}
-    {{ $photos = $photos | append (dict "city" $city "image_url" $imageURL "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
   {{ end }}
 {{ end }}
 {{ $photos = sort $photos "sortkey" }}
