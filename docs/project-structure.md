@@ -28,8 +28,8 @@ assets/                    → mounted to BOTH the `assets` and `static` Hugo ta
   img/                     → all site images
     hero.webp              → homepage hero photo (processed via resources.Get/.Resize)
     logo.svg               → brand logo (navbar + footer)
-    favicon.svg/.png/.ico  → site favicon (svg + png + ico for max compatibility;
-                             favicon.png doubles as the iOS apple-touch icon)
+    favicon.svg/.png/.ico  → site favicon (svg + png + ico for max compatibility)
+    apple-touch.png        → iOS home-screen icon (180×180, opaque cream bg)
     404page.png            → illustration on the 404 page
     contact-chill.gif      → animation on the Contact page
     eufunded.png           → shared EU-funding badge for Erasmus+ articles
