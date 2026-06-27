@@ -19,6 +19,29 @@
   {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
   {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
 
+  {{- /* Per-page social image: article image if available, else hero */ -}}
+  {{- $ogImage := $heroOg.Permalink -}}
+  {{- $ogWidth := $heroOg.Width -}}
+  {{- $ogHeight := $heroOg.Height -}}
+  {{- if and .IsPage (eq .Section "blog") -}}
+    {{- $thumb := .Params.featured_image -}}
+    {{- if not $thumb -}}
+      {{- with findRE `src="[^"]+"` .Content 1 -}}
+        {{- $src := index . 0 | replaceRE `src="([^"]+)"` "$1" -}}
+        {{- if or (hasPrefix $src "http") (hasPrefix $src "/") -}}
+          {{- $thumb = $src -}}
+        {{- else -}}
+          {{- $thumb = printf "%s%s" $.RelPermalink $src -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if $thumb -}}
+      {{- $ogImage = absURL $thumb -}}
+      {{- $ogWidth = "" -}}
+      {{- $ogHeight = "" -}}
+    {{- end -}}
+  {{- end -}}
+
   <!-- Title -->
   <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else if gt (len .Title) 40 }}{{ .Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
 
@@ -43,9 +66,11 @@
   <meta property="og:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta property="og:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta property="og:url" content="{{ .Permalink }}" />
-  <meta property="og:image" content="{{ $heroOg.Permalink }}" />
-  <meta property="og:image:width" content="{{ $heroOg.Width }}" />
-  <meta property="og:image:height" content="{{ $heroOg.Height }}" />
+  <meta property="og:image" content="{{ $ogImage }}" />
+  {{ if $ogWidth -}}
+  <meta property="og:image:width" content="{{ $ogWidth }}" />
+  <meta property="og:image:height" content="{{ $ogHeight }}" />
+  {{- end }}
   {{ if and .IsPage (eq .Section "blog") -}}
   <meta property="og:type" content="article" />
   <meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}" />
@@ -60,7 +85,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta name="twitter:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
-  <meta name="twitter:image" content="{{ $heroOg.Permalink }}" />
+  <meta name="twitter:image" content="{{ $ogImage }}" />
 
   <!-- Preload hero image on homepage for LCP -->
   {{ if .IsHome -}}
