@@ -12,7 +12,7 @@ url: "/contact"
           <p style="color:var(--muted-foreground);margin-top:1rem;line-height:1.75">Have a question, project idea, or just want to say hello? I'd love to hear from you. Drop me a message and I'll get back to you as soon as possible.</p>
         </div>
         <div style="flex-shrink:0">
-          <img src="/images/contact-chill.gif" alt="Relaxing animation" style="width:min(12rem,60vw);height:auto;object-fit:contain" />
+          <img src="/contact-chill.gif" alt="Relaxing animation" style="width:min(12rem,60vw);height:auto;object-fit:contain" />
         </div>
       </div>
     </div>
