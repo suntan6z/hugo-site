@@ -29,7 +29,7 @@ assets/                    → mounted to BOTH the `assets` and `static` Hugo ta
   favicon.svg, apple-touch.png
   404page.png              → illustration on the 404 page
   contact-chill.gif        → animation on the Contact page
-  eufundedlogo.png         → shared EU-funding badge for Erasmus+ articles
+  eufunded.png             → shared EU-funding badge for Erasmus+ articles
   _headers                 → security headers (CSP, etc.), read by StaticHost
 
 layouts/
