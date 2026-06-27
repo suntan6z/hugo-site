@@ -1,241 +1,35 @@
-# Lorenzo Loconsole — Hugo Site
+# Lorenzo Loconsole — Personal Website
 
-Personal website built with [Hugo](https://gohugo.io/), hosted on [StaticHost.eu](https://www.statichost.eu).
-Live at **[lorenzo.loconsole.eu](https://lorenzo.loconsole.eu)**.
+Visit my website at: **[lorenzo.loconsole.eu](https://lorenzo.loconsole.eu)**
 
----
+This site is my corner of the internet — a side project where I write about technology, cybersecurity, and European identity, share photos from the places I've traveled to, and figure out web design as I go. I'm originally from Apulia, Italy, studied philosophy in Paris, and have spent a fair amount of time around Erasmus+ projects and NGOs across Europe, which is also a recurring topic on the blog.
 
-## Local development
+The site has been redesigned and rebuilt many times since I first started tinkering with it. Its current tech stack is:
 
-```bash
-# Install Hugo — requires v0.158.0+ (the site uses `locale` and `hugo.Data`)
-brew install hugo
+- **[Hugo](https://gohugo.io/)** — static site generator
+- **[Supabase](https://supabase.com/)** — serverless relay (Edge Functions) for the contact form and newsletter signup
+- **[Resend](https://resend.com/)** — transactional email delivery for the contact form and newsletter
+- **[Litlyx](https://litlyx.com/)** — self-hosted, cookieless analytics
+- **[StaticHost.eu](https://www.statichost.eu/)** — hosting; builds and deploys on every push to `main`
 
-# Run the dev server with live reload
-hugo server
+All UX design was completed by me, with a little inspiration here and there.
 
-# Open http://localhost:1313
-```
+This site also features photos I take while exploring the world — the homepage gallery is a running collection from the cities I've visited, all taken by me.
 
-A production build is generated with `hugo --minify`, but you normally don't run this
-by hand — see deployment below.
+For practical, technical how-tos (adding articles, gallery photos, deploying, etc.), see [`/docs`](docs/).
 
 ---
 
-## Deployment
+### Can I use this site's code?
 
-**Push to `main` and you're done.** StaticHost.eu watches the GitHub repo, runs
-`hugo --minify` on its own servers, and serves the result.
+Yes, you can fork this repo. Please give me proper credit by linking back to [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu). I spent a non-trivial amount of effort building and designing this site, and I am proud of it! All I ask of you is to not claim this effort as your own.
 
-```bash
-git add -A
-git commit -m "Describe your change"
-git push
-```
+I own the photos used throughout this site (gallery and blog images), unless otherwise noted. Partner and EU-funding logos shown on some Erasmus+ articles belong to their respective organizations. Please don't use any of these images without express permission.
 
-> ⚠️ **Do not commit the `public/` folder.** It is in `.gitignore` on purpose —
-> StaticHost regenerates it on every deploy. Tracking it causes build conflicts.
-> The git repo holds **source only** (content, layouts, static assets, config).
+### Can you help me get started?
 
----
+If you have questions about the implementation, don't hesitate to reach out to me.
 
-## Adding a blog article
+### What is the best way to credit you?
 
-Each article is a folder under `content/blog/` containing an `index.md`:
-
-```bash
-hugo new blog/my-article-slug/index.md
-```
-
-This uses `archetypes/blog.md` and starts the article as `draft: true`. Edit the
-frontmatter, write the body in Markdown, then set `draft: false` to publish.
-
-### Frontmatter
-
-```yaml
----
-title: "My Article Title"
-date: 2026-06-21
-slug: "my-article-slug"
-category: "Technology"        # see valid categories below
-description: "One-sentence summary — used for SEO, the blog listing, and social cards."
-draft: false
----
-```
-
-**Valid `category` values** (these match the filter buttons on `/blog`):
-`Technology`, `Cybersecurity`, `Personal`, `Erasmus+`.
-Using `"Erasmus+"` also triggers the EU partner strip (see below).
-
-### The lead / thumbnail image
-
-Put the main image as the **first Markdown image in the body** — the blog listing
-automatically uses it as the thumbnail:
-
-```markdown
-![Descriptive alt text](/images/blog/my-image.jpg)
-```
-
-Optionally, you can instead set it explicitly in frontmatter. This is **required**
-if you want the article to show a thumbnail in the homepage "Latest articles" grid:
-
-```yaml
-featured_image: "/images/blog/my-image.jpg"
-```
-
-Store article images in `static/images/` and reference them as `/images/...`.
-
-### Erasmus+ articles — extra frontmatter
-
-Articles with `category: "Erasmus+"` show a partner strip (partner logo + EU
-co-funded badge) at the top of the article. Add:
-
-```yaml
-partner_name: "Les Schini's"
-partner_url: "https://www.lesschinis.com"
-partner_logo_url: "/images/erasmus/lesschinislogo.png"
-project_url: "https://youthincontact.wixsite.com/project"   # optional — shows a "Project website" link
-eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
-```
-
-Partner logos live in `static/images/erasmus/`.
-
----
-
-## The photo gallery
-
-The homepage gallery auto-discovers photos from `assets/gallery/<city-slug>/` at
-build time — just drop image files into a city's folder and they show up, no
-JSON editing required. `data/gallery_photos.json` is now optional and only used
-to override the caption/alt text of specific photos.
-
-### How it's organised
-
-```
-data/
-  gallery_cities.json        → the city filter tabs (name, slug, flag)
-  gallery_photos.json        → optional caption/alt_text overrides, keyed by image_url
-
-assets/gallery/
-  paris/   1.jpg 2.jpg …      → photo files, one folder per city
-  bari/    1.jpg 2.jpg …
-```
-
-The folder name must match a `slug` in `gallery_cities.json` — that's how the
-filter tabs know which photos to show. A city listed without any photos shows a
-friendly "Photos coming soon" placeholder.
-
-### Adding photos for a city
-
-1. **Drop the files** into `assets/gallery/<city-slug>/` (e.g.
-   `assets/gallery/barcelona/1.jpg`). Any common image extension works
-   (`.jpg`, `.jpeg`, `.png`). Numbering them `1.jpg`, `2.jpg`, … controls the
-   display order; files without a leading number are shown after the numbered
-   ones.
-
-2. **Make sure the city exists** in `data/gallery_cities.json`. If it's new, add a line:
-
-   ```json
-   { "name": "Barcelona", "slug": "barcelona", "flag": "🇪🇸" }
-   ```
-
-That's it — the photos appear automatically on the next build, with no template
-or data-file changes needed.
-
-3. *(Optional)* To give a specific photo a caption or custom alt text, add an
-   entry to `data/gallery_photos.json` keyed by its `image_url`:
-
-   ```json
-   { "city": "barcelona", "image_url": "/gallery/barcelona/1.jpg", "caption": "Sagrada Família", "alt_text": "Detailed description for accessibility and SEO" }
-   ```
-
-   Photos without a matching entry get a generic alt text and no caption.
-
----
-
-## Updating site-wide settings
-
-Edit `hugo.toml`:
-
-| Key | What it controls |
-|-----|-----------------|
-| `title` | Site title (used in `<title>`, footer, structured data) |
-| `params.description` | Default meta description |
-| `params.email` | Email address shown on the Contact page |
-| `params.linkedin` / `params.mastodon` / `params.telegram` / `params.appleMusic` | Footer social links |
-| `params.heroPhoto` | Path to the homepage hero image |
-| `params.resumeUrl` | Path to the downloadable CV |
-| `params.quote` / `params.quoteAuthor` / `params.quoteArticle` | Quote shown on the homepage and the article it links to |
-| `menu.main` | Navigation items and their order |
-
-Static pages (`About`, `Now`, `Contact`, `Privacy Policy`) are edited via their
-Markdown files in `content/` and their layouts in `layouts/_default/`.
-
----
-
-## Forms
-
-Both forms POST to Supabase Edge Functions (the anon key in the markup is public by
-design and safe to expose):
-
-- **Contact form** — `layouts/_default/contact.html`
-- **Newsletter signup** — `layouts/blog/single.html`
-
-To change the backend, update the `fetch(...)` URL and `Authorization` header in
-those files.
-
----
-
-## Project structure
-
-```
-hugo.toml                  → site config (title, social links, params, menu)
-
-content/
-  about.md, now.md, contact.md, privacy-policy.md   → static pages
-  blog/<slug>/index.md     → one folder per article
-
-data/
-  gallery_cities.json      → gallery city tabs
-  gallery_photos.json      → optional caption/alt_text overrides for gallery photos
-
-static/
-  css/main.css             → all styles
-  js/main.js               → mobile menu, fade-in animations, hero tilt
-  hero-portrait.png        → homepage hero photo
-  cv-fr.pdf                → downloadable CV (params.resumeUrl)
-  favicon.ico, favicon.svg → favicons
-  apple-touch.png          → iOS home-screen icon
-  logo.svg                 → brand logo (navbar)
-  gallery/<city>/*.jpg     → gallery photos
-  images/
-    404page.png            → illustration on the 404 page
-    contact-chill.gif      → animation on the Contact page
-    erasmus/               → Erasmus+ partner logos + EU badge
-    blog/                  → article images (create this folder when you add your first)
-
-layouts/
-  index.html               → homepage (hero, quote, gallery, latest articles)
-  404.html                 → custom 404 page
-  _default/
-    baseof.html            → base template + all SEO/meta/structured data
-    about.html, now.html, contact.html, privacy-policy.html
-    rss.xml                → custom RSS feed
-  blog/
-    list.html              → blog index (/blog) with category filters
-    single.html            → individual article (share buttons, newsletter, partner strip)
-  partials/
-    header.html            → navigation + search modal
-    footer.html            → footer with social links
-```
-
----
-
-## SEO notes
-
-- `baseof.html` outputs canonical URLs, Open Graph + Twitter cards, JSON-LD
-  structured data (`Person`/`WebSite` on the homepage, `BlogPosting` on articles),
-  and favicon links.
-- Sitemap is at `/sitemap.xml`, RSS at `/blog/feed.xml`, robots at `/robots.txt`.
-- After deploying, submit the sitemap in
-  [Google Search Console](https://search.google.com/search-console).
+Please give me proper credit by linking back to [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu).
