@@ -1,0 +1,196 @@
+# Stringhe d'interfaccia in italiano. Vedi i18n/en.toml per l'elenco di riferimento.
+# %city% / %n% sono segnaposto sostituiti durante il rendering.
+
+# ── Navigazione / etichette condivise ────────────────────────────
+[nav_home]
+other = "Home"
+[nav_about]
+other = "Chi sono"
+[nav_now]
+other = "Ora"
+[nav_blog]
+other = "Blog"
+[nav_contact]
+other = "Contatti"
+[nav_privacy]
+other = "Informativa sulla privacy"
+
+# ── Home page ────────────────────────────────────────────────────
+[hero_heading]
+other = "Ciao!"
+[hero_intro]
+other = "È un progetto personale che porto avanti per imparare qualcosa in più sul web design e l'HTML. Il mio primo sito risale al 2014: con alcuni amici avevo creato uno spazio dove condividere i momenti migliori giocando e le migliori creepypasta che riuscivamo a trovare. All'epoca andava di moda…"
+[hero_intro2]
+other = "In ogni caso, spero che la visita ti piaccia e che tu possa conoscermi un po' meglio!"
+[view_resume]
+other = "Vedi il CV"
+[get_in_touch]
+other = "Mettiti in contatto"
+[read_article]
+other = "Leggi l'articolo →"
+[gallery_best_of]
+other = "Il meglio di"
+[gallery_subtitle]
+other = "Una raccolta di foto selezionate dalle mie città preferite. Tutte le foto sono mie."
+[latest_articles]
+other = "Ultimi articoli"
+[latest_articles_sub]
+other = "Riflessioni su tecnologia, politica europea e vita."
+[browse_all]
+other = "Sfoglia tutti gli articoli →"
+[cta_heading]
+other = "Restiamo in contatto"
+[cta_text]
+other = "Sono sempre disponibile a parlare di nuovi progetti, idee creative o occasioni per far parte di qualcosa di straordinario."
+[say_hello]
+other = "Scrivimi →"
+[photos_coming_soon]
+other = "Foto in arrivo"
+[gallery_empty_msg]
+other = "Non ho ancora caricato le mie foto di %city% — torna più tardi!"
+[photo_alt]
+other = "Foto di %city%"
+
+# ── Articolo del blog ────────────────────────────────────────────
+[back_to_blog]
+other = "Torna al blog"
+[min_read]
+other = "min di lettura"
+[project_website]
+other = "Sito del progetto"
+[share]
+other = "Condividi"
+[share_on]
+other = "Condividi su"
+[copy_link]
+other = "Copia il link"
+[partner_organisation]
+other = "Organizzazione partner"
+[eu_funded_alt]
+other = "Cofinanziato dall'Unione europea"
+[eu_funding_default]
+other = "Cofinanziato dall'Unione europea nell'ambito del programma Erasmus+."
+[newsletter_heading]
+other = "Iscriviti alla mia newsletter"
+[newsletter_desc]
+other = "Ricevi una notifica quando pubblico nuovi articoli su tecnologia, politica europea e riflessioni personali. Niente spam, disiscrizione in qualsiasi momento."
+[newsletter_subscribed]
+other = "Iscrizione completata!"
+[email_placeholder]
+other = "tua@email.com"
+[subscribe]
+other = "Iscriviti"
+[subscribing]
+other = "Iscrizione… "
+[nav_previous]
+other = "Precedente"
+[nav_next]
+other = "Successivo"
+
+# ── Elenco del blog / categorie ──────────────────────────────────
+[blog_heading]
+other = "Blog"
+[blog_subtitle]
+other = "Riflessioni su tecnologia, politica europea, cybersicurezza e temi più personali."
+[filter_all]
+other = "Tutti"
+[cat_Technology]
+other = "Tecnologia"
+[cat_Cybersecurity]
+other = "Cybersicurezza"
+[cat_Personal]
+other = "Personale"
+["cat_Erasmus+"]
+other = "Erasmus+"
+
+# ── Finestra di ricerca ──────────────────────────────────────────
+[search]
+other = "Cerca"
+[toggle_menu]
+other = "Apri il menu"
+[search_placeholder]
+other = "Cerca articoli e pagine…"
+[advanced_filters]
+other = "Filtri avanzati"
+[filters]
+other = "Filtri"
+[esc]
+other = "Esc"
+[filter_category]
+other = "Categoria"
+[published_between]
+other = "Pubblicato tra"
+[any_year]
+other = "Tutti gli anni"
+[read_time_label]
+other = "Tempo di lettura"
+[rt_any]
+other = "Qualsiasi durata"
+[rt_short]
+other = "Meno di 5 min"
+[rt_medium]
+other = "5 – 15 min"
+[rt_long]
+other = "15+ min"
+[clear_all]
+other = "Cancella tutto"
+[pages]
+other = "Pagine"
+[results]
+other = "Risultati"
+[recent_articles]
+other = "Articoli recenti"
+[no_results]
+other = "Nessun risultato per"
+[with_filters]
+other = "con i filtri attuali"
+[did_you_mean]
+other = "Forse cercavi"
+[clear_all_filters]
+other = "Cancella tutti i filtri"
+[showing_of]
+other = "Mostrati 8 di %n% — affina la ricerca o i filtri per restringere i risultati"
+[filter_active_one]
+other = "filtro attivo"
+[filter_active_many]
+other = "filtri attivi"
+[no_filters_active]
+other = "Nessun filtro attivo"
+[tag_category]
+other = "Categoria"
+[tag_year]
+other = "Anno"
+[tag_read]
+other = "Lettura"
+[year_any]
+other = "tutti"
+[rt_tag_short]
+other = "< 5 min"
+[rt_tag_medium]
+other = "5–15 min"
+[rt_tag_long]
+other = "15+ min"
+[count_of]
+other = "di"
+
+# ── Piè di pagina ────────────────────────────────────────────────
+[quick_links]
+other = "Link rapidi"
+[connect]
+other = "Social"
+[rights_reserved]
+other = "Tutti i diritti riservati."
+[powered_by]
+other = "Realizzato con"
+[rss_feed]
+other = "Feed RSS"
+
+# ── Varie ────────────────────────────────────────────────────────
+[toggle_dark_mode]
+other = "Attiva/disattiva la modalità scura"
+[change_language]
+other = "Cambia lingua"
+[og_locale]
+other = "it_IT"
+[job_title]
+other = "Sostenitore della tecnologia e sviluppatore"

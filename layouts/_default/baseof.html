@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ .Site.Language.Lang }}">
 <head>
   <meta charset="UTF-8" />
   <script>
@@ -43,7 +43,7 @@
   {{- end -}}
 
   <!-- Title -->
-  <title>{{ if .IsHome }}Home | {{ .Site.Title }}{{ else if gt (len .Title) 40 }}{{ .Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+  <title>{{ if .IsHome }}{{ i18n "nav_home" }} | {{ .Site.Title }}{{ else if gt (len .Title) 40 }}{{ .Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
 
   <!-- Google Search Console verification -->
   <meta name="google-site-verification" content="PiwICYDMI_zA_6e-3RhXYrGPLPZsQ5my4SENB306raQ" />
@@ -61,10 +61,22 @@
   <link rel="canonical" href="{{ .Permalink }}" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
+  <!-- hreflang alternates for each available translation (+ x-default → English) -->
+  {{- range .AllTranslations }}
+  <link rel="alternate" hreflang="{{ .Language.Lang }}" href="{{ .Permalink }}" />
+  {{- end }}
+  {{- range .AllTranslations }}{{ if eq .Language.Lang "en" }}
+  <link rel="alternate" hreflang="x-default" href="{{ .Permalink }}" />
+  {{- end }}{{ end }}
+
   <!-- Open Graph -->
   <meta property="og:site_name" content="{{ .Site.Title }}" />
-  <meta property="og:locale" content="en_US" />
-  <meta property="og:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
+  {{- $ogLocales := dict "en" "en_US" "fr" "fr_FR" "it" "it_IT" }}
+  <meta property="og:locale" content="{{ index $ogLocales .Site.Language.Lang | default "en_US" }}" />
+  {{- range .Translations }}
+  <meta property="og:locale:alternate" content="{{ index $ogLocales .Language.Lang | default "en_US" }}" />
+  {{- end }}
+  <meta property="og:title" content="{{ if .IsHome }}{{ i18n "nav_home" }} | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta property="og:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta property="og:url" content="{{ .Permalink }}" />
   <meta property="og:image" content="{{ $ogImage }}" />
@@ -84,7 +96,7 @@
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{{ if .IsHome }}Home | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
+  <meta name="twitter:title" content="{{ if .IsHome }}{{ i18n "nav_home" }} | {{ .Site.Title }}{{ else }}{{ .Title }}{{ end }}" />
   <meta name="twitter:description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.description }}{{ end }}" />
   <meta name="twitter:image" content="{{ $ogImage }}" />
 
@@ -101,21 +113,21 @@
     "@graph": [
       {
         "@type": "WebSite",
-        "url": "{{ .Site.BaseURL }}",
+        "url": "{{ .Site.Home.Permalink }}",
         "name": {{ .Site.Title | jsonify }},
         "description": {{ .Site.Params.description | jsonify }},
-        "inLanguage": "en"
+        "inLanguage": {{ .Site.Language.Lang | jsonify }}
       },
       {
         "@type": "Person",
         "name": "Lorenzo Loconsole",
-        "url": "{{ .Site.BaseURL }}",
+        "url": "{{ .Site.Home.Permalink }}",
         "image": "{{ $heroOg.Permalink }}",
         "sameAs": [
           {{ .Site.Params.linkedin | jsonify }},
           {{ .Site.Params.mastodon | jsonify }}
         ],
-        "jobTitle": "Tech Advocate & Developer"
+        "jobTitle": {{ i18n "job_title" | jsonify }}
       }
     ]
   }
@@ -132,7 +144,7 @@
     "url": "{{ .Permalink }}",
     "mainEntityOfPage": "{{ .Permalink }}",
     "articleSection": {{ .Params.category | jsonify }},
-    "inLanguage": "en",
+    "inLanguage": {{ .Site.Language.Lang | jsonify }},
     "author": {
       "@type": "Person",
       "name": "Lorenzo Loconsole",
@@ -146,8 +158,8 @@
     "breadcrumb": {
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ .Site.BaseURL }}" },
-        { "@type": "ListItem", "position": 2, "name": "Blog", "item": "{{ .Site.BaseURL }}blog/" },
+        { "@type": "ListItem", "position": 1, "name": {{ i18n "nav_home" | jsonify }}, "item": "{{ .Site.Home.Permalink }}" },
+        { "@type": "ListItem", "position": 2, "name": {{ i18n "nav_blog" | jsonify }}, "item": "{{ with .Site.GetPage "/blog" }}{{ .Permalink }}{{ end }}" },
         { "@type": "ListItem", "position": 3, "name": {{ .Title | jsonify }}, "item": "{{ .Permalink }}" }
       ]
     }
@@ -159,7 +171,7 @@
   <link rel="preload" as="font" type="font/woff2" href="/fonts/dmsans-400-normal-latin.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="/fonts/fraunces-600-normal-latin.woff2" crossorigin />
   <link rel="stylesheet" href="/css/main.css" />
-  <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" href="/blog/feed.xml" />
+  <link rel="alternate" type="application/rss+xml" title="{{ .Site.Title }}" href="{{ "/blog/feed.xml" | relLangURL }}" />
   {{- if and (not hugo.IsServer) .Site.Params.litlyxProjectId }}
   <script defer src="/js/litlyx.js"
     data-project="{{ .Site.Params.litlyxProjectId }}"

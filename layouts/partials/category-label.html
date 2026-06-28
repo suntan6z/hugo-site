@@ -1,0 +1,5 @@
+{{- /* Localized display label for a blog category. The raw English value
+       (e.g. "Technology", "Erasmus+") stays the canonical key used by the JS
+       filters and front matter; only the visible label is translated.
+       Usage: {{ partial "category-label.html" .Params.category }} */ -}}
+{{- i18n (printf "cat_%s" .) | default . -}}
