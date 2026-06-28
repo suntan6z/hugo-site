@@ -1,6 +1,15 @@
 baseURL = "https://lorenzo.loconsole.eu"
-languageCode = "en"
 title = "Lorenzo Loconsole"
+
+# ── Multilingual ──────────────────────────────────────────────────────────
+# The site is available in English (default), French and Italian.
+# `defaultContentLanguageInSubdir = false` keeps English at the root
+# (/blog/…) while French lives under /fr/… and Italian under /it/… — this
+# preserves the existing English URLs and their SEO.
+# Content is translated "by filename": a post bundle keeps index.md (English)
+# and adds index.fr.md / index.it.md in the same folder, sharing its images.
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
 
 # Categories are only a frontmatter label for the JS blog filter, not browsable
 # taxonomy term pages — disable taxonomy/term generation so Hugo doesn't emit
@@ -20,9 +29,88 @@ disableKinds = ["taxonomy", "term"]
     source = "assets"
     target = "static"
 
+# ── Languages ─────────────────────────────────────────────────────────────
+# Shared params live in the top-level [params] block below and are inherited by
+# every language. Only language-varying params (description, quote) and the
+# translated navigation menu are defined per language here.
+[languages]
+  [languages.en]
+    locale ="en"
+    label ="English"
+    weight = 1
+    [languages.en.params]
+      description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
+      quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
+    [languages.en.menus]
+      [[languages.en.menus.main]]
+        name = "About"
+        pageRef = "/about"
+        weight = 1
+      [[languages.en.menus.main]]
+        name = "Now"
+        pageRef = "/now"
+        weight = 2
+      [[languages.en.menus.main]]
+        name = "Blog"
+        pageRef = "/blog"
+        weight = 3
+      [[languages.en.menus.main]]
+        name = "Contact"
+        pageRef = "/contact"
+        weight = 4
+
+  [languages.fr]
+    locale ="fr"
+    label ="Français"
+    weight = 2
+    [languages.fr.params]
+      description = "Passionné de tech, défenseur des outils basés en Europe et amateur de bonne cuisine. J'explore en ce moment l'intersection entre la technologie et l'identité européenne."
+      quote = "Prétendre que le droit à la vie privée vous importe peu parce que vous n'avez rien à cacher ne diffère en rien d'affirmer que la liberté d'expression vous importe peu parce que vous n'avez rien à dire."
+    [languages.fr.menus]
+      [[languages.fr.menus.main]]
+        name = "À propos"
+        pageRef = "/about"
+        weight = 1
+      [[languages.fr.menus.main]]
+        name = "Maintenant"
+        pageRef = "/now"
+        weight = 2
+      [[languages.fr.menus.main]]
+        name = "Blog"
+        pageRef = "/blog"
+        weight = 3
+      [[languages.fr.menus.main]]
+        name = "Contact"
+        pageRef = "/contact"
+        weight = 4
+
+  [languages.it]
+    locale ="it"
+    label ="Italiano"
+    weight = 3
+    [languages.it.params]
+      description = "Appassionato di tecnologia, sostenitore degli strumenti con base in Europa e amante del buon cibo. Attualmente esploro l'intersezione tra tecnologia e identità europea."
+      quote = "Sostenere che non ti importa del diritto alla privacy perché non hai nulla da nascondere non è diverso dal dire che non ti importa della libertà di parola perché non hai nulla da dire."
+    [languages.it.menus]
+      [[languages.it.menus.main]]
+        name = "Chi sono"
+        pageRef = "/about"
+        weight = 1
+      [[languages.it.menus.main]]
+        name = "Ora"
+        pageRef = "/now"
+        weight = 2
+      [[languages.it.menus.main]]
+        name = "Blog"
+        pageRef = "/blog"
+        weight = 3
+      [[languages.it.menus.main]]
+        name = "Contatti"
+        pageRef = "/contact"
+        weight = 4
+
 [params]
   author = "Lorenzo"
-  description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
   resumeUrl = "/cv-fr.pdf"
   email = "lorenzo@loconsole.eu"
   location = "France, Europe 🇪🇺"
@@ -30,7 +118,6 @@ disableKinds = ["taxonomy", "term"]
   mastodon = "https://c.im/@lv"
   telegram = "https://t.me/loconsole_bot"
   appleMusic = "https://music.apple.com/profile/thends"
-  quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
   quoteAuthor = "Edward Snowden"
   quoteArticle = "edward-snowden-mass-surveillance"
   litlyxProjectId  = "6a39d3a301a7b289aa1d5f0b"
@@ -45,24 +132,6 @@ disableKinds = ["taxonomy", "term"]
       unsafe = true
   [markup.highlight]
     style = "github"
-
-[menu]
-  [[menu.main]]
-    name = "About"
-    url = "/about"
-    weight = 1
-  [[menu.main]]
-    name = "Now"
-    url = "/now"
-    weight = 2
-  [[menu.main]]
-    name = "Blog"
-    url = "/blog"
-    weight = 3
-  [[menu.main]]
-    name = "Contact"
-    url = "/contact"
-    weight = 4
 
 enableRobotsTXT = true
 
