@@ -103,6 +103,10 @@ other = "Cybersecurity"
 other = "Personal"
 ["cat_Erasmus+"]
 other = "Erasmus+"
+[not_yet_translated]
+other = "Not yet translated into %lang%."
+[read_in_lang]
+other = "Read in %lang% →"
 
 # ── Search modal ─────────────────────────────────────────────────
 [search]
