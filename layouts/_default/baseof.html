@@ -14,10 +14,9 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  {{- /* Hero image: optimised WebP for on-page use, JPEG for social sharing */ -}}
-  {{- $heroSrc := resources.Get "img/hero.webp" -}}
-  {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
-  {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
+  {{- /* Hero image: optimised WebP for on-page use, JPEG (from the original hero.jpeg, not a webp re-encode) for social sharing */ -}}
+  {{- $heroWebp := (resources.Get "img/hero.webp").Resize "640x webp q82" -}}
+  {{- $heroOg := (resources.Get "img/hero.jpeg").Resize "640x jpg q85" -}}
 
   {{- /* Per-page social image: article image if available, else the logo */ -}}
   {{- $ogImage := "/img/logo-og.png" | absURL -}}
