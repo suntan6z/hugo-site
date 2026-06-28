@@ -31,6 +31,11 @@ static/                    → copied verbatim to the site root, no processing.
                               paths (e.g. /about) to their /en/ equivalent
   img/                     → all other site images
     logo.svg               → brand logo (navbar + footer)
+    logo-og.png             → logo rasterized at 1200×630 on the site's cream background;
+                              fallback social-card image (baseof.html) for pages with no
+                              featured/content image. Hugo can't rasterize SVG itself, so
+                              this is a one-off manual export, not Pipes-generated — re-export
+                              it by hand if logo.svg ever changes.
     favicon.svg/.png/.ico  → site favicon (svg + png + ico for max compatibility)
     apple-touch.png        → iOS home-screen icon (180×180, opaque cream bg)
     404page.png            → illustration on the 404 page
