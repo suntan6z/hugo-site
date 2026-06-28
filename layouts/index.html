@@ -162,15 +162,15 @@
 </section>
 
 {{ $captionOverrides := dict }}
-{{ range hugo.Data.gallery_photos }}
+{{ range .Site.Data.gallery_photos }}
   {{ $captionOverrides = merge $captionOverrides (dict .image_url (dict "caption" .caption "alt_text" .alt_text)) }}
 {{ end }}
 {{ $cityNames := dict }}
-{{ range hugo.Data.gallery_cities }}
+{{ range .Site.Data.gallery_cities }}
   {{ $cityNames = merge $cityNames (dict .slug .name) }}
 {{ end }}
 {{ $photos := slice }}
-{{ range hugo.Data.gallery_cities }}
+{{ range .Site.Data.gallery_cities }}
   {{ $city := .slug }}
   {{ with $.Site.GetPage (printf "/gallery/%s" $city) }}
     {{ range .Resources.ByType "image" }}
@@ -207,7 +207,7 @@ const citiesData = (function shuffle(a) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-})({{ hugo.Data.gallery_cities | jsonify | safeJS }});
+})({{ .Site.Data.gallery_cities | jsonify | safeJS }});
 let currentCity = null;
 let lbPhotos = [];
 let lbIndex = 0;

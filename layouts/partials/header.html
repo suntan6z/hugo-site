@@ -29,9 +29,9 @@
           <svg class="lang-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lang-menu" role="menu">
-          {{- range hugo.Sites -}}
+          {{- range .Site.Sites -}}
             {{- $u := or (index $pageByLang .Language.Lang) (index $homeByLang .Language.Lang) -}}
-            <a role="menuitem" href="{{ $u }}" hreflang="{{ .Language.Lang }}"{{ if eq .Language.Lang $cur }} class="active" aria-current="true"{{ end }}><span>{{ .Language.Label }}</span><span class="lang-code">{{ .Language.Lang | upper }}</span></a>
+            <a role="menuitem" href="{{ $u }}" hreflang="{{ .Language.Lang }}"{{ if eq .Language.Lang $cur }} class="active" aria-current="true"{{ end }}><span>{{ .Language.LanguageName }}</span><span class="lang-code">{{ .Language.Lang | upper }}</span></a>
           {{- end -}}
         </div>
       </div>
@@ -62,9 +62,9 @@
           <svg class="lang-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lang-menu" role="menu">
-          {{- range hugo.Sites -}}
+          {{- range .Site.Sites -}}
             {{- $u := or (index $pageByLang .Language.Lang) (index $homeByLang .Language.Lang) -}}
-            <a role="menuitem" href="{{ $u }}" hreflang="{{ .Language.Lang }}"{{ if eq .Language.Lang $cur }} class="active" aria-current="true"{{ end }}><span>{{ .Language.Label }}</span><span class="lang-code">{{ .Language.Lang | upper }}</span></a>
+            <a role="menuitem" href="{{ $u }}" hreflang="{{ .Language.Lang }}"{{ if eq .Language.Lang $cur }} class="active" aria-current="true"{{ end }}><span>{{ .Language.LanguageName }}</span><span class="lang-code">{{ .Language.Lang | upper }}</span></a>
           {{- end -}}
         </div>
       </div>
