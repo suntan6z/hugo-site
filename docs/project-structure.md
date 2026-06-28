@@ -18,8 +18,9 @@ data/
 
 assets/                    → Hugo Pipes sources only — files here are processed by a template
                               (`resources.Get`, `.Resize`, …) rather than served as-is.
-  img/hero.webp            → homepage hero photo (processed via resources.Get/.Resize)
-  img/hero.jpeg            → original source for hero.webp, unused directly, kept for reference
+  img/hero.webp            → homepage hero photo, modern browsers (resources.Get/.Resize)
+  img/hero.jpeg            → same photo, JPEG: <picture> fallback for non-WebP browsers,
+                              and source for the og:image/JSON-LD JPEG
 
 static/                    → copied verbatim to the site root, no processing.
   css/main.css             → all styles
