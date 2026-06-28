@@ -29,7 +29,7 @@ A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the
 
 ## Architecture — the non-obvious parts
 
-**`static/` has been merged into `assets/`.** There is no `static/` directory. `hugo.toml` mounts the single `assets/` folder to *both* the `assets` and `static` targets, so the same folder serves Hugo Pipes resources (`resources.Get`, e.g. the hero image processed through `.Resize`) **and** files copied verbatim to the site root (CSS at `/css/main.css`, JS, fonts, images under `/img/...`, `/cv-fr.pdf`). When the README's "Project structure" section says `static/css/main.css`, the real path is `assets/css/main.css`. Reference root-copied files by their served path (e.g. `/img/logo.svg`, `/cv-fr.pdf`), and `resources.Get`/`resources.Match` paths are relative to `assets/` (e.g. `resources.Get "img/hero.webp"`). All site images live under `assets/img/`.
+**`static/` and `assets/` follow Hugo's default convention** — no custom `[module.mounts]`. `static/` holds everything copied verbatim to the site root: CSS (`/css/main.css`), JS, fonts, `/cv-fr.pdf`, `/_headers`, the root `/404.html`, and most images under `/img/...`. `assets/` holds only the handful of files actually processed through Hugo Pipes — currently just `assets/img/hero.webp` (and its unprocessed source `hero.jpeg`, kept for reference), resized via `resources.Get "img/hero.webp"` + `.Resize` for the homepage hero and `og:image`. Reference root-copied files by their served path (e.g. `/img/logo.svg`); only reach for `resources.Get`/`resources.Match` when a file actually needs Pipes processing — otherwise it belongs in `static/`.
 
 **Blog posts are page bundles.** Each article is `content/blog/<slug>/index.md` with its images in the same folder. Because the section is `blog`, these render through `layouts/blog/single.html` (article) and `layouts/blog/list.html` (the `/blog` index). The bundle's images are page resources, which the image render hook (below) uses to emit real dimensions.
 
@@ -48,7 +48,7 @@ A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the
 
 **Forms POST to Supabase Edge Functions** (contact form in `layouts/_default/contact.html`, newsletter signup in `layouts/blog/single.html`). The Supabase anon key in the markup is public by design. To change the backend, edit the `fetch(...)` URL and `Authorization` header in those files.
 
-**Security headers live in `assets/_headers`** (served by StaticHost). The CSP `connect-src` whitelists the Supabase project and the analytics hosts — **if you add any external fetch/connection, update the CSP there** or it will be blocked in production. Analytics (Litlyx) only loads when `not hugo.IsServer`, so it never runs in the dev server.
+**Security headers live in `static/_headers`** (served by StaticHost). The CSP `connect-src` whitelists the Supabase project and the analytics hosts — **if you add any external fetch/connection, update the CSP there** or it will be blocked in production. Analytics (Litlyx) only loads when `not hugo.IsServer`, so it never runs in the dev server.
 
 ## Multilingual (EN / FR / IT)
 
@@ -62,7 +62,7 @@ The site is trilingual — **English (default), French, Italian** — using Hugo
 - **Category labels are localized, category *keys* are not.** `.Params.category` stays the canonical English value (`Technology`, `Erasmus+`, …) used by the JS filter; the visible label is rendered through `layouts/partials/category-label.html`, which maps the value to `i18n "cat_<value>"`. Filter pills keep English `data-category`/onclick args and only translate the button text.
 - **Dates** use `{{ .Date | time.Format ":date_long" }}` (article) or `":date_medium"` (cards, search) so they localize via each language's `locale`. Never hardcode a `"Jan 2, 2006"` layout.
 - **SEO** (`baseof.html`): `<html lang>`, `og:locale` (+ `og:locale:alternate`), JSON-LD `inLanguage`, and `hreflang` alternates (incl. `x-default` → English) are all derived by looping `.AllTranslations`. The language switcher (`header.html`) links each language to the current page's translation, falling back to that language's home via `.Site.Home.AllTranslations`.
-- **English-only by design:** the `404.html` copy and the contact-form validation strings in `assets/js/main.js` are not translated.
+- **English-only by design:** the `404.html` copy and the contact-form validation strings in `static/js/main.js` are not translated.
 
 ## Adding content
 
