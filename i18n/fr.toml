@@ -102,6 +102,10 @@ other = "Cybersécurité"
 other = "Personnel"
 ["cat_Erasmus+"]
 other = "Erasmus+"
+[not_yet_translated]
+other = "Pas encore traduit en %lang%."
+[read_in_lang]
+other = "Lire en %lang% →"
 
 # ── Fenêtre de recherche ─────────────────────────────────────────
 [search]

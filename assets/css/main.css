@@ -449,6 +449,12 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   transform: translateY(-2px);
 }
 .article-card.featured { background: hsl(350 45% 40% / 0.05); border-color: hsl(350 45% 40% / 0.3); }
+.article-card-locked { opacity: 0.7; }
+.article-card-locked:hover { border-color: var(--border); box-shadow: none; transform: none; }
+.article-card-locked h2 { color: var(--muted-foreground); }
+.article-locked-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+.locked-lang-link { font-size: 0.8rem; font-weight: 500; color: var(--primary); }
+.locked-lang-link:hover { text-decoration: underline; }
 .article-card-inner { display: flex; gap: 1rem; align-items: center; }
 .article-card-body { flex: 1; min-width: 0; }
 .article-meta { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; overflow: hidden; }
