@@ -21,19 +21,6 @@ defaultContentLanguageInSubdir = true
 # phantom /categories/ pages (and the "no layout for kind taxonomy" build warning).
 disableKinds = ["taxonomy", "term"]
 
-# Single asset directory: `static/` was merged into `assets/`. Mounting `assets`
-# to both the `assets` and `static` targets lets the same folder serve Hugo Pipes
-# resources (resources.Get, e.g. the hero image) AND files copied verbatim to the
-# site root (CSS, JS, fonts, favicon, …). Other roots (content, layouts, data,
-# i18n, archetypes) keep their default mounts.
-[module]
-  [[module.mounts]]
-    source = "assets"
-    target = "assets"
-  [[module.mounts]]
-    source = "assets"
-    target = "static"
-
 # ── Languages ─────────────────────────────────────────────────────────────
 # Shared params live in the top-level [params] block below and are inherited by
 # every language. Only language-varying params (description, quote) and the
