@@ -1,7 +1,7 @@
 {{- $excluded := slice "privacy-policy" "categories" -}}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   {{- range .Site.Pages }}
-  {{- $path := strings.TrimPrefix "/" .RelPermalink | strings.TrimSuffix "/" }}
+  {{- $path := strings.TrimPrefix "/" .Path }}
   {{- if not (in $excluded $path) }}
   <url>
     <loc>{{ .Permalink }}</loc>

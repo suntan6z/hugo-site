@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
 
-Disallow: /privacy-policy/
-Disallow: /categories/
+{{- range hugo.Sites }}
+Disallow: {{ .Home.RelPermalink }}privacy-policy/
+Disallow: {{ .Home.RelPermalink }}categories/
+{{- end }}
 
 Sitemap: {{ .Site.BaseURL }}sitemap.xml
