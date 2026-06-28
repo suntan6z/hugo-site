@@ -145,7 +145,11 @@
             <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
           {{ if .Params.featured_image }}
-          <div class="article-thumb"><img src="{{ .Params.featured_image }}" alt="{{ .Title }}" loading="lazy" /></div>
+          {{ $featSrc := .Params.featured_image }}
+          {{ if not (or (hasPrefix $featSrc "http") (hasPrefix $featSrc "//") (hasPrefix $featSrc "/")) }}
+            {{ with .Page.Resources.GetMatch $featSrc }}{{ $featSrc = .RelPermalink }}{{ end }}
+          {{ end }}
+          <div class="article-thumb"><img src="{{ $featSrc }}" alt="{{ .Title }}" loading="lazy" /></div>
           {{ end }}
         </div>
       </a>
