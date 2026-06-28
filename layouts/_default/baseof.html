@@ -19,10 +19,10 @@
   {{- $heroWebp := $heroSrc.Resize "640x webp q82" -}}
   {{- $heroOg := $heroSrc.Resize "640x jpg q85" -}}
 
-  {{- /* Per-page social image: article image if available, else hero */ -}}
-  {{- $ogImage := $heroOg.Permalink -}}
-  {{- $ogWidth := $heroOg.Width -}}
-  {{- $ogHeight := $heroOg.Height -}}
+  {{- /* Per-page social image: article image if available, else the logo */ -}}
+  {{- $ogImage := "/img/logo-og.png" | absURL -}}
+  {{- $ogWidth := 1200 -}}
+  {{- $ogHeight := 630 -}}
   {{- if and .IsPage (eq .Section "blog") -}}
     {{- $thumb := .Params.featured_image -}}
     {{- if and $thumb (not (or (hasPrefix $thumb "http") (hasPrefix $thumb "//") (hasPrefix $thumb "/"))) -}}

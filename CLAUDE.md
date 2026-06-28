@@ -37,7 +37,7 @@ A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the
 
 **Thumbnail / social-card image resolution is duplicated in three templates** — keep them consistent when changing the rule. The shared logic: use `.Params.featured_image` if set, else fall back to the first `<img src>` in the rendered `.Content` (via `findRE`), resolving relative paths against the page's `RelPermalink`.
 - `layouts/blog/list.html` — thumbnail on the `/blog` grid (has the full featured_image-or-first-image fallback).
-- `layouts/_default/baseof.html` — `og:image` / `twitter:image` for link previews (same fallback; falls back to the site hero for the homepage and image-less pages).
+- `layouts/_default/baseof.html` — `og:image` / `twitter:image` for link previews (same fallback; falls back to `static/img/logo-og.png` — the logo composited onto the site's cream background at 1200×630 — for the homepage and image-less pages).
 - `layouts/index.html` — homepage "Latest Articles" grid, which only honors `.Params.featured_image` (no body-image fallback), so an article with no `featured_image` shows no thumbnail there.
 
 **Image render hook** (`layouts/_default/_markup/render-image.html`) rewrites every Markdown image: page-bundle images are resolved as page resources to emit intrinsic `width`/`height` (prevents CLS) plus `loading="lazy"`; external/root-relative images fall back to a plain lazy `<img>`. `markup.goldmark.renderer.unsafe = true` is on so raw HTML in articles is allowed.
