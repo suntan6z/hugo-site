@@ -1,7 +1,6 @@
 ---
 title: "Privacy Policy"
 description: "Privacy policy for Lorenzo Loconsole's personal website. Learn how we handle your data, cookies, and your rights under GDPR."
-url: "/privacy-policy"
 ---
 <div style="padding-top:4rem">
   <section style="padding:5rem 0">
