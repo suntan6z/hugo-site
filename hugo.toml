@@ -23,7 +23,7 @@ disableKinds = ["taxonomy", "term"]
 
 # ── Languages ─────────────────────────────────────────────────────────────
 # Shared params live in the top-level [params] block below and are inherited by
-# every language. Only language-varying params (description, quote) and the
+# every language. Only language-varying params (description) and the
 # translated navigation menu are defined per language here.
 [languages]
   [languages.en]
@@ -32,7 +32,6 @@ disableKinds = ["taxonomy", "term"]
     weight = 1
     [languages.en.params]
       description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
-      quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
     [languages.en.menus]
       [[languages.en.menus.main]]
         name = "About"
@@ -57,7 +56,6 @@ disableKinds = ["taxonomy", "term"]
     weight = 2
     [languages.fr.params]
       description = "Passionné de tech, défenseur des outils basés en Europe et amateur de bonne cuisine. J'explore en ce moment l'intersection entre la technologie et l'identité européenne."
-      quote = "Prétendre que le droit à la vie privée vous importe peu parce que vous n'avez rien à cacher ne diffère en rien d'affirmer que la liberté d'expression vous importe peu parce que vous n'avez rien à dire."
     [languages.fr.menus]
       [[languages.fr.menus.main]]
         name = "À propos"
@@ -82,7 +80,6 @@ disableKinds = ["taxonomy", "term"]
     weight = 3
     [languages.it.params]
       description = "Appassionato di tecnologia, sostenitore degli strumenti con base in Europa e amante del buon cibo. Attualmente esploro l'intersezione tra tecnologia e identità europea."
-      quote = "Sostenere che non ti importa del diritto alla privacy perché non hai nulla da nascondere non è diverso dal dire che non ti importa della libertà di parola perché non hai nulla da dire."
     [languages.it.menus]
       [[languages.it.menus.main]]
         name = "Chi sono"
@@ -110,6 +107,9 @@ disableKinds = ["taxonomy", "term"]
   mastodon = "https://c.im/@lv"
   telegram = "https://t.me/loconsole_bot"
   appleMusic = "https://music.apple.com/profile/thends"
+  # Kept in English on every language version — it's Snowden's exact quote,
+  # not Lorenzo's own writing, so it isn't translated.
+  quote = "Arguing that you don't care about the right to privacy because you have nothing to hide is no different than saying you don't care about free speech because you have nothing to say."
   quoteAuthor = "Edward Snowden"
   quoteArticle = "edward-snowden-mass-surveillance"
   litlyxProjectId  = "6a39d3a301a7b289aa1d5f0b"
