@@ -91,7 +91,11 @@
                style="display:flex;flex-direction:column;align-items:center;gap:0.4rem;text-decoration:none;transition:transform 0.2s"
                onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''">
               {{ if .Params.partner_logo_url }}
-              <img src="{{ .Params.partner_logo_url }}" alt="{{ .Params.partner_name }}" style="height:3rem;width:auto;object-fit:contain" />
+              {{ $logoSrc := .Params.partner_logo_url }}
+              {{ if not (or (hasPrefix $logoSrc "http") (hasPrefix $logoSrc "//") (hasPrefix $logoSrc "/")) }}
+                {{ with .Page.Resources.GetMatch $logoSrc }}{{ $logoSrc = .RelPermalink }}{{ end }}
+              {{ end }}
+              <img src="{{ $logoSrc }}" alt="{{ .Params.partner_name }}" style="height:3rem;width:auto;object-fit:contain" />
               {{ end }}
               <span style="font-size:0.75rem;color:var(--muted-foreground)">{{ .Params.partner_name }}</span>
             </a>
@@ -109,7 +113,11 @@
       {{ end }}
 
       {{ if .Params.featured_image }}
-      <img src="{{ .Params.featured_image }}" alt="{{ .Title }}" style="width:100%;border-radius:0.75rem;margin-top:2rem;box-shadow:0 8px 32px -8px hsl(220 15% 15% / 0.2)" />
+      {{ $featSrc := .Params.featured_image }}
+      {{ if not (or (hasPrefix $featSrc "http") (hasPrefix $featSrc "//") (hasPrefix $featSrc "/")) }}
+        {{ with .Page.Resources.GetMatch $featSrc }}{{ $featSrc = .RelPermalink }}{{ end }}
+      {{ end }}
+      <img src="{{ $featSrc }}" alt="{{ .Title }}" style="width:100%;border-radius:0.75rem;margin-top:2rem;box-shadow:0 8px 32px -8px hsl(220 15% 15% / 0.2)" />
       {{ end }}
     </div>
   </div>

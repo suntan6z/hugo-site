@@ -25,6 +25,9 @@
   {{- $ogHeight := $heroOg.Height -}}
   {{- if and .IsPage (eq .Section "blog") -}}
     {{- $thumb := .Params.featured_image -}}
+    {{- if and $thumb (not (or (hasPrefix $thumb "http") (hasPrefix $thumb "//") (hasPrefix $thumb "/"))) -}}
+      {{- with .Page.Resources.GetMatch $thumb -}}{{- $thumb = .RelPermalink -}}{{- end -}}
+    {{- end -}}
     {{- if not $thumb -}}
       {{- with findRE `src="[^"]+"` .Content 1 -}}
         {{- $src := index . 0 | replaceRE `src="([^"]+)"` "$1" -}}
@@ -114,9 +117,9 @@
       {
         "@type": "WebSite",
         "url": "{{ .Site.Home.Permalink }}",
-        "name": {{ .Site.Title | jsonify }},
-        "description": {{ .Site.Params.description | jsonify }},
-        "inLanguage": {{ .Site.Language.Lang | jsonify }}
+        "name": {{ .Site.Title | jsonify | safeJS }},
+        "description": {{ .Site.Params.description | jsonify | safeJS }},
+        "inLanguage": {{ .Site.Language.Lang | jsonify | safeJS }}
       },
       {
         "@type": "Person",
@@ -124,10 +127,10 @@
         "url": "{{ .Site.Home.Permalink }}",
         "image": "{{ $heroOg.Permalink }}",
         "sameAs": [
-          {{ .Site.Params.linkedin | jsonify }},
-          {{ .Site.Params.mastodon | jsonify }}
+          {{ .Site.Params.linkedin | jsonify | safeJS }},
+          {{ .Site.Params.mastodon | jsonify | safeJS }}
         ],
-        "jobTitle": {{ i18n "job_title" | jsonify }}
+        "jobTitle": {{ i18n "job_title" | jsonify | safeJS }}
       }
     ]
   }
@@ -137,14 +140,14 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": {{ .Title | jsonify }},
-    "description": {{ if .Description }}{{ .Description | jsonify }}{{ else }}{{ .Summary | plainify | jsonify }}{{ end }},
+    "headline": {{ .Title | jsonify | safeJS }},
+    "description": {{ if .Description }}{{ .Description | jsonify | safeJS }}{{ else }}{{ .Summary | plainify | jsonify | safeJS }}{{ end }},
     "datePublished": "{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}",
     "dateModified": "{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
     "url": "{{ .Permalink }}",
     "mainEntityOfPage": "{{ .Permalink }}",
-    "articleSection": {{ .Params.category | jsonify }},
-    "inLanguage": {{ .Site.Language.Lang | jsonify }},
+    "articleSection": {{ .Params.category | jsonify | safeJS }},
+    "inLanguage": {{ .Site.Language.Lang | jsonify | safeJS }},
     "author": {
       "@type": "Person",
       "name": "Lorenzo Loconsole",
@@ -158,9 +161,9 @@
     "breadcrumb": {
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": {{ i18n "nav_home" | jsonify }}, "item": "{{ .Site.Home.Permalink }}" },
-        { "@type": "ListItem", "position": 2, "name": {{ i18n "nav_blog" | jsonify }}, "item": "{{ with .Site.GetPage "/blog" }}{{ .Permalink }}{{ end }}" },
-        { "@type": "ListItem", "position": 3, "name": {{ .Title | jsonify }}, "item": "{{ .Permalink }}" }
+        { "@type": "ListItem", "position": 1, "name": {{ i18n "nav_home" | jsonify | safeJS }}, "item": "{{ .Site.Home.Permalink }}" },
+        { "@type": "ListItem", "position": 2, "name": {{ i18n "nav_blog" | jsonify | safeJS }}, "item": "{{ with .Site.GetPage "/blog" }}{{ .Permalink }}{{ end }}" },
+        { "@type": "ListItem", "position": 3, "name": {{ .Title | jsonify | safeJS }}, "item": "{{ .Permalink }}" }
       ]
     }
   }
