@@ -41,6 +41,9 @@
             <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
           {{ $thumb := .Params.featured_image }}
+          {{ if and $thumb (not (or (hasPrefix $thumb "http") (hasPrefix $thumb "//") (hasPrefix $thumb "/"))) }}
+            {{ with .Page.Resources.GetMatch $thumb }}{{ $thumb = .RelPermalink }}{{ end }}
+          {{ end }}
           {{ if not $thumb }}
             {{ $permalink := .RelPermalink }}
             {{ with findRE `src="[^"]+"` .Content 1 }}
