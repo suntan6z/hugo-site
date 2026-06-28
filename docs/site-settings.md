@@ -8,7 +8,7 @@ Most site-wide settings live in `hugo.toml` under `[params]` and `[menu]`:
 | `params.description` | Default meta description |
 | `params.email` | Contact email address |
 | `params.linkedin` / `params.mastodon` / `params.telegram` / `params.appleMusic` | Social links |
-| `params.resumeUrl` | Path to the downloadable CV (served from `assets/`, e.g. `/cv-fr.pdf`) |
+| `params.resumeUrl` | Path to the downloadable CV (served from `static/`, e.g. `/cv-fr.pdf`) |
 | `params.quote` / `params.quoteAuthor` / `params.quoteArticle` | Quote shown on the homepage and the article it links to |
 | `params.litlyxProjectId` / `params.litlyxBrokerHost` | Self-hosted Litlyx analytics config (only loads outside the dev server) |
 | `menu.main` | Navigation items and their order |
