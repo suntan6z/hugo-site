@@ -1,7 +1,6 @@
 ---
 title: "Now"
 description: "A snapshot of what I'm currently reading, building, listening to, and thinking about — updated periodically. Inspired by the /now movement."
-url: "/now"
 ---
 <article class="container" style="max-width:700px;padding-top:8rem;padding-bottom:5rem">
   <div class="fade-up">

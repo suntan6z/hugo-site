@@ -3,13 +3,18 @@ title = "Lorenzo Loconsole"
 
 # ── Multilingual ──────────────────────────────────────────────────────────
 # The site is available in English (default), French and Italian.
-# `defaultContentLanguageInSubdir = false` keeps English at the root
-# (/blog/…) while French lives under /fr/… and Italian under /it/… — this
-# preserves the existing English URLs and their SEO.
+# `defaultContentLanguageInSubdir = true` puts every language under its own
+# prefix, including English (/en/blog/…), French (/fr/…) and Italian (/it/…).
+# This is required for Hugo's automatic sitemapindex.xml: when the default
+# language instead lived at the root ("/"), its own per-language sitemap.xml
+# collided with the auto-generated index at that same root path, corrupting
+# both. Putting English under /en/ removes the collision and lets Hugo wire
+# up sitemap.xml -> {en,fr,it}/sitemap.xml automatically, the documented way.
+# Root "/" still works: Hugo emits a meta-refresh redirect to /en/ there.
 # Content is translated "by filename": a post bundle keeps index.md (English)
 # and adds index.fr.md / index.it.md in the same folder, sharing its images.
 defaultContentLanguage = "en"
-defaultContentLanguageInSubdir = false
+defaultContentLanguageInSubdir = true
 
 # Categories are only a frontmatter label for the JS blog filter, not browsable
 # taxonomy term pages — disable taxonomy/term generation so Hugo doesn't emit
