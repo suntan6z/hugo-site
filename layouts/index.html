@@ -22,8 +22,12 @@
 
       <div class="hero-photo-wrap fade-up">
         <div class="hero-glow"></div>
-        {{ $hero := (resources.Get "img/hero.webp").Resize "640x webp q82" }}
-        <img src="{{ $hero.RelPermalink }}" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
+        {{ $heroWebp := (resources.Get "img/hero.webp").Resize "640x webp q82" }}
+        {{ $heroJpg := (resources.Get "img/hero.jpeg").Resize "640x jpg q82" }}
+        <picture>
+          <source srcset="{{ $heroWebp.RelPermalink }}" type="image/webp" />
+          <img src="{{ $heroJpg.RelPermalink }}" alt="Lorenzo Loconsole" class="hero-photo" width="320" height="420" fetchpriority="high" />
+        </picture>
       </div>
     </div>
   </div>
