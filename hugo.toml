@@ -35,8 +35,8 @@ disableKinds = ["taxonomy", "term"]
 # translated navigation menu are defined per language here.
 [languages]
   [languages.en]
-    languageCode = "en"
-    languageName = "English"
+    locale = "en"
+    label = "English"
     weight = 1
     [languages.en.params]
       description = "Tech enthusiast, EU-based tools advocate, and lover of good food. Currently exploring the intersection of technology and European identity."
@@ -60,8 +60,8 @@ disableKinds = ["taxonomy", "term"]
         weight = 4
 
   [languages.fr]
-    languageCode = "fr"
-    languageName = "Français"
+    locale = "fr"
+    label = "Français"
     weight = 2
     [languages.fr.params]
       description = "Passionné de tech, défenseur des outils basés en Europe et amateur de bonne cuisine. J'explore en ce moment l'intersection entre la technologie et l'identité européenne."
@@ -85,8 +85,8 @@ disableKinds = ["taxonomy", "term"]
         weight = 4
 
   [languages.it]
-    languageCode = "it"
-    languageName = "Italiano"
+    locale = "it"
+    label = "Italiano"
     weight = 3
     [languages.it.params]
       description = "Appassionato di tecnologia, sostenitore degli strumenti con base in Europa e amante del buon cibo. Attualmente esploro l'intersezione tra tecnologia e identità europea."
