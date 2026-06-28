@@ -1,0 +1,14 @@
+# Explicit, version-controlled build config for StaticHost.eu — overrides
+# the dashboard's Hugo/Version/Build-flags/Public-directory fields entirely.
+#
+# Pinned to the extended edition (no "std"/"reg" prefix = extended per
+# hugomods' own docs: docker.hugomods.com/docs/tags/) to match the local dev
+# Hugo binary (`hugo v0.163.3+extended`). Required for image processing
+# (.Resize to webp on the hero image) to behave the same in prod as locally.
+#
+# To bump the Hugo version: find the matching tag at
+# https://hub.docker.com/r/hugomods/hugo/tags (search "git-<version>",
+# no reg/std prefix) — don't assume a tag exists for every version.
+image: "hugomods/hugo:debian-git-0.163.3"
+command: "hugo --minify"
+public: "public"
