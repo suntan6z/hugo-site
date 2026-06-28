@@ -53,4 +53,4 @@ project_url: "https://youthincontact.wixsite.com/project"   # optional — shows
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ```
 
-Place the partner's logo file directly in the article's bundle folder alongside `index.md` (e.g. `content/blog/my-slug/partnerlogo.png`) and reference it by filename in `partner_logo_url`. The generic EU-funding badge itself is shared across all Erasmus+ articles and lives at `assets/img/eufunded.png` — you don't need to add that one yourself.
+Place the partner's logo file directly in the article's bundle folder alongside `index.md` (e.g. `content/blog/my-slug/partnerlogo.png`) and reference it by filename in `partner_logo_url`. The generic EU-funding badge itself is shared across all Erasmus+ articles and lives at `static/img/eufunded.png` — you don't need to add that one yourself.

@@ -16,17 +16,20 @@ data/
   gallery_cities.json      → gallery city tabs
   gallery_photos.json      → optional caption/alt_text overrides for gallery photos
 
-assets/                    → mounted to BOTH the `assets` and `static` Hugo targets — there is
-                              no separate `static/` folder. Files here are served verbatim at
-                              the site root (e.g. `assets/css/main.css` → `/css/main.css`) AND
-                              available to Hugo Pipes (`resources.Get`, `resources.Match`).
+assets/                    → Hugo Pipes sources only — files here are processed by a template
+                              (`resources.Get`, `.Resize`, …) rather than served as-is.
+  img/hero.webp            → homepage hero photo (processed via resources.Get/.Resize)
+  img/hero.jpeg            → original source for hero.webp, unused directly, kept for reference
+
+static/                    → copied verbatim to the site root, no processing.
   css/main.css             → all styles
   js/main.js               → mobile menu, fade-in animations, search, contact form submit
   js/litlyx.js             → self-hosted analytics snippet
   cv-fr.pdf                → downloadable CV (params.resumeUrl)
   _headers                 → security headers (CSP, etc.), read by StaticHost
-  img/                     → all site images
-    hero.webp              → homepage hero photo (processed via resources.Get/.Resize)
+  404.html                 → root-level 404 StaticHost requires; redirects bare/unprefixed
+                              paths (e.g. /about) to their /en/ equivalent
+  img/                     → all other site images
     logo.svg               → brand logo (navbar + footer)
     favicon.svg/.png/.ico  → site favicon (svg + png + ico for max compatibility)
     apple-touch.png        → iOS home-screen icon (180×180, opaque cream bg)
