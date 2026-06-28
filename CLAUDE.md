@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Personal website for Lorenzo Loconsole, built with **Hugo** (requires v0.158.0+; `locale` and `hugo.Data` are used). Hand-written templates and CSS — no external Hugo theme. Live at [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu).
+Personal website for Lorenzo Loconsole, built with **Hugo**. Hand-written templates and CSS — no external Hugo theme. Live at [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu).
 
 ## Commands
 
@@ -17,7 +17,15 @@ There are no tests, linters, or a build toolchain beyond Hugo itself.
 
 ## Deployment
 
-Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs `hugo --minify` on its own servers and serves the result. There is no CI in this repo.
+Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs `hugo --minify` on its own servers and serves the result. There is no CI in this repo, and **no way in this repo to preview StaticHost's actual Hugo version** — it builds in a `hugomods/hugo:ci-X.Y.Z` Docker image pinned on their side. **This has been older than whatever Hugo is installed locally** (seen running 0.150.0 while a local `brew`-installed Hugo was 0.163.3). A local `hugo server`/`hugo build` succeeding does **not** guarantee the StaticHost build succeeds.
+
+**Avoid template/config APIs newer than Hugo 0.150.0** unless you've confirmed StaticHost's current pinned version (check their build logs after a deploy — the "CONFIGURING" step prints the exact `hugo vX.Y.Z` image tag). Concretely, prefer the older form on the left over the newer one on the right, since the newer form did not exist yet in 0.150.0:
+- `.Site.Sites` over `hugo.Sites` (range over all language sites)
+- `.Site.Data` over `hugo.Data` (read `data/*.json|toml|yaml`)
+- `.Language.LanguageName` over `.Language.Label`
+- `languageCode` / `languageName` over `locale` / `label` (per-language config keys in `hugo.toml`)
+
+Local Hugo will print harmless `WARN deprecated: ... will be removed in a future release` for all of the above — that's expected and fine; it means the API still works locally. The danger is the opposite: a newer API that's silent locally but **fails outright** on StaticHost's older pinned version (e.g. `error calling partial: ... can't evaluate field Sites in type interface {}`). If StaticHost's pinned version ever gets bumped past 0.158.0, these can be switched to the newer forms — but verify the deployed version first rather than assuming.
 
 **Never commit `public/` or `resources/`** — both are git-ignored. StaticHost regenerates them on every deploy; tracking them causes build conflicts. The repo holds **source only**.
 
