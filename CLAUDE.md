@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Personal website for Lorenzo Loconsole, built with **Hugo**. Hand-written templates and CSS — no external Hugo theme. Live at [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu).
+Personal website for Lorenzo Loconsole, built with **Hugo v0.163.3 extended** (pinned exactly — see Deployment). Hand-written templates and CSS — no external Hugo theme. Live at [lorenzo.loconsole.eu](https://lorenzo.loconsole.eu).
 
 ## Commands
 
@@ -17,15 +17,13 @@ There are no tests, linters, or a build toolchain beyond Hugo itself.
 
 ## Deployment
 
-Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs `hugo --minify` on its own servers and serves the result. There is no CI in this repo, and **no way in this repo to preview StaticHost's actual Hugo version** — it builds in a `hugomods/hugo:ci-X.Y.Z` Docker image pinned on their side. **This has been older than whatever Hugo is installed locally** (seen running 0.150.0 while a local `brew`-installed Hugo was 0.163.3). A local `hugo server`/`hugo build` succeeding does **not** guarantee the StaticHost build succeeds.
+Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs the build on its own servers and serves the result. There is no CI in this repo.
 
-**Avoid template/config APIs newer than Hugo 0.150.0** unless you've confirmed StaticHost's current pinned version (check their build logs after a deploy — the "CONFIGURING" step prints the exact `hugo vX.Y.Z` image tag). Concretely, prefer the older form on the left over the newer one on the right, since the newer form did not exist yet in 0.150.0:
-- `.Site.Sites` over `hugo.Sites` (range over all language sites)
-- `.Site.Data` over `hugo.Data` (read `data/*.json|toml|yaml`)
-- `.Language.LanguageName` over `.Language.Label`
-- `languageCode` / `languageName` over `locale` / `label` (per-language config keys in `hugo.toml`)
+**The Hugo version StaticHost uses is pinned explicitly in [`statichost.yml`](statichost.yml)** (repo root), not in StaticHost's dashboard. That file's presence makes StaticHost ignore its own dashboard "Hugo/Version/Build flags/Public directory" fields entirely — they become inert once `statichost.yml` exists. This was deliberate: StaticHost's dashboard version field is "hidden state" that isn't visible in the repo and silently drifted out of sync with local dev once (StaticHost defaulted to Hugo 0.150.0 while local dev was on 0.163.3, which broke the build the moment a template used an API introduced after 0.150 — `hugo.Sites`/`hugo.Data`/`.Language.Label`/`locale`+`label` config keys, all added in Hugo 0.156–0.158). Keeping the version in `statichost.yml` means it travels with the repo and is visible in `git blame`.
 
-Local Hugo will print harmless `WARN deprecated: ... will be removed in a future release` for all of the above — that's expected and fine; it means the API still works locally. The danger is the opposite: a newer API that's silent locally but **fails outright** on StaticHost's older pinned version (e.g. `error calling partial: ... can't evaluate field Sites in type interface {}`). If StaticHost's pinned version ever gets bumped past 0.158.0, these can be switched to the newer forms — but verify the deployed version first rather than assuming.
+**Image tag note:** `hugomods/hugo` (the Docker image family `statichost.yml` references) only publishes its convenient bare `ci-X.Y.Z` alias for a curated subset of releases — it did **not** have one for 0.163.3 at the time of writing. The full ingredient-tag (e.g. `debian-git-0.163.3`, used in `statichost.yml`) exists for every release instead. Per hugomods' own docs (docker.hugomods.com/docs/tags/): tags **without** a `std`/`reg` prefix are the Hugo **extended** edition (needed here for `.Resize` to webp on the hero image, matching the local `+extended` Hugo binary); `std`/`reg`-prefixed tags are the **non-extended** standard edition — don't swap these casually. When bumping the pinned version, search https://hub.docker.com/r/hugomods/hugo/tags for a matching `git-<version>` tag (no `std`/`reg` prefix) rather than assuming one exists.
+
+A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the StaticHost build succeeds — `statichost.yml` narrows that gap by pinning the exact same version, but the Docker *image* itself isn't something this repo can test without Docker installed locally.
 
 **Never commit `public/` or `resources/`** — both are git-ignored. StaticHost regenerates them on every deploy; tracking them causes build conflicts. The repo holds **source only**.
 
