@@ -1,0 +1,196 @@
+# Chaînes d'interface en français. Voir i18n/en.toml pour la liste de référence.
+# %city% / %n% sont des marqueurs remplacés au rendu.
+
+# ── Navigation / libellés partagés ───────────────────────────────
+[nav_home]
+other = "Accueil"
+[nav_about]
+other = "À propos"
+[nav_now]
+other = "Maintenant"
+[nav_blog]
+other = "Blog"
+[nav_contact]
+other = "Contact"
+[nav_privacy]
+other = "Politique de confidentialité"
+
+# ── Page d'accueil ───────────────────────────────────────────────
+[hero_heading]
+other = "Salut !"
+[hero_intro]
+other = "C'est un projet personnel que je maintiens pour en apprendre un peu plus sur le web design et le HTML. Mon premier site remonte à 2014 : avec des amis, j'avais créé un endroit où l'on partageait nos meilleurs moments de jeu et les meilleures creepypastas qu'on pouvait dénicher. C'était à la mode à l'époque…"
+[hero_intro2]
+other = "Quoi qu'il en soit, j'espère que votre visite vous plaira et que vous apprendrez à mieux me connaître !"
+[view_resume]
+other = "Voir le CV"
+[get_in_touch]
+other = "Me contacter"
+[read_article]
+other = "Lire l'article →"
+[gallery_best_of]
+other = "Le meilleur de"
+[gallery_subtitle]
+other = "Une collection de photos choisies dans mes villes préférées. Toutes les photos sont de moi."
+[latest_articles]
+other = "Derniers articles"
+[latest_articles_sub]
+other = "Réflexions sur la tech, la politique européenne et la vie."
+[browse_all]
+other = "Voir tous les articles →"
+[cta_heading]
+other = "Restons en contact"
+[cta_text]
+other = "Je suis toujours partant pour discuter de nouveaux projets, d'idées créatives ou d'occasions de prendre part à quelque chose de formidable."
+[say_hello]
+other = "Dire bonjour →"
+[photos_coming_soon]
+other = "Photos bientôt disponibles"
+[gallery_empty_msg]
+other = "Je n'ai pas encore mis en ligne mes photos de %city% — revenez plus tard !"
+[photo_alt]
+other = "Photo de %city%"
+
+# ── Article de blog ──────────────────────────────────────────────
+[back_to_blog]
+other = "Retour au blog"
+[min_read]
+other = "min de lecture"
+[project_website]
+other = "Site du projet"
+[share]
+other = "Partager"
+[share_on]
+other = "Partager sur"
+[copy_link]
+other = "Copier le lien"
+[partner_organisation]
+other = "Organisation partenaire"
+[eu_funded_alt]
+other = "Cofinancé par l'Union européenne"
+[eu_funding_default]
+other = "Cofinancé par l'Union européenne dans le cadre du programme Erasmus+."
+[newsletter_heading]
+other = "Abonnez-vous à ma newsletter"
+[newsletter_desc]
+other = "Soyez informé·e dès que je publie de nouveaux articles sur la technologie, la politique européenne et mes réflexions personnelles. Pas de spam, désabonnement à tout moment."
+[newsletter_subscribed]
+other = "Vous êtes abonné·e !"
+[email_placeholder]
+other = "votre@email.com"
+[subscribe]
+other = "S'abonner"
+[subscribing]
+other = "Abonnement… "
+[nav_previous]
+other = "Précédent"
+[nav_next]
+other = "Suivant"
+
+# ── Liste du blog / catégories ───────────────────────────────────
+[blog_heading]
+other = "Blog"
+[blog_subtitle]
+other = "Réflexions sur la technologie, la politique européenne, la cybersécurité et des sujets plus personnels."
+[filter_all]
+other = "Tous"
+[cat_Technology]
+other = "Technologie"
+[cat_Cybersecurity]
+other = "Cybersécurité"
+[cat_Personal]
+other = "Personnel"
+["cat_Erasmus+"]
+other = "Erasmus+"
+
+# ── Fenêtre de recherche ─────────────────────────────────────────
+[search]
+other = "Rechercher"
+[toggle_menu]
+other = "Ouvrir le menu"
+[search_placeholder]
+other = "Rechercher articles et pages…"
+[advanced_filters]
+other = "Filtres avancés"
+[filters]
+other = "Filtres"
+[esc]
+other = "Échap"
+[filter_category]
+other = "Catégorie"
+[published_between]
+other = "Publié entre"
+[any_year]
+other = "Toutes les années"
+[read_time_label]
+other = "Temps de lecture"
+[rt_any]
+other = "Toutes durées"
+[rt_short]
+other = "Moins de 5 min"
+[rt_medium]
+other = "5 – 15 min"
+[rt_long]
+other = "15+ min"
+[clear_all]
+other = "Tout effacer"
+[pages]
+other = "Pages"
+[results]
+other = "Résultats"
+[recent_articles]
+other = "Articles récents"
+[no_results]
+other = "Aucun résultat pour"
+[with_filters]
+other = "avec les filtres actuels"
+[did_you_mean]
+other = "Vouliez-vous dire"
+[clear_all_filters]
+other = "Effacer tous les filtres"
+[showing_of]
+other = "Affichage de 8 sur %n% — affinez votre recherche ou vos filtres pour réduire la liste"
+[filter_active_one]
+other = "filtre actif"
+[filter_active_many]
+other = "filtres actifs"
+[no_filters_active]
+other = "Aucun filtre actif"
+[tag_category]
+other = "Catégorie"
+[tag_year]
+other = "Année"
+[tag_read]
+other = "Lecture"
+[year_any]
+other = "toutes"
+[rt_tag_short]
+other = "< 5 min"
+[rt_tag_medium]
+other = "5–15 min"
+[rt_tag_long]
+other = "15+ min"
+[count_of]
+other = "sur"
+
+# ── Pied de page ─────────────────────────────────────────────────
+[quick_links]
+other = "Liens rapides"
+[connect]
+other = "Réseaux"
+[rights_reserved]
+other = "Tous droits réservés."
+[powered_by]
+other = "Propulsé par"
+[rss_feed]
+other = "Flux RSS"
+
+# ── Divers ───────────────────────────────────────────────────────
+[toggle_dark_mode]
+other = "Basculer le mode sombre"
+[change_language]
+other = "Changer de langue"
+[og_locale]
+other = "fr_FR"
+[job_title]
+other = "Défenseur de la tech & développeur"

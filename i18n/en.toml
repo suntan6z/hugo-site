@@ -1,0 +1,197 @@
+# English UI strings. Keys are shared across templates; see i18n/fr.toml and
+# i18n/it.toml for the translations. %city% / %n% are placeholders replaced at
+# render time (server-side via `replace`, client-side via String.replace).
+
+# ── Navigation / shared link labels ──────────────────────────────
+[nav_home]
+other = "Home"
+[nav_about]
+other = "About"
+[nav_now]
+other = "Now"
+[nav_blog]
+other = "Blog"
+[nav_contact]
+other = "Contact"
+[nav_privacy]
+other = "Privacy Policy"
+
+# ── Homepage ─────────────────────────────────────────────────────
+[hero_heading]
+other = "Hey there!"
+[hero_intro]
+other = "This is a side project I'm maintaining in order to learn a bit more about web design and html. My first website was back in 2014, I created with some friends a place where we could share the best moments while gaming and the best creepy pasta stories we could find. It was a thing at that time..."
+[hero_intro2]
+other = "Anyway, I hope you enjoy your visit and get to know more about me!"
+[view_resume]
+other = "View Résumé"
+[get_in_touch]
+other = "Get in touch"
+[read_article]
+other = "Read the article →"
+[gallery_best_of]
+other = "Best of"
+[gallery_subtitle]
+other = "A curated photo collection from my favourite cities. All photos are taken by me."
+[latest_articles]
+other = "Latest Articles"
+[latest_articles_sub]
+other = "Thoughts on tech, EU policy, and life"
+[browse_all]
+other = "Browse all articles →"
+[cta_heading]
+other = "Let's Connect"
+[cta_text]
+other = "I'm always open to discussing new projects, creative ideas, or opportunities to be part of something amazing."
+[say_hello]
+other = "Say hello →"
+[photos_coming_soon]
+other = "Photos coming soon"
+[gallery_empty_msg]
+other = "I haven't uploaded my %city% photos yet — check back later!"
+[photo_alt]
+other = "%city% photo"
+
+# ── Blog post ────────────────────────────────────────────────────
+[back_to_blog]
+other = "Back to Blog"
+[min_read]
+other = "min read"
+[project_website]
+other = "Project website"
+[share]
+other = "Share"
+[share_on]
+other = "Share on"
+[copy_link]
+other = "Copy link"
+[partner_organisation]
+other = "Partner organisation"
+[eu_funded_alt]
+other = "Co-funded by the European Union"
+[eu_funding_default]
+other = "Co-funded by the European Union under the Erasmus+ programme."
+[newsletter_heading]
+other = "Subscribe to my Newsletter"
+[newsletter_desc]
+other = "Get notified when I publish new articles about technology, EU policy, and personal reflections. No spam, unsubscribe anytime."
+[newsletter_subscribed]
+other = "You're subscribed!"
+[email_placeholder]
+other = "your@email.com"
+[subscribe]
+other = "Subscribe"
+[subscribing]
+other = "Subscribing… "
+[nav_previous]
+other = "Previous"
+[nav_next]
+other = "Next"
+
+# ── Blog list / categories ───────────────────────────────────────
+[blog_heading]
+other = "Blog"
+[blog_subtitle]
+other = "Thoughts on technology, European policy, cybersecurity, and personal reflections."
+[filter_all]
+other = "All"
+[cat_Technology]
+other = "Technology"
+[cat_Cybersecurity]
+other = "Cybersecurity"
+[cat_Personal]
+other = "Personal"
+["cat_Erasmus+"]
+other = "Erasmus+"
+
+# ── Search modal ─────────────────────────────────────────────────
+[search]
+other = "Search"
+[toggle_menu]
+other = "Toggle menu"
+[search_placeholder]
+other = "Search articles and pages…"
+[advanced_filters]
+other = "Advanced filters"
+[filters]
+other = "Filters"
+[esc]
+other = "Esc"
+[filter_category]
+other = "Category"
+[published_between]
+other = "Published between"
+[any_year]
+other = "Any year"
+[read_time_label]
+other = "Read time"
+[rt_any]
+other = "Any length"
+[rt_short]
+other = "Under 5 min"
+[rt_medium]
+other = "5 – 15 min"
+[rt_long]
+other = "15+ min"
+[clear_all]
+other = "Clear all"
+[pages]
+other = "Pages"
+[results]
+other = "Results"
+[recent_articles]
+other = "Recent articles"
+[no_results]
+other = "No results match"
+[with_filters]
+other = "with the current filters"
+[did_you_mean]
+other = "Did you mean"
+[clear_all_filters]
+other = "Clear all filters"
+[showing_of]
+other = "Showing 8 of %n% — refine your search or filters to narrow down"
+[filter_active_one]
+other = "filter active"
+[filter_active_many]
+other = "filters active"
+[no_filters_active]
+other = "No filters active"
+[tag_category]
+other = "Category"
+[tag_year]
+other = "Year"
+[tag_read]
+other = "Read"
+[year_any]
+other = "any"
+[rt_tag_short]
+other = "< 5 min"
+[rt_tag_medium]
+other = "5–15 min"
+[rt_tag_long]
+other = "15+ min"
+[count_of]
+other = "of"
+
+# ── Footer ───────────────────────────────────────────────────────
+[quick_links]
+other = "Quick Links"
+[connect]
+other = "Connect"
+[rights_reserved]
+other = "All rights reserved."
+[powered_by]
+other = "Powered by"
+[rss_feed]
+other = "RSS Feed"
+
+# ── Misc ─────────────────────────────────────────────────────────
+[toggle_dark_mode]
+other = "Toggle dark mode"
+[change_language]
+other = "Change language"
+[og_locale]
+other = "en_US"
+[job_title]
+other = "Tech Advocate & Developer"
