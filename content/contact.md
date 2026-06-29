@@ -20,8 +20,8 @@ description: "Get in touch with Lorenzo Loconsole — questions, collaborations,
     <div class="container">
       <div class="contact-grid">
         <div class="contact-form fade-up">
-          <h2>Send a Message</h2>
-          <p class="form-note">Fields marked with <span style="color:var(--primary)">*</span> are mandatory.</p>
+          <h2 id="form-title">Send a Message</h2>
+          <p class="form-note" id="form-note">Fields marked with <span style="color:var(--primary)">*</span> are mandatory.</p>
           <div id="form-success" style="display:none;padding:3rem 2rem;text-align:center">
             <div style="display:inline-flex;align-items:center;justify-content:center;width:4rem;height:4rem;border-radius:50%;background:hsl(350 45% 40% / 0.1);margin-bottom:1.5rem">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="20 6 9 17 4 12"/></svg>
@@ -51,7 +51,65 @@ description: "Get in touch with Lorenzo Loconsole — questions, collaborations,
               </div>
               <div class="form-group">
                 <label for="phone">Phone number</label>
-                <input type="tel" id="phone" name="phone" placeholder="+33 6 00 00 00 00" />
+                <div class="phone-field">
+                  <select id="phone-country" name="phoneCountry" aria-label="Country code">
+                    <option value="+33" selected>🇫🇷 +33</option>
+                    <option value="+39">🇮🇹 +39</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+1">🇨🇦 +1</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+351">🇵🇹 +351</option>
+                    <option value="+32">🇧🇪 +32</option>
+                    <option value="+31">🇳🇱 +31</option>
+                    <option value="+41">🇨🇭 +41</option>
+                    <option value="+43">🇦🇹 +43</option>
+                    <option value="+352">🇱🇺 +352</option>
+                    <option value="+353">🇮🇪 +353</option>
+                    <option value="+45">🇩🇰 +45</option>
+                    <option value="+46">🇸🇪 +46</option>
+                    <option value="+47">🇳🇴 +47</option>
+                    <option value="+358">🇫🇮 +358</option>
+                    <option value="+48">🇵🇱 +48</option>
+                    <option value="+420">🇨🇿 +420</option>
+                    <option value="+421">🇸🇰 +421</option>
+                    <option value="+36">🇭🇺 +36</option>
+                    <option value="+40">🇷🇴 +40</option>
+                    <option value="+30">🇬🇷 +30</option>
+                    <option value="+385">🇭🇷 +385</option>
+                    <option value="+386">🇸🇮 +386</option>
+                    <option value="+359">🇧🇬 +359</option>
+                    <option value="+372">🇪🇪 +372</option>
+                    <option value="+371">🇱🇻 +371</option>
+                    <option value="+370">🇱🇹 +370</option>
+                    <option value="+356">🇲🇹 +356</option>
+                    <option value="+357">🇨🇾 +357</option>
+                    <option value="+90">🇹🇷 +90</option>
+                    <option value="+380">🇺🇦 +380</option>
+                    <option value="+7">🇷🇺 +7</option>
+                    <option value="+212">🇲🇦 +212</option>
+                    <option value="+213">🇩🇿 +213</option>
+                    <option value="+216">🇹🇳 +216</option>
+                    <option value="+20">🇪🇬 +20</option>
+                    <option value="+27">🇿🇦 +27</option>
+                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+966">🇸🇦 +966</option>
+                    <option value="+972">🇮🇱 +972</option>
+                    <option value="+91">🇮🇳 +91</option>
+                    <option value="+86">🇨🇳 +86</option>
+                    <option value="+81">🇯🇵 +81</option>
+                    <option value="+82">🇰🇷 +82</option>
+                    <option value="+852">🇭🇰 +852</option>
+                    <option value="+65">🇸🇬 +65</option>
+                    <option value="+61">🇦🇺 +61</option>
+                    <option value="+64">🇳🇿 +64</option>
+                    <option value="+55">🇧🇷 +55</option>
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+54">🇦🇷 +54</option>
+                  </select>
+                  <input type="tel" id="phone" name="phone" placeholder="6 00 00 00 00" />
+                </div>
               </div>
             </div>
             <div class="form-group">
