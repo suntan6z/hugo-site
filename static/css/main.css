@@ -704,6 +704,9 @@ footer {
 }
 .form-group textarea { resize: vertical; min-height: 120px; }
 .req { color: var(--primary); }
+.phone-field { display: flex; gap: 0.5rem; align-items: center; }
+.phone-field select { width: auto; flex: 0 0 auto; }
+.phone-field input { flex: 1; min-width: 0; }
 .contact-methods { display: flex; flex-direction: column; gap: 1rem; }
 .contact-method {
   display: flex; align-items: center; gap: 1rem;
