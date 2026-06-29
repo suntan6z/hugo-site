@@ -112,6 +112,11 @@ if (document.getElementById('contact-form')) {
     btn.textContent = 'Sending...';
     btn.disabled = true;
 
+    // Phone is optional; only prefix the dialling code when a number was entered
+    const phoneNumber = document.getElementById('phone').value.trim();
+    const phoneCountry = document.getElementById('phone-country')?.value || '';
+    const phone = phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
+
     try {
       const res = await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/send-contact-email', {
         method: 'POST',
@@ -119,13 +124,16 @@ if (document.getElementById('contact-form')) {
         body: JSON.stringify({
           name: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
           email: document.getElementById('email').value,
-          phone: document.getElementById('phone').value,
+          phone: phone,
           subject: document.getElementById('subject').value,
           message: document.getElementById('message').value,
         })
       });
 
       if (res.ok) {
+        // Replace the whole form panel (heading, note, fields) with the confirmation
+        document.getElementById('form-title').style.display = 'none';
+        document.getElementById('form-note').style.display = 'none';
         document.getElementById('contact-form').style.display = 'none';
         document.getElementById('form-success').style.display = 'block';
       } else {
