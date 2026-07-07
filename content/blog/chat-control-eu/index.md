@@ -1,10 +1,10 @@
 ---
 title: "It's not over. Chat control... Again !"
-date: 2026-02-08
+date: 2026-07-07
 slug: "chat-control-eu"
 category: "Cybersecurity"
 draft: false
-description: "Chat Control is the EU proposal to mass-scan private messages, which."
+description: "Chat Control is the EU proposal to mass-scan private messages."
 ---
 
 Some people just can't take a no as a response.
