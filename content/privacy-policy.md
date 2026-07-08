@@ -41,7 +41,7 @@ description: "Privacy policy for Lorenzo Loconsole's personal website. Learn how
           <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.5rem">C. Contact Form</h3>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">If you contact me via the contact form, the personal data you transmit (name, email, subject, and message) is stored. The legal basis is either your consent (Article 6(1)(a) GDPR) or the necessity to respond to your pre-contractual inquiry (Article 6(1)(b) GDPR).</p>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">I retain contact form messages until your inquiry is resolved or for a maximum of 2 years, whichever comes first.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">Your submission is relayed via a <strong style="color:var(--foreground)">Supabase Edge Function</strong> (a serverless compute layer) to <strong style="color:var(--foreground)">Resend</strong>, which delivers it to my inbox as an email. Supabase does not persistently store your message — it acts solely as a relay. Resend processes it for email delivery and is subject to their privacy policy.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8">Your submission is relayed via a <strong style="color:var(--foreground)">Scaleway Function</strong> (a serverless compute layer, hosted in France within the EU) to <strong style="color:var(--foreground)">Resend</strong>, which delivers it to my inbox as an email. The function does not persistently store your message — it acts solely as a relay, and unlike Resend, it does not involve any transfer of data outside the European Economic Area. Resend processes it for email delivery and is subject to their privacy policy.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">How I Use Your Data</h2>
@@ -118,7 +118,6 @@ description: "Privacy policy for Lorenzo Loconsole's personal website. Learn how
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Some third-party service providers may process data outside the European Economic Area (EEA). Appropriate safeguards are in place:</p>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
             <li><strong style="color:var(--foreground)">StaticHost.eu</strong> — EU-based hosting provider.</li>
-            <li><strong style="color:var(--foreground)">Supabase</strong> — Serverless relay for contact form submissions; acts as a transit layer only, does not store message content.</li>
             <li><strong style="color:var(--foreground)">Resend</strong> — Email delivery for contact form messages and newsletter; implements appropriate safeguards for international data transfers.</li>
           </ul>
         </section>

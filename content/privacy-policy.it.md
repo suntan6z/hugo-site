@@ -41,7 +41,7 @@ description: "Informativa sulla privacy del sito personale di Lorenzo Loconsole.
           <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.5rem">C. Modulo di contatto</h3>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Se mi contatti tramite il modulo di contatto, i dati personali che trasmetti (nome, e-mail, oggetto e messaggio) vengono conservati. La base giuridica è il tuo consenso (articolo 6(1)(a) del GDPR) oppure la necessità di rispondere alla tua richiesta precontrattuale (articolo 6(1)(b) del GDPR).</p>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Conservo i messaggi del modulo di contatto fino alla risoluzione della tua richiesta o per un massimo di 2 anni, a seconda di quale evento si verifichi per primo.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">Il tuo invio viene inoltrato tramite una <strong style="color:var(--foreground)">Edge Function di Supabase</strong> (un livello di calcolo serverless) a <strong style="color:var(--foreground)">Resend</strong>, che me lo recapita nella casella di posta sotto forma di e-mail. Supabase non conserva in modo permanente il tuo messaggio — agisce esclusivamente come tramite. Resend lo elabora per la consegna dell'e-mail ed è soggetta alla propria informativa sulla privacy.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8">Il tuo invio viene inoltrato tramite una <strong style="color:var(--foreground)">funzione Scaleway</strong> (un livello di calcolo serverless, ospitato in Francia all'interno dell'UE) a <strong style="color:var(--foreground)">Resend</strong>, che me lo recapita nella casella di posta sotto forma di e-mail. La funzione non conserva in modo permanente il tuo messaggio — agisce esclusivamente come tramite, e a differenza di Resend non comporta alcun trasferimento di dati al di fuori dello Spazio economico europeo. Resend lo elabora per la consegna dell'e-mail ed è soggetta alla propria informativa sulla privacy.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Come utilizzo i tuoi dati</h2>
@@ -118,7 +118,6 @@ description: "Informativa sulla privacy del sito personale di Lorenzo Loconsole.
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Alcuni fornitori di servizi terzi potrebbero trattare dati al di fuori dello Spazio economico europeo (SEE). Sono in atto garanzie adeguate:</p>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
             <li><strong style="color:var(--foreground)">StaticHost.eu</strong> — Fornitore di hosting con base nell'UE.</li>
-            <li><strong style="color:var(--foreground)">Supabase</strong> — Tramite serverless per gli invii del modulo di contatto; agisce solo come livello di transito e non conserva il contenuto dei messaggi.</li>
             <li><strong style="color:var(--foreground)">Resend</strong> — Consegna delle e-mail per i messaggi del modulo di contatto e per la newsletter; adotta garanzie adeguate per i trasferimenti internazionali di dati.</li>
           </ul>
         </section>

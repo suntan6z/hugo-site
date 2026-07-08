@@ -210,14 +210,15 @@ document.getElementById('newsletter-form')?.addEventListener('submit', async (e)
   btn.disabled = true;
   btn.childNodes[0].textContent = I18N.subscribing;
   try {
-    await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/subscribe-newsletter', {
+    const res = await fetch('https://loconsoleapik19unsn0-newsletter.functions.fnc.fr-par.scw.cloud', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email:   document.getElementById('newsletter-email').value,
         website: document.getElementById('nl-website').value
       })
     });
+    if (!res.ok) throw new Error('Failed');
     e.target.style.display = 'none';
     const ok = document.getElementById('newsletter-subscribed');
     ok.style.display = 'flex';
