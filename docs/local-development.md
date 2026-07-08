@@ -1,7 +1,9 @@
 # Local Development
 
 ```bash
-# Install Hugo — requires v0.158.0+ (the site uses `locale` and `hugo.Data`)
+# Install Hugo — the site is pinned to v0.163.3 extended (see statichost.yml);
+# it needs at least the extended edition and the APIs added around v0.156–0.158
+# (`locale`, `hugo.Data`), so match the pinned version to avoid build drift.
 brew install hugo
 
 # Run the dev server with live reload
