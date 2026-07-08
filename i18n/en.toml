@@ -77,6 +77,8 @@ other = "Subscribe to my Newsletter"
 other = "Get notified when I publish new articles about technology, EU policy, and personal reflections. No spam, unsubscribe anytime."
 [newsletter_subscribed]
 other = "You're subscribed!"
+[newsletter_already_subscribed]
+other = "You're already subscribed!"
 [email_placeholder]
 other = "your@email.com"
 [subscribe]

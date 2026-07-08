@@ -76,6 +76,8 @@ other = "Iscriviti alla mia newsletter"
 other = "Ricevi una notifica quando pubblico nuovi articoli su tecnologia, politica europea e riflessioni personali. Niente spam, disiscrizione in qualsiasi momento."
 [newsletter_subscribed]
 other = "Iscrizione completata!"
+[newsletter_already_subscribed]
+other = "Sei già iscritto/a!"
 [email_placeholder]
 other = "tua@email.com"
 [subscribe]
