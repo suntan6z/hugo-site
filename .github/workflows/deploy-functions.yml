@@ -14,7 +14,6 @@ jobs:
       SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
       SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
     steps:
       - uses: actions/checkout@v4
 

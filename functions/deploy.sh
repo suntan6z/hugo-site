@@ -2,17 +2,15 @@
 # Deploys both functions (contact, newsletter) to Scaleway.
 # Requires: `scw` CLI configured (scw init, or SCW_ACCESS_KEY/SCW_SECRET_KEY/
 # SCW_DEFAULT_ORGANIZATION_ID/SCW_DEFAULT_PROJECT_ID env vars), plus
-# RESEND_API_KEY and RESEND_AUDIENCE_ID env vars set.
+# a RESEND_API_KEY env var set.
 #
 # Safe to re-run: reuses the namespace/functions if they already exist.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 : "${RESEND_API_KEY:?Set RESEND_API_KEY}"
-: "${RESEND_AUDIENCE_ID:?Set RESEND_AUDIENCE_ID}"
 
 NAMESPACE_NAME="loconsole-api"
-ALLOWED_ORIGIN="https://lorenzo.loconsole.eu"
 
 echo "==> Looking up namespace '$NAMESPACE_NAME'..."
 NS_ID=$(scw function namespace list name="$NAMESPACE_NAME" -o json | jq -r '.[0].id // empty')
@@ -20,20 +18,14 @@ NS_ID=$(scw function namespace list name="$NAMESPACE_NAME" -o json | jq -r '.[0]
 if [ -z "$NS_ID" ]; then
   echo "==> Creating namespace..."
   NS_ID=$(scw function namespace create name="$NAMESPACE_NAME" \
-    environment-variables.ALLOWED_ORIGIN="$ALLOWED_ORIGIN" \
     secret-environment-variables.0.key=RESEND_API_KEY \
     secret-environment-variables.0.value="$RESEND_API_KEY" \
-    secret-environment-variables.1.key=RESEND_AUDIENCE_ID \
-    secret-environment-variables.1.value="$RESEND_AUDIENCE_ID" \
     -o json | jq -r '.id')
 else
-  echo "==> Updating namespace secrets/env (namespace $NS_ID)..."
+  echo "==> Updating namespace secrets (namespace $NS_ID)..."
   scw function namespace update "$NS_ID" \
-    environment-variables.ALLOWED_ORIGIN="$ALLOWED_ORIGIN" \
     secret-environment-variables.0.key=RESEND_API_KEY \
     secret-environment-variables.0.value="$RESEND_API_KEY" \
-    secret-environment-variables.1.key=RESEND_AUDIENCE_ID \
-    secret-environment-variables.1.value="$RESEND_AUDIENCE_ID" \
     -o json > /dev/null
 fi
 
