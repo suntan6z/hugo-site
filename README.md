@@ -7,7 +7,7 @@ This site is my corner of the internet — a side project where I write about te
 The site has been redesigned and rebuilt many times since I first started tinkering with it. Its current tech stack is:
 
 - **[Hugo](https://gohugo.io/)** — static site generator
-- **[Supabase](https://supabase.com/)** — serverless relay (Edge Functions) for the contact form and newsletter signup
+- **[Scaleway Functions](https://www.scaleway.com/en/serverless-functions/)** — EU-based (French) serverless relay for the contact form and newsletter signup
 - **[Resend](https://resend.com/)** — transactional email delivery for the contact form and newsletter
 - **[Litlyx](https://litlyx.com/)** — self-hosted, cookieless analytics
 - **[StaticHost.eu](https://www.statichost.eu/)** — hosting; builds and deploys on every push to `main`

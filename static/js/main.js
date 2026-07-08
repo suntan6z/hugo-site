@@ -118,9 +118,9 @@ if (document.getElementById('contact-form')) {
     const phone = phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
 
     try {
-      const res = await fetch('https://phumzjyrginrqbrrkbtg.supabase.co/functions/v1/send-contact-email', {
+      const res = await fetch('https://loconsoleapik19unsn0-contact.functions.fnc.fr-par.scw.cloud', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBodW16anlyZ2lucnFicnJrYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMzg5NzgsImV4cCI6MjA5NzYxNDk3OH0.39XOP9kErRDRMh4wDGTywzOOb0yznldfeW6HyHNsWjk' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
           email: document.getElementById('email').value,
