@@ -1,0 +1,10 @@
+{
+  "name": "loconsole-api-functions",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:contact": "node dev-server.js contact 8787",
+    "dev:newsletter": "node dev-server.js newsletter 8788",
+    "deploy": "./deploy.sh"
+  }
+}

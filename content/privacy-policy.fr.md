@@ -41,7 +41,7 @@ description: "Politique de confidentialité du site personnel de Lorenzo Loconso
           <h3 style="font-weight:600;margin-bottom:0.5rem;margin-top:1.5rem">C. Formulaire de contact</h3>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Si vous me contactez via le formulaire de contact, les données personnelles que vous transmettez (nom, e-mail, sujet et message) sont stockées. La base légale est soit votre consentement (article 6(1)(a) du RGPD), soit la nécessité de répondre à votre demande précontractuelle (article 6(1)(b) du RGPD).</p>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:0.75rem">Je conserve les messages du formulaire de contact jusqu'à la résolution de votre demande ou pendant une durée maximale de 2 ans, selon la première éventualité.</p>
-          <p style="color:var(--muted-foreground);line-height:1.8">Votre envoi est relayé via une <strong style="color:var(--foreground)">fonction Edge de Supabase</strong> (une couche de calcul serverless) vers <strong style="color:var(--foreground)">Resend</strong>, qui me le livre sous forme d'e-mail dans ma boîte de réception. Supabase ne conserve pas votre message de façon persistante — elle agit uniquement comme relais. Resend le traite pour la livraison de l'e-mail et est soumise à sa propre politique de confidentialité.</p>
+          <p style="color:var(--muted-foreground);line-height:1.8">Votre envoi est relayé via une <strong style="color:var(--foreground)">fonction Scaleway</strong> (une couche de calcul serverless, hébergée en France au sein de l'UE) vers <strong style="color:var(--foreground)">Resend</strong>, qui me le livre sous forme d'e-mail dans ma boîte de réception. La fonction ne conserve pas votre message de façon persistante — elle agit uniquement comme relais, et contrairement à Resend, elle n'implique aucun transfert de données en dehors de l'Espace économique européen. Resend le traite pour la livraison de l'e-mail et est soumise à sa propre politique de confidentialité.</p>
         </section>
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Comment j'utilise vos données</h2>
@@ -118,7 +118,6 @@ description: "Politique de confidentialité du site personnel de Lorenzo Loconso
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Certains prestataires tiers peuvent traiter des données en dehors de l'Espace économique européen (EEE). Des garanties appropriées sont en place :</p>
           <ul style="color:var(--muted-foreground);line-height:1.8;display:flex;flex-direction:column;gap:0.5rem;padding-left:1.25rem">
             <li><strong style="color:var(--foreground)">StaticHost.eu</strong> — Hébergeur basé dans l'UE.</li>
-            <li><strong style="color:var(--foreground)">Supabase</strong> — Relais serverless pour les envois du formulaire de contact ; agit uniquement comme couche de transit et ne stocke pas le contenu des messages.</li>
             <li><strong style="color:var(--foreground)">Resend</strong> — Livraison des e-mails pour les messages du formulaire de contact et la newsletter ; met en œuvre des garanties appropriées pour les transferts internationaux de données.</li>
           </ul>
         </section>

@@ -2,3 +2,9 @@ resources/
 public/
 .hugo_build.lock
 **/.DS_Store
+
+# Scaleway Functions (functions/)
+functions/node_modules/
+functions/.serverless/
+functions/.env
+functions/*.zip

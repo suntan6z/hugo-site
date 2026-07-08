@@ -43,6 +43,9 @@ static/                    → copied verbatim to the site root, no processing.
     contact-chill.gif      → animation on the Contact page
     eufunded.png           → shared EU-funding badge for Erasmus+ articles
 
+functions/                 → Scaleway Functions (contact + newsletter API), deployed independently
+                              of the Hugo build via functions/deploy.sh — see forms-and-email.md
+
 layouts/
   index.html               → homepage (hero, quote, gallery, latest articles)
   404.html                 → custom 404 page
