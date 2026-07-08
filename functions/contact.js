@@ -51,6 +51,10 @@ export async function handle(event) {
   const subject = String(body.subject).trim();
   const message = String(body.message).trim();
 
+  // Values are pre-escaped with esc() because the `contact-form-notification`
+  // Resend template inserts these variables with raw triple-brace `{{{ }}}`
+  // (no auto-escaping). If that template is ever switched to double-brace
+  // `{{ }}` (auto-escaped), drop esc() here or values will double-escape.
   const notificationRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -79,6 +83,11 @@ export async function handle(event) {
 
   // Best-effort: the submitter's confirmation email is a nice-to-have —
   // don't fail the whole request if only this part errors.
+  //
+  // Values here are passed RAW (not esc()'d): the `contact-form-confirmation`
+  // template uses double-brace `{{ }}`, which auto-escapes. Pre-escaping would
+  // double-escape. This is the opposite of the notification send above — each
+  // path is matched to its template's brace style.
   const name = `${firstName} ${lastName}`;
   const messagePreview = message.slice(0, 150) + (message.length > 150 ? '...' : '');
   await fetch('https://api.resend.com/emails', {
