@@ -122,7 +122,8 @@ if (document.getElementById('contact-form')) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
+          firstName: document.getElementById('firstName').value,
+          lastName: document.getElementById('lastName').value,
           email: document.getElementById('email').value,
           phone: phone,
           subject: document.getElementById('subject').value,

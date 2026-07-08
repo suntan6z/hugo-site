@@ -5,8 +5,8 @@ import { isRateLimited, clientIp } from './lib/rateLimit.js';
 function validate(body) {
   const errors = [];
 
-  const nameParts = typeof body.name === 'string' ? body.name.trim().split(/\s+/).filter(Boolean) : [];
-  if (nameParts.length < 2 || nameParts.some((part) => part.length < 3)) errors.push('name');
+  if (typeof body.firstName !== 'string' || body.firstName.trim().length < 3) errors.push('firstName');
+  if (typeof body.lastName !== 'string' || body.lastName.trim().length < 3) errors.push('lastName');
 
   if (!isValidEmail(body.email)) errors.push('email');
 
@@ -44,13 +44,12 @@ export async function handle(event) {
   const errors = validate(body);
   if (errors.length) return json(event, { error: 'Validation failed', fields: errors }, 400);
 
-  const name = String(body.name).trim();
+  const firstName = String(body.firstName).trim();
+  const lastName = String(body.lastName).trim();
   const email = String(body.email).trim();
   const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
   const subject = String(body.subject).trim();
   const message = String(body.message).trim();
-
-  const phoneRow = phone ? `<p><strong>Phone:</strong> ${esc(phone)}</p>` : '';
 
   const notificationRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -59,11 +58,20 @@ export async function handle(event) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'contact@loconsole.eu',
+      from: 'New Form Submission <contact@loconsole.eu>',
       to: ['contact@loconsole.eu'],
       reply_to: email,
-      subject: `[Contact] ${esc(subject)}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"><h2>New Contact Form Submission</h2><div style="background:#f9fafb;padding:20px;border-radius:8px"><p><strong>From:</strong> ${esc(name)}</p><p><strong>Email:</strong> ${esc(email)}</p>${phoneRow}<p><strong>Subject:</strong> ${esc(subject)}</p></div><div style="padding:20px;border:1px solid #e5e7eb;border-radius:8px;margin-top:1rem"><p style="white-space:pre-wrap">${esc(message)}</p></div></div>`,
+      template: {
+        id: 'contact-form-notification',
+        variables: {
+          first_name: esc(firstName),
+          last_name: esc(lastName),
+          email: esc(email),
+          phone: phone ? esc(phone) : '—',
+          subject: esc(subject),
+          message: esc(message),
+        },
+      },
     }),
   });
 
@@ -71,6 +79,7 @@ export async function handle(event) {
 
   // Best-effort: the submitter's confirmation email is a nice-to-have —
   // don't fail the whole request if only this part errors.
+  const name = `${firstName} ${lastName}`;
   const messagePreview = message.slice(0, 150) + (message.length > 150 ? '...' : '');
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
