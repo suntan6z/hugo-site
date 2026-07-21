@@ -1,78 +1,56 @@
 ---
 title: "Now"
-description: "A snapshot of what I'm currently reading, building, listening to, and thinking about — updated periodically. Inspired by the /now movement."
+description: "What I'm working on, reading, and using right now — updated whenever something changes. Inspired by the /now movement."
 ---
-<article class="container" style="max-width:700px;padding-top:8rem;padding-bottom:5rem">
-  <div class="fade-up">
-    <p style="color:var(--muted-foreground);font-style:italic;font-size:0.875rem;margin-bottom:1rem">— June 22, 2026</p>
-    <h1 style="font-size:clamp(3rem,8vw,5rem);line-height:1.1">Now</h1>
-    <p style="font-size:1.1rem;color:var(--muted-foreground);margin-top:1rem">A snapshot of what I'm currently reading, using, and thinking about — updated whenever life shifts.</p>
-  </div>
-  <div style="margin-top:4rem;display:flex;flex-direction:column;gap:4rem">
-    <section class="now-section fade-up">
-      <h2 class="now-section-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        Reading
-      </h2>
-      <div style="display:flex;flex-direction:column;gap:2rem">
-        <div>
-          <p style="font-family:'Fraunces',serif;font-weight:600;color:var(--foreground)">Permanent Record <span style="font-family:'DM Sans',sans-serif;font-weight:400;color:var(--muted-foreground)">by Edward Snowden</span></p>
-          <p style="font-size:0.75rem;color:var(--muted-foreground);margin-top:0.25rem">432 pages · 2019</p>
-          <p style="color:var(--muted-foreground);margin-top:0.75rem;line-height:1.7">His memoir about working for the NSA and CIA, and why he chose to expose the largest surveillance program in history. A must-read on government overreach and digital privacy.</p>
-          <div class="progress-bar" style="margin-top:0.75rem;max-width:280px"><div class="progress-fill" style="width:70%"></div></div>
-        </div>
-        <div>
-          <p style="font-family:'Fraunces',serif;font-weight:600;color:var(--foreground)">The Gambler <span style="font-family:'DM Sans',sans-serif;font-weight:400;color:var(--muted-foreground)">by Fyodor Dostoevsky</span></p>
-          <p style="font-size:0.75rem;color:var(--muted-foreground);margin-top:0.25rem">175 pages · 1867</p>
-          <p style="color:var(--muted-foreground);margin-top:0.75rem;line-height:1.7">A short, intense novel about obsession and compulsion. Raw and surprisingly modern.</p>
-          <div class="progress-bar" style="margin-top:0.75rem;max-width:280px"><div class="progress-fill" style="width:90%"></div></div>
+<article class="container" style="padding-bottom:4rem">
+  <div class="content-col is-left">
+    <div class="page-header">
+      <p class="page-eyebrow">Last updated July 2026</p>
+      <h1>Now</h1>
+      <p class="page-lede">What I'm working on, reading and using at the moment. Updated whenever something actually changes.</p>
+    </div>
+    <div class="now-list">
+      <div class="now-row">
+        <div class="now-label">work</div>
+        <div class="now-value">Customer service representative at <span class="now-title">Konecta</span>, near Paris. <span class="muted">Disputes, escalations, and a lot of listening.</span></div>
+      </div>
+      <div class="now-row">
+        <div class="now-label">just did</div>
+        <div class="now-value">Came back from <span class="now-title">#UpdateEurope</span> with MeetEU — a citizen action project inside the European Parliament in Strasbourg. <span class="muted">A month that put a lot of my Erasmus+ years into perspective.</span></div>
+      </div>
+      <div class="now-row">
+        <div class="now-label">making</div>
+        <div class="now-value">This site. <span class="muted">Rebuilding it in Hugo and finding out where my CSS habits are wrong.</span></div>
+      </div>
+      <div class="now-row">
+        <div class="now-label">reading</div>
+        <div class="now-value">
+          <ul>
+            <li><span class="now-title">Permanent Record</span> — Edward Snowden <span class="muted">· on surveillance, and why he blew the whistle</span></li>
+            <li><span class="now-title">The Gambler</span> — Fyodor Dostoevsky <span class="muted">· short, obsessive, surprisingly modern</span></li>
+          </ul>
         </div>
       </div>
-    </section>
-    <section class="now-section fade-up">
-      <h2 class="now-section-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Using
-      </h2>
-      <ul style="list-style:none">
-        <li class="tool-item">
-          <div>
-            <p class="tool-name"><a href="https://proton.me" target="_blank" rel="noopener noreferrer">Proton</a></p>
-            <p class="tool-desc">Swiss-based encrypted email and cloud suite. My go-to for private, EU-aligned communication and file storage.</p>
-          </div>
-        </li>
-        <li class="tool-item">
-          <div>
-            <p class="tool-name"><a href="https://adguard.com" target="_blank" rel="noopener noreferrer">AdGuard</a></p>
-            <p class="tool-desc">DNS-level ad and tracker blocker. Keeps my browsing clean across all devices.</p>
-          </div>
-        </li>
-        <li class="tool-item">
-          <div>
-            <p class="tool-name"><a href="https://stashr.wtf" target="_blank" rel="noopener noreferrer">Stashr</a></p>
-            <p class="tool-desc">Simple, secure, and anonymous file sharing for everyone.</p>
-          </div>
-        </li>
-        <li class="tool-item" style="border-bottom:none">
-          <div>
-            <p class="tool-name"><a href="https://radio.garden" target="_blank" rel="noopener noreferrer">Radio Garden</a></p>
-            <p class="tool-desc">A globe where you can tune into live radio stations from anywhere in the world. A beautiful antidote to algorithmic music.</p>
-          </div>
-        </li>
-      </ul>
-    </section>
-    <section class="now-section fade-up">
-      <h2 class="now-section-title">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Thinking About
-      </h2>
-      <p style="font-family:'Fraunces',serif;font-weight:600;color:var(--foreground);font-size:1.2rem;margin-bottom:0.75rem">Technology and the human cost of convenience</p>
-      <p style="color:var(--muted-foreground);line-height:1.8">We've traded ownership for subscriptions, privacy for personalization, and presence for engagement metrics. Big Tech has built ecosystems designed to keep you in — not because it serves you, but because your attention and data are the product. Between algorithmic feeds that shape what you think, targeted ads that follow your every click, and the slow erosion of what it means to own your digital life, I keep coming back to the same question: at what point does convenience become a cage?</p>
-    </section>
+      <div class="now-row">
+        <div class="now-label">using</div>
+        <div class="now-value">
+          <a href="https://proton.me" target="_blank" rel="noopener noreferrer">Proton</a> <span class="muted">for mail and files</span> ·
+          <a href="https://adguard.com" target="_blank" rel="noopener noreferrer">AdGuard</a> <span class="muted">for DNS-level blocking</span> ·
+          <a href="https://stashr.wtf" target="_blank" rel="noopener noreferrer">Stashr</a> <span class="muted">for anonymous file sharing</span> ·
+          <a href="https://radio.garden" target="_blank" rel="noopener noreferrer">Radio Garden</a> <span class="muted">for radio from anywhere but the algorithm</span>
+        </div>
+      </div>
+      <div class="now-row">
+        <div class="now-label">thinking</div>
+        <div class="now-value">At what point convenience becomes a cage. <span class="muted">Ownership traded for subscriptions, privacy for personalisation, presence for engagement metrics.</span></div>
+      </div>
+      <div class="now-row">
+        <div class="now-label">where</div>
+        <div class="now-value">France. <span class="muted">Originally from the Bari area, Apulia.</span></div>
+      </div>
+    </div>
+    <p style="font-size:0.875rem;color:var(--muted-foreground);line-height:1.7;margin-top:2rem">
+      This is a <a href="https://nownownow.com/about" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">now page</a>, an idea from <a href="https://sive.rs/now" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">Derek Sivers</a>. Updated whenever something changes — so, occasionally.
+    </p>
   </div>
-  <hr style="margin:4rem 0;border:none;border-top:1px solid var(--border)" />
-  <p class="fade-up" style="font-size:0.875rem;color:var(--muted-foreground);line-height:1.7">
-    Inspired by <a href="https://sive.rs/now" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">Derek Sivers</a> and the others on <a href="https://nownownow.com/" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">NowNowNow</a> to create this page.
-  </p>
-  <p class="fade-up" style="font-size:0.875rem;color:var(--muted-foreground);font-style:italic;margin-top:0.5rem">I'll update once in a while. Maybe.</p>
 </article>

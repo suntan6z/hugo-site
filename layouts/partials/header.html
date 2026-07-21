@@ -190,7 +190,10 @@ const searchIndex = [
     dateISO:   {{ .Date.Format "2006-01-02" | jsonify | safeJS }},
     year:      {{ .Date.Format "2006" | jsonify | safeJS }},
     wordCount: {{ .WordCount }},
-    excerpt:   {{ .Summary | replaceRE "<h[1-6][^>]*>.*?</h[1-6]>" "" | replaceRE "<[^>]+>" "" | htmlUnescape | plainify | truncate 220 | jsonify | safeJS }},
+    {{- /* A stub flagged `untranslated: true` has an empty .Summary, which would
+           render a blank result. Say why instead — the result stays findable and
+           the page it opens explains where to read the article. */ -}}
+    excerpt:   {{ if .Params.untranslated }}{{ replace (i18n "not_yet_translated") "%lang%" $.Site.Language.Label | jsonify | safeJS }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>.*?</h[1-6]>" "" | replaceRE "<[^>]+>" "" | htmlUnescape | plainify | truncate 220 | jsonify | safeJS }}{{ end }},
     body:      {{ .Plain | htmlUnescape | truncate 8000 "" | jsonify | safeJS }}
   },
   {{ end }}
@@ -213,8 +216,9 @@ const searchIndex = [
   {{ end }}
 ];
 
-/* read time in minutes from word count */
-searchIndex.forEach(p => { p.readMin = Math.max(1, Math.round(p.wordCount / 200)); });
+/* read time in minutes from word count. wordCount 0 means an untranslated stub
+   with no body — leave readMin null so the result doesn't claim "1 min read". */
+searchIndex.forEach(p => { p.readMin = p.wordCount ? Math.max(1, Math.round(p.wordCount / 200)) : null; });
 
 /* category label map for localized display (filter keys stay the English value) */
 const catLabelMap = {};
@@ -355,6 +359,8 @@ function matchesFilters(p) {
   if (F.categories.length && !F.categories.includes(p.category)) return false;
   if (F.yearFrom && p.year < F.yearFrom) return false;
   if (F.yearTo   && p.year > F.yearTo)   return false;
+  /* no readMin (untranslated stub, no body) can't satisfy any read-time filter */
+  if (F.readTime && F.readTime !== 'any' && !p.readMin) return false;
   if (F.readTime === 'short'  && p.readMin >= 5)  return false;
   if (F.readTime === 'medium' && (p.readMin < 5 || p.readMin > 15)) return false;
   if (F.readTime === 'long'   && p.readMin <= 15) return false;
@@ -563,7 +569,7 @@ function renderResults(query) {
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:${snip?'0.25rem':'0'}">
               ${p.category ? `<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--primary)">${p.categoryLabel||p.category}</span>` : ''}
               ${p.date ? `<span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${calIcon} ${p.date}</span>` : ''}
-              ${p.type === 'article' ? `<span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${clockIcon} ${p.readMin} ${I18N.minRead}</span>` : ''}
+              ${p.type === 'article' && p.readMin ? `<span style="display:flex;align-items:center;gap:0.2rem;font-size:0.7rem;color:var(--muted-foreground)">${clockIcon} ${p.readMin} ${I18N.minRead}</span>` : ''}
             </div>
             ${snip ? `<div style="font-size:0.78rem;color:var(--muted-foreground);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5">${hl(snip, q)}</div>` : ''}
           </div>
