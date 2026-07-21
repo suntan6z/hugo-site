@@ -2,18 +2,20 @@
 title: "Privacy Policy"
 description: "Privacy policy for Lorenzo Loconsole's personal website. Learn how we handle your data, cookies, and your rights under GDPR."
 ---
-<div style="padding-top:4rem">
-  <section style="padding:5rem 0">
+<div>
+  <section class="page-header">
     <div class="container">
-      <div style="text-align:center;margin-bottom:3rem">
-        <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-bottom:1rem">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <h1 style="font-family:'Fraunces',serif;font-size:clamp(2rem,5vw,3rem);font-weight:700">Privacy <span class="text-gradient">Policy</span></h1>
-        </div>
-        <p style="color:var(--muted-foreground);max-width:38rem;margin:0 auto">Your privacy matters. This policy explains what data I collect and how I use it.</p>
+      <div class="content-col">
+        <div style="margin-bottom:0.75rem"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h1>Privacy <span class="text-gradient">Policy</span></h1>
+        <p class="page-lede">Your privacy matters. This policy explains what data I collect and how I use it.</p>
         <p style="font-size:0.875rem;color:var(--muted-foreground);margin-top:1rem">Last updated: June 23, 2026</p>
       </div>
-      <div style="max-width:48rem;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;display:flex;flex-direction:column;gap:2.5rem">
+    </div>
+  </section>
+  <section style="padding-bottom:5rem">
+    <div class="container">
+      <div class="content-col" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;display:flex;flex-direction:column;gap:2.5rem">
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Introduction</h2>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Thank you for visiting my personal website. I am committed to protecting your privacy and being transparent about the minimal data I collect. This website operates on a simple principle: collect only what is absolutely necessary to provide my services, and never use your data for tracking, advertising, or any purpose beyond what you explicitly consented to.</p>

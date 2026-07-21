@@ -19,9 +19,9 @@ other = "Politique de confidentialité"
 [hero_heading]
 other = "Salut !"
 [hero_intro]
-other = "C'est un projet personnel que je maintiens pour en apprendre un peu plus sur le web design et le HTML. Mon premier site remonte à 2014 : avec des amis, j'avais créé un endroit où l'on partageait nos meilleurs moments de jeu et les meilleures creepypastas qu'on pouvait dénicher. C'était à la mode à l'époque…"
+other = "Bienvenue dans mon espace personnel en ligne. N'hésitez pas à explorer, à lire quelques articles, à jeter un œil à mes meilleures photos plus bas, et à me contacter si vous souhaitez partager un retour ou réagir à l'un de mes textes."
 [hero_intro2]
-other = "Quoi qu'il en soit, j'espère que votre visite vous plaira et que vous apprendrez à mieux me connaître !"
+other = ""
 [view_resume]
 other = "Voir le CV"
 [get_in_touch]
@@ -108,6 +108,12 @@ other = "Erasmus+"
 other = "Pas encore traduit en %lang%."
 [read_in_lang]
 other = "Lire en %lang% →"
+[untranslated_heading]
+other = "Pas encore disponible en français"
+[untranslated_body]
+other = "Cet article n'a pas encore été traduit en %lang%. Vous pouvez lire la version originale dans une autre langue ci-dessous."
+[untranslated_card_note]
+other = "Disponible en %langs%"
 
 # ── Fenêtre de recherche ─────────────────────────────────────────
 [search]

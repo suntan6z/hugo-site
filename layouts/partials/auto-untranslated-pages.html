@@ -1,0 +1,80 @@
+{{/*
+  Shared body of the blog content adapters.
+
+  Called from content/blog/_content.gotmpl (+ the .fr / .it siblings), once per
+  language. For every page bundle under content/blog/, if the current language
+  has no Markdown file of its own, synthesise a placeholder page flagged
+  `untranslated: true`.
+
+  That gives a reader who lands on, say, /it/blog/<slug>/ a proper "not
+  available in Italian yet — read it in English" page instead of a 404, and
+  gives layouts/blog/list.html a muted card to render. So publishing
+  content/blog/<slug>/index.md on its own is enough; there are no stub files to
+  create or keep in sync.
+
+  A real Markdown file always wins — write index.it.md and this skips the
+  bundle. To hand-write a placeholder instead (to localise its title, say),
+  create the file and set `untranslated: true` in its front matter; the
+  templates treat hand-written and generated placeholders identically.
+
+  Takes the content-adapter context as its argument (needs .AddPage on it).
+*/}}
+
+{{ $ctx := . }}
+{{ $defaultLang := "en" }}
+{{ $lang := site.Language.Lang }}
+{{ $mine := cond (eq $lang $defaultLang) "index.md" (printf "index.%s.md" $lang) }}
+
+{{ range $dir := readDir "content/blog" }}
+  {{ if $dir.IsDir }}
+    {{ $slug := $dir.Name }}
+
+    {{/* Which language files does this bundle actually ship? */}}
+    {{ $names := slice }}
+    {{ range readDir (printf "content/blog/%s" $slug) }}
+      {{ $names = $names | append .Name }}
+    {{ end }}
+
+    {{ if not (in $names $mine) }}
+      {{/* Copy metadata from the default language if present, otherwise from
+           whichever translation does exist. */}}
+      {{ $src := "" }}
+      {{ if in $names "index.md" }}
+        {{ $src = "index.md" }}
+      {{ else }}
+        {{ range $names }}
+          {{ if and (eq $src "") (hasPrefix . "index.") (hasSuffix . ".md") }}
+            {{ $src = . }}
+          {{ end }}
+        {{ end }}
+      {{ end }}
+
+      {{ with $src }}
+        {{ $raw := readFile (printf "content/blog/%s/%s" $slug .) }}
+        {{ with findRESubmatch `(?s)\A---\n(.*?)\n---` $raw 1 }}
+          {{ $fm := (index (index . 0) 1) | transform.Unmarshal }}
+          {{/* Never surface a draft, and never mirror a source that is itself
+               only a placeholder. */}}
+          {{ if not (or $fm.draft $fm.untranslated) }}
+            {{/* YAML hands the date back as a string; Dates.Date wants a time. */}}
+            {{ $date := now }}
+            {{ with $fm.date }}{{ $date = time.AsTime . }}{{ end }}
+            {{ $ctx.AddPage (dict
+                 "path"  $slug
+                 "title" $fm.title
+                 "kind"  "page"
+                 "dates" (dict "date" $date)
+                 "params" (dict
+                    "untranslated"   true
+                    "category"       $fm.category
+                    "description"    $fm.description
+                    "translationKey" $slug
+                 )
+                 "content" (dict "value" "" "mediaType" "text/markdown")
+            ) }}
+          {{ end }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}

@@ -2,13 +2,13 @@
 title: "Contatti"
 description: "Mettiti in contatto con Lorenzo Loconsole — domande, collaborazioni, feedback o solo per salutare. Leggo ogni messaggio."
 ---
-<div style="padding-top:4rem">
-  <section class="page-hero">
+<div>
+  <section class="page-header">
     <div class="container">
       <div id="contact-hero-wrap" class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:2rem">
-        <div style="max-width:36rem">
+        <div>
           <h1>Mettiti in <span class="text-gradient">contatto</span></h1>
-          <p style="color:var(--muted-foreground);margin-top:1rem;line-height:1.75">Hai una domanda, un'idea per un progetto o vuoi solo salutare? Mi farebbe piacere sentirti. Lasciami un messaggio e ti risponderò il prima possibile.</p>
+          <p class="page-lede">Hai una domanda, un'idea per un progetto o vuoi solo salutare? Mi farebbe piacere sentirti. Lasciami un messaggio e ti risponderò il prima possibile.</p>
         </div>
         <div style="flex-shrink:0">
           <img src="/img/contact-chill.gif" alt="Animazione rilassante" style="width:min(12rem,60vw);height:auto;object-fit:contain" />

@@ -1,6 +1,8 @@
 {{- $pagesCount := 20 -}}
 {{- $pages := .Pages -}}
 {{- if eq .Kind "home" }}{{ $pages = .Site.RegularPages }}{{ end -}}
+{{- /* Don't syndicate `untranslated: true` stubs — they have no body. */ -}}
+{{- $pages = where $pages "Params.untranslated" "!=" true -}}
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>{{ if eq .Title .Site.Title }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} – {{ end }}{{ .Site.Title }}{{ end }}</title>

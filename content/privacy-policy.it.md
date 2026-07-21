@@ -2,18 +2,20 @@
 title: "Informativa sulla privacy"
 description: "Informativa sulla privacy del sito personale di Lorenzo Loconsole. Scopri come vengono gestiti i tuoi dati, i cookie e i tuoi diritti ai sensi del GDPR."
 ---
-<div style="padding-top:4rem">
-  <section style="padding:5rem 0">
+<div>
+  <section class="page-header">
     <div class="container">
-      <div style="text-align:center;margin-bottom:3rem">
-        <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;margin-bottom:1rem">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <h1 style="font-family:'Fraunces',serif;font-size:clamp(2rem,5vw,3rem);font-weight:700">Informativa sulla <span class="text-gradient">privacy</span></h1>
-        </div>
-        <p style="color:var(--muted-foreground);max-width:38rem;margin:0 auto">La tua privacy è importante. Questa informativa spiega quali dati raccolgo e come li utilizzo.</p>
+      <div class="content-col">
+        <div style="margin-bottom:0.75rem"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h1>Informativa sulla <span class="text-gradient">privacy</span></h1>
+        <p class="page-lede">La tua privacy è importante. Questa informativa spiega quali dati raccolgo e come li utilizzo.</p>
         <p style="font-size:0.875rem;color:var(--muted-foreground);margin-top:1rem">Ultimo aggiornamento: 23 giugno 2026</p>
       </div>
-      <div style="max-width:48rem;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;display:flex;flex-direction:column;gap:2.5rem">
+    </div>
+  </section>
+  <section style="padding-bottom:5rem">
+    <div class="container">
+      <div class="content-col" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;display:flex;flex-direction:column;gap:2.5rem">
         <section>
           <h2 style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:600;margin-bottom:1rem">Introduzione</h2>
           <p style="color:var(--muted-foreground);line-height:1.8;margin-bottom:1rem">Grazie per aver visitato il mio sito personale. Mi impegno a proteggere la tua privacy e a essere trasparente sui pochi dati che raccolgo. Questo sito si basa su un principio semplice: raccogliere solo ciò che è strettamente necessario per fornire i miei servizi e non usare mai i tuoi dati per tracciamento, pubblicità o qualsiasi scopo diverso da quello a cui hai espressamente acconsentito.</p>

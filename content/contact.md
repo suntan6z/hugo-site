@@ -2,13 +2,13 @@
 title: "Contact"
 description: "Get in touch with Lorenzo Loconsole — questions, collaborations, feedback, or just to say hi. I read every message."
 ---
-<div style="padding-top:4rem">
-  <section class="page-hero">
+<div>
+  <section class="page-header">
     <div class="container">
       <div id="contact-hero-wrap" class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:2rem">
-        <div style="max-width:36rem">
+        <div>
           <h1>Get in <span class="text-gradient">Touch</span></h1>
-          <p style="color:var(--muted-foreground);margin-top:1rem;line-height:1.75">Have a question, project idea, or just want to say hello? I'd love to hear from you. Drop me a message and I'll get back to you as soon as possible.</p>
+          <p class="page-lede">Have a question, project idea, or just want to say hello? I'd love to hear from you. Drop me a message and I'll get back to you as soon as possible.</p>
         </div>
         <div style="flex-shrink:0">
           <img src="/img/contact-chill.gif" alt="Relaxing animation" style="width:min(12rem,60vw);height:auto;object-fit:contain" />

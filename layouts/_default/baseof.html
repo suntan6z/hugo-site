@@ -60,14 +60,27 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
   <link rel="icon" type="image/png" href="/img/favicon.png" />
   <link rel="apple-touch-icon" href="/img/apple-touch.png" />
-  <link rel="canonical" href="{{ .Permalink }}" />
+  {{- /* An `untranslated: true` stub has no body of its own — it only points at
+         the language where the article can be read. Keep it out of the index and
+         point the canonical at that real version, so it isn't treated as thin or
+         duplicate content. */ -}}
+  {{- $canonical := .Permalink -}}
+  {{- if .Params.untranslated -}}
+    {{- range .AllTranslations -}}
+      {{- if not .Params.untranslated -}}{{- $canonical = .Permalink -}}{{- end -}}
+    {{- end }}
+  <meta name="robots" content="noindex, follow" />
+  {{- end }}
+  <link rel="canonical" href="{{ $canonical }}" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 
-  <!-- hreflang alternates for each available translation (+ x-default → English) -->
-  {{- range .AllTranslations }}
+  <!-- hreflang alternates for each available translation (+ x-default → English).
+       `untranslated: true` stubs are skipped — advertising an empty page as the
+       alternate for a language is worse than advertising no alternate at all. -->
+  {{- range .AllTranslations }}{{ if not .Params.untranslated }}
   <link rel="alternate" hreflang="{{ .Language.Lang }}" href="{{ .Permalink }}" />
-  {{- end }}
-  {{- range .AllTranslations }}{{ if eq .Language.Lang "en" }}
+  {{- end }}{{ end }}
+  {{- range .AllTranslations }}{{ if and (eq .Language.Lang "en") (not .Params.untranslated) }}
   <link rel="alternate" hreflang="x-default" href="{{ .Permalink }}" />
   {{- end }}{{ end }}
 
