@@ -20,9 +20,9 @@ other = "Privacy Policy"
 [hero_heading]
 other = "Hey there!"
 [hero_intro]
-other = "This is a side project I'm maintaining in order to learn a bit more about web design and html. My first website was back in 2014, I created with some friends a place where we could share the best moments while gaming and the best creepy pasta stories we could find. It was a thing at that time..."
+other = "Welcome to my online personal space. Feel free to roam around, read a few articles, snoop through my best pictures below, and get in touch if you want to share feedback or comment on something I've written."
 [hero_intro2]
-other = "Anyway, I hope you enjoy your visit and get to know more about me!"
+other = ""
 [view_resume]
 other = "View Résumé"
 [get_in_touch]
@@ -109,6 +109,12 @@ other = "Erasmus+"
 other = "Not yet translated into %lang%."
 [read_in_lang]
 other = "Read in %lang% →"
+[untranslated_heading]
+other = "Not available in English yet"
+[untranslated_body]
+other = "This article hasn't been translated into %lang% yet. You can read the original version in another language below."
+[untranslated_card_note]
+other = "Available in %langs%"
 
 # ── Search modal ─────────────────────────────────────────────────
 [search]
