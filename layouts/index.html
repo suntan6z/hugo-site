@@ -6,7 +6,9 @@
     <div class="hero-grid">
       <div class="fade-up" style="position:relative;z-index:1">
         <h1>{{ i18n "hero_heading" }}</h1>
-        <p>{{ i18n "hero_intro" }}</p>
+        <div class="hero-intro-frame">
+          <p class="hero-intro">{{ i18n "hero_intro" }}</p>
+        </div>
         {{ with i18n "hero_intro2" }}<p style="color:var(--muted-foreground);margin-bottom:2rem">{{ . }}</p>{{ end }}
         <div class="btn-group">
           <a href="{{ .Site.Params.resumeUrl }}" target="_blank" rel="noopener noreferrer" class="btn-primary">
@@ -21,7 +23,6 @@
       </div>
 
       <div class="hero-photo-wrap fade-up">
-        <div class="hero-glow"></div>
         {{ $heroWebp := (resources.Get "img/hero.webp").Resize "640x webp q82" }}
         {{ $heroJpg := (resources.Get "img/hero.jpeg").Resize "640x jpg q82" }}
         <picture>
