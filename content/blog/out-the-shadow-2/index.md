@@ -13,7 +13,7 @@ eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
 ---
 
 
-![Out the Shadow TC2 - Puppets workshop](otstc2-1.jpg)
+![Out the Shadow TC2 - Puppets workshop](otstc2-1.jpeg)
 
 I am back in Dobczyce for the second training of Out the shadow.
 I am so glad for this possiblity and to continue exploring the world of black light theatre and commedia dell'arte. Maciej and Ewelina facilitaded the workshops with great professionalism and in such a way that getting up early in the morning was (almost) something that I looked out for !
@@ -24,7 +24,7 @@ From the participants there were many new faces, as well as some of the lovely p
 
 The first day we started with some ice breakers games and then we dived into the commedia dell'arte characters, which even tho I am italian I did not know before coming to this training. Some well-known character examples include Arlecchino (Harlequin), Pulcinella, Pantalone, il Dottore, Colombina, and Scaramuccia. We then played in little groups trying to impersonate the features of these characters. The next day we even went a step further and, enjoying the sunny weather outside, we painted and created our own masks with clay, colors and our personal touch.
 
-![Out the Shadow TC2 - Masks workshop](otstc2-2.jpg)
+![Out the Shadow TC2 - Masks workshop](otstc2-2.jpeg)
 
 Playing with the masks in the dark using glowing tapes and paint added an extra sensory experience to what I already felt the first time I discovered black light theatre last year.
 
