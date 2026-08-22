@@ -4,7 +4,7 @@ date: 2026-08-21
 slug: "colors-of-solidarity"
 category: "Erasmus+"
 draft: false
-description: "Journaling my exeprience in the Europeean solidarity corps."
+description: "Journaling my experience in the Europeean solidarity corps."
 partner_name: "VVI Foundation"
 partner_url: "https://www.vvifoundation.org/en/"
 partner_logo_url: "vvilogo.png"
