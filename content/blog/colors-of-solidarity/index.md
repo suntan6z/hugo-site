@@ -4,7 +4,7 @@ date: 2026-08-21
 slug: "colors-of-solidarity"
 category: "Erasmus+"
 draft: false
-description: "Improvisation in black light theatre - The third  apointment of the Out the Shadow Erasmus+ training course in Taranto, Italy."
+description: "Journaling my exeprience in the Europeean solidarity corps."
 partner_name: "VVI Foundation"
 partner_url: "https://www.vvifoundation.org/en/"
 partner_logo_url: "vvilogo.png"
