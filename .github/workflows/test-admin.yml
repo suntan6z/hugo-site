@@ -1,0 +1,29 @@
+name: Test Admin Portal
+
+# Scoped to admin/** plus the content it validates: the front-matter round-trip
+# suite reads content/blog and content/gallery directly (rather than vendored
+# fixtures, which would drift), so a content change can break it too.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "admin/**"
+      - "content/blog/**"
+      - "content/gallery/**"
+  pull_request:
+    paths:
+      - "admin/**"
+      - "content/blog/**"
+      - "content/gallery/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Front-matter round-trip suite
+        working-directory: admin
+        run: npm test
