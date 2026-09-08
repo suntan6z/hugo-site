@@ -64,14 +64,27 @@ export class FrontMatterError extends Error {}
 export class FrontMatter {
 	private lines: Line[];
 	/** Everything after the closing delimiter, preserved byte-for-byte. */
-	readonly body: string;
+	private bodyText: string;
 	/** Whether the closing `---` was followed by a newline in the source. */
 	private readonly closeEol: string;
 
 	private constructor(lines: Line[], body: string, closeEol: string) {
 		this.lines = lines;
-		this.body = body;
+		this.bodyText = body;
 		this.closeEol = closeEol;
+	}
+
+	get body(): string {
+		return this.bodyText;
+	}
+
+	/**
+	 * Replaces the Markdown body. Left untouched by every other method, so a
+	 * metadata-only edit never perturbs a single byte below the front matter.
+	 */
+	setBody(body: string): this {
+		this.bodyText = body;
+		return this;
 	}
 
 	static parse(raw: string): FrontMatter {
@@ -98,7 +111,7 @@ export class FrontMatter {
 
 	/** Reconstructs the file. `serialize(parse(x)) === x` for any unmodified document. */
 	serialize(): string {
-		return `---\n${this.lines.map((l) => l.raw).join('\n')}\n---${this.closeEol}${this.body}`;
+		return `---\n${this.lines.map((l) => l.raw).join('\n')}\n---${this.closeEol}${this.bodyText}`;
 	}
 
 	/** Top-level keys, in document order. */
