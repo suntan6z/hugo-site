@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { IS_LOCAL, SITE_ROOT, github } from '../env.ts';
 import { gh, GitHubError } from '../github/api.ts';
 
@@ -7,7 +8,13 @@ import { gh, GitHubError } from '../github/api.ts';
 export type FileOp =
 	| { path: string; content: string }
 	| { path: string; bytes: Uint8Array }
-	| { path: string; delete: true };
+	| { path: string; delete: true }
+	/**
+	 * Rename without moving bytes. Renumbering a gallery city touches every
+	 * photo in it; re-uploading 20 images to change their order would be absurd.
+	 * On GitHub this reuses the existing blob SHA, so nothing is transferred.
+	 */
+	| { path: string; moveFrom: string };
 
 export interface Repo {
 	readText(p: string): Promise<string | null>;
@@ -76,7 +83,23 @@ class LocalRepo implements Repo {
 	}
 
 	async commit(_message: string, ops: FileOp[]) {
+		// Moves are staged to temporary names first: renumbering a gallery swaps
+		// names that are still occupied (1->2 while 2->3), and a naive sequential
+		// rename would clobber a file that a later move still needs.
+		const moves = ops.filter((o): o is { path: string; moveFrom: string } => 'moveFrom' in o);
+		const staged: { tmp: string; to: string }[] = [];
+		for (const op of moves) {
+			const tmp = `${this.abs(op.moveFrom)}.moving-${crypto.randomUUID().slice(0, 8)}`;
+			await fs.rename(this.abs(op.moveFrom), tmp);
+			staged.push({ tmp, to: this.abs(op.path) });
+		}
+		for (const { tmp, to } of staged) {
+			await fs.mkdir(path.dirname(to), { recursive: true });
+			await fs.rename(tmp, to);
+		}
+
 		for (const op of ops) {
+			if ('moveFrom' in op) continue;
 			const full = this.abs(op.path);
 			if ('delete' in op) {
 				await fs.rm(full, { force: true });
@@ -141,6 +164,20 @@ class GitHubRepo implements Repo {
 		const headSha = ref.object.sha;
 		const head = await gh<{ tree: { sha: string } }>('GET', `/git/commits/${headSha}`);
 
+		// A move reuses the source blob's SHA, so no bytes are transferred. The
+		// base tree is fetched once and shared by every move in the commit.
+		const moves = ops.filter((o): o is { path: string; moveFrom: string } => 'moveFrom' in o);
+		let blobByPath = new Map<string, string>();
+		if (moves.length) {
+			const full = await gh<{ tree: TreeEntry[] }>(
+				'GET',
+				`/git/trees/${head.tree.sha}?recursive=1`
+			);
+			blobByPath = new Map(
+				full.tree.filter((e) => e.type === 'blob' && e.sha).map((e) => [e.path, e.sha as string])
+			);
+		}
+
 		const tree: TreeEntry[] = [];
 		// Cap concurrency: a gallery city upload can be 20 blobs at once.
 		for (let i = 0; i < ops.length; i += 5) {
@@ -151,6 +188,11 @@ class GitHubRepo implements Repo {
 					if ('delete' in op) {
 						return { path: op.path, mode: '100644', type: 'blob', sha: null };
 					}
+					if ('moveFrom' in op) {
+						const sha = blobByPath.get(op.moveFrom);
+						if (!sha) throw new Error(`cannot move ${op.moveFrom}: not found in the tree`);
+						return { path: op.path, mode: '100644', type: 'blob', sha };
+					}
 					const payload =
 						'content' in op
 							? { content: op.content, encoding: 'utf-8' }
@@ -160,6 +202,15 @@ class GitHubRepo implements Repo {
 				})
 			);
 			tree.push(...batch);
+		}
+
+		// Delete each move's source, unless something else in this commit writes
+		// to that same path (a swap, or a rename chain).
+		const written = new Set(tree.map((e) => e.path));
+		for (const op of moves) {
+			if (!written.has(op.moveFrom)) {
+				tree.push({ path: op.moveFrom, mode: '100644', type: 'blob', sha: null });
+			}
 		}
 
 		const newTree = await gh<{ sha: string }>('POST', '/git/trees', {
