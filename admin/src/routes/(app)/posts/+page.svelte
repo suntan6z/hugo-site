@@ -38,7 +38,7 @@
 				{#if p.draft}<span class="draft">draft</span>{/if}
 				{#if !p.featured_image}<span class="gap" title="No featured_image: no thumbnail on the homepage grid">no thumb</span>{/if}
 				<span class="langs">
-					{#each ['en', 'fr', 'it'] as l}
+					{#each ['en', 'fr', 'it'] as const as l}
 						<i class:on={p.langs.includes(l)}>{l}</i>
 					{/each}
 				</span>
