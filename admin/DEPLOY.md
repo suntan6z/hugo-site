@@ -84,3 +84,14 @@ Nothing in that ladder depends on email, GitHub, or this laptop.
 The container's storage API key expires **2027-09-07**. Storage silently starts
 failing after that. Create a new key for the `loconsole-admin-portal` IAM
 application, update `.env`, re-run `create-container.sh`.
+
+## IndexNow
+
+`static/<INDEXNOW_KEY>.txt` contains the key and must stay in sync with
+`INDEXNOW_KEY` in `admin/.env`. Rotating the key means writing a new file,
+deleting the old one and re-running `create-container.sh` — the old file must
+go, or both keys stay valid.
+
+Publishing queues the affected URLs rather than submitting them: at publish
+time StaticHost has not rebuilt, so the URL would still 404. The dashboard
+submits the queue once it sees the deploy go live.

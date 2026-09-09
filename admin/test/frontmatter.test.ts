@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { FrontMatter, FrontMatterError, formatScalar } from '../src/lib/server/content/frontmatter.ts';
+import { FrontMatter, FrontMatterError, formatScalar, fromForm } from '../src/lib/server/content/frontmatter.ts';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..');
 
@@ -130,5 +130,33 @@ describe('guards', () => {
 
 	test('multi-line values are rejected', () => {
 		assert.throws(() => formatScalar('description', 'a\nb'), FrontMatterError);
+	});
+});
+
+describe('form-boundary line endings', () => {
+	test('CRLF from a textarea is converted back to LF before writing', () => {
+		// Browsers normalise textarea line breaks to CRLF on form submission.
+		// Writing that verbatim breaks Hugo's front-matter regex and makes the
+		// file unreadable by this very parser — see the guard test above.
+		assert.equal(fromForm('a\r\nb\r\nc'), 'a\nb\nc');
+		assert.equal(fromForm('no breaks'), 'no breaks');
+		assert.equal(fromForm(null), '');
+	});
+
+	test('a body that arrived as CRLF round-trips cleanly once normalised', () => {
+		const original = read('content/blog/ai-fatigue-is-real/index.md');
+		const fm = FrontMatter.parse(original);
+		const asSubmittedByBrowser = fm.body.replace(/\n/g, '\r\n');
+
+		assert.throws(
+			() => FrontMatter.parse(fm.setBody(asSubmittedByBrowser).serialize()),
+			FrontMatterError,
+			'writing raw CRLF must be rejected rather than silently corrupting the file'
+		);
+
+		assert.equal(
+			FrontMatter.parse(original).setBody(fromForm(asSubmittedByBrowser)).serialize(),
+			original
+		);
 	});
 });

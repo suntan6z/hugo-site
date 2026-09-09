@@ -1,5 +1,6 @@
 <script lang="ts">
-	let { data } = $props();
+	import { enhance } from '$app/forms';
+	let { data, form } = $props();
 	const stats = $derived(data.stats);
 	const posts = $derived(data.posts);
 	const status = $derived(data.status);
@@ -57,6 +58,27 @@
 		<span class="n">{stats.translationDebt.length}</span><span class="l">missing translations</span>
 	</div>
 </section>
+
+{#if form?.indexNow}<p class="note ok">{form.indexNow}</p>{/if}
+{#if form?.message}<p class="note bad">{form.message}</p>{/if}
+
+{#if data.indexNow.configured && data.indexNow.queued.length > 0}
+	<section class="indexnow" class:ready={status.state === 'live'}>
+		<div>
+			<strong>{data.indexNow.queued.length} URL{data.indexNow.queued.length === 1 ? '' : 's'} ready for IndexNow</strong>
+			<span>
+				{#if status.state === 'live'}
+					Bing will be told these changed instead of waiting to crawl them.
+				{:else}
+					Waiting for the deploy — submitting now would point Bing at a page that still 404s.
+				{/if}
+			</span>
+		</div>
+		<form method="POST" action="?/indexnow" use:enhance>
+			<button type="submit" disabled={status.state !== 'live'}>Submit</button>
+		</form>
+	</section>
+{/if}
 
 {#if !data.fromManifest}
 	<p class="note warn">
@@ -156,6 +178,19 @@
 		color: var(--muted); background: var(--panel);
 	}
 	.chips a:hover { color: var(--ink); border-color: var(--accent); }
+
+	.indexnow { display: flex; align-items: center; gap: 1rem; margin-top: 1rem;
+		background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.8rem 1rem; }
+	.indexnow.ready { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+	.indexnow div { display: flex; flex-direction: column; gap: 0.1rem; }
+	.indexnow strong { font-size: 0.88rem; }
+	.indexnow span { font-size: 0.8rem; color: var(--muted); }
+	.indexnow form { margin-left: auto; }
+	.indexnow button { padding: 0.45rem 0.9rem; border: 0; border-radius: 8px;
+		background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+	.indexnow button:disabled { opacity: 0.45; cursor: default; }
+	.note.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border: 0; }
+	.note.bad { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); border: 0; }
 
 	.note { font-size: 0.84rem; padding: 0.75rem 1rem; border-radius: var(--radius); margin: 1rem 0 0; }
 	.note.warn { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--warn); color: var(--muted); }
