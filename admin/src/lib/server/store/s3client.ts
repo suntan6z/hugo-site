@@ -86,7 +86,8 @@ export class S3Client {
 
 		return fetch(`https://${this.host}${canonicalUri}${query ? `?${query}` : ''}`, {
 			method,
-			body: payload === '' ? undefined : payload,
+			// Uint8Array<ArrayBufferLike> needs widening to BodyInit for fetch.
+			body: payload === '' ? undefined : (payload as BodyInit),
 			headers: {
 				...headers,
 				Authorization:

@@ -40,6 +40,35 @@ export const actions: Actions = {
 			};
 		}
 
+		// Images arrive already resized and re-encoded to WebP by the browser
+		// (src/lib/client/image.ts), because the site's render hook serves bundle
+		// resources at their committed size.
+		const newImages: { name: string; bytes: Uint8Array }[] = [];
+		for (const entry of f.getAll('newimage')) {
+			if (!(entry instanceof File) || entry.size === 0) continue;
+			if (entry.size > 4 * 1024 * 1024) {
+				return fail(400, { message: `${entry.name} is over 4 MB after processing.` });
+			}
+			newImages.push({ name: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) });
+		}
+
+		let deleteImages: string[] = [];
+		try {
+			deleteImages = JSON.parse(String(f.get('deleteimages') ?? '[]'));
+		} catch {
+			deleteImages = [];
+		}
+		// Never delete a file the post still references.
+		const bodies = LANGS.map((l) => translations[l].body).join('\n');
+		const stillUsed = deleteImages.filter(
+			(n) => bodies.includes(n) || str('featured_image') === n || str('partner_logo_url') === n
+		);
+		if (stillUsed.length) {
+			return fail(400, {
+				message: `Still referenced, so not deleted: ${stillUsed.join(', ')}. Remove the reference first.`
+			});
+		}
+
 		const publish = f.get('intent') === 'publish';
 		try {
 			const { sha } = await savePost({
@@ -55,9 +84,16 @@ export const actions: Actions = {
 					project_url: str('project_url') || undefined
 				},
 				translations,
+				newImages,
+				deleteImages,
 				message: `${publish ? 'Publish' : 'Update'} ${params.slug}`
 			});
-			await audit(publish ? 'publish' : 'save', { slug: params.slug, sha });
+			await audit(publish ? 'publish' : 'save', {
+				slug: params.slug,
+				sha,
+				images: newImages.map((i) => i.name),
+				removed: deleteImages
+			});
 			return { success: true, sha, published: publish };
 		} catch (e) {
 			if (e instanceof ConcurrentWriteError) return fail(409, { message: e.message });
