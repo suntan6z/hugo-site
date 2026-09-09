@@ -1,0 +1,92 @@
+name: Deploy Admin Portal
+
+# Scoped to admin/** the same way deploy-functions.yml is scoped to functions/**.
+# StaticHost builds the Hugo site independently and is untouched by this.
+on:
+  push:
+    branches: [main]
+    paths: ["admin/**"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: rg.fr-par.scw.cloud/loconsole-admin
+  IMAGE: admin
+  SCW_NAMESPACE: loconsole-admin
+  SCW_CONTAINER: admin
+  SCW_REGION: fr-par
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - working-directory: admin
+        run: npm ci
+      # Reads the real content/blog and content/gallery from the checkout, so a
+      # front-matter serializer regression blocks the deploy rather than
+      # silently shipping and breaking Hugo's FR/IT placeholder pages.
+      - working-directory: admin
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Scaleway Container Registry
+        run: echo "${{ secrets.SCW_SECRET_KEY }}" | docker login "$REGISTRY" -u nologin --password-stdin
+
+      - name: Build and push
+        working-directory: admin
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build -t "$REGISTRY/$IMAGE:$TAG" -t "$REGISTRY/$IMAGE:latest" .
+          docker push "$REGISTRY/$IMAGE:$TAG"
+          docker push "$REGISTRY/$IMAGE:latest"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Install Scaleway CLI
+        run: curl -fsSL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sudo sh
+
+      - name: Point the container at the new image
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          NS_ID=$(scw container namespace list region="$SCW_REGION" -o json \
+            | jq -r --arg n "$SCW_NAMESPACE" '.[] | select(.name==$n) | .id')
+          if [ -z "$NS_ID" ]; then
+            echo "::error::namespace $SCW_NAMESPACE not found in $SCW_REGION"; exit 1
+          fi
+
+          C_ID=$(scw container container list namespace-id="$NS_ID" region="$SCW_REGION" -o json \
+            | jq -r --arg n "$SCW_CONTAINER" '.[] | select(.name==$n) | .id')
+          if [ -z "$C_ID" ]; then
+            echo "::error::container $SCW_CONTAINER does not exist yet."
+            echo "::error::Its environment holds the app secrets and is created once by hand,"
+            echo "::error::so CI never needs them. See admin/DEPLOY.md."
+            exit 1
+          fi
+
+          # Only the image changes here. Env vars and secrets live in Scaleway
+          # and are deliberately not managed from CI.
+          scw container container update "$C_ID" region="$SCW_REGION" \
+            registry-image="$REGISTRY/$IMAGE:$TAG" redeploy=true
+
+          for i in $(seq 1 30); do
+            STATUS=$(scw container container get "$C_ID" region="$SCW_REGION" -o json | jq -r '.status')
+            echo "status: $STATUS"
+            case "$STATUS" in
+              ready) echo "deployed $TAG"; exit 0 ;;
+              error) scw container container get "$C_ID" region="$SCW_REGION" -o json | jq -r '.error_message'; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::timed out waiting for the container to become ready"; exit 1
