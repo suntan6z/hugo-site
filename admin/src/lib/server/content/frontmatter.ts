@@ -22,6 +22,16 @@
  * dates as ISO timestamps.
  */
 
+/**
+ * Browsers normalise <textarea> line breaks to CRLF when a form is submitted
+ * (per the HTML spec), so anything arriving from the editor must be converted
+ * back before it is written. CRLF in a content file breaks Hugo's front-matter
+ * regex — the FR/IT placeholder pages silently stop generating — and this very
+ * parser then refuses to read the file back. The round-trip suite cannot catch
+ * it, because the corruption happens in the browser, not in the serializer.
+ */
+export const fromForm = (v: unknown): string => String(v ?? '').replace(/\r\n/g, '\n');
+
 /** Canonical key order, taken from the 13 existing blog posts. */
 export const POST_ORDER = [
 	'title',

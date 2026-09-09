@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { loadCity, saveCity, removeCity } from '$lib/server/content/gallery.ts';
 import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
+import { fromForm } from '$lib/server/content/post.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -19,8 +20,8 @@ export const actions: Actions = {
 		let order: string[];
 		let captions: { filename: string; caption: string; altText: string }[];
 		try {
-			order = JSON.parse(String(f.get('order') ?? '[]'));
-			captions = JSON.parse(String(f.get('captions') ?? '[]'));
+			order = JSON.parse(fromForm(f.get('order')) || '[]');
+			captions = JSON.parse(fromForm(f.get('captions')) || '[]');
 		} catch {
 			return fail(400, { message: 'Malformed form data — reload and try again.' });
 		}
