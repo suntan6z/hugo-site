@@ -191,7 +191,14 @@
       {{ $num := 999999 }}
       {{ if gt (len $digits) 0 }}{{ $num = int (index $digits 0) }}{{ end }}
       {{ $sortkey := printf "%s_%06d_%s" $city $num $filename }}
-      {{ $override := index $captionOverrides $imageURL }}
+      {{/* data/gallery_photos.json keys photos by their language-independent
+           path (/gallery/<city>/<file>), but .RelPermalink is language-prefixed
+           (/en/gallery/<city>/<file>) because defaultContentLanguageInSubdir is
+           on. Looking up by RelPermalink alone silently matched nothing, so
+           every caption and alt-text override in that file was dead. Try the
+           canonical key first, then RelPermalink for any full-path entries. */}}
+      {{ $overrideKey := printf "/gallery/%s/%s" $city $filename }}
+      {{ $override := or (index $captionOverrides $overrideKey) (index $captionOverrides $imageURL) }}
       {{ $caption := "" }}
       {{ $altText := replace (i18n "photo_alt") "%city%" (or (index $cityNames $city) (title $city)) }}
       {{ if $override }}
