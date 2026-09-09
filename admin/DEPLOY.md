@@ -9,7 +9,8 @@ never touches StaticHost.
 | Thing | Name |
 |---|---|
 | Container namespace | `loconsole-admin` |
-| Container | `admin` (port 8080, min-scale 0, max-scale 3, 512 MB / 250 mCPU) |
+| Container | `admin` (port 8080, min-scale 0, max-scale 3, 1 GB / 250 mCPU) |
+| Endpoint | `https://loconsoleadmin46c00049-admin.functions.fnc.fr-par.scw.cloud` |
 | Registry namespace | `loconsole-admin` (private) |
 | Object Storage bucket | `loconsole-admin-state` (private) |
 | GitHub App | `loconsole-admin-portal`, `contents:write` + `metadata:read`, `suntan6z/hugo-site` only |
@@ -47,6 +48,23 @@ cd admin && ./scripts/create-container.sh
 
 Safe to re-run — it updates the existing container rather than making a second
 one. Run it whenever a value in `.env` changes.
+
+## Gotchas found the hard way
+
+- **`admin/.env` must not leak into the `scw` CLI's environment.** Sourcing it
+  exports `SCW_ACCESS_KEY`/`SCW_SECRET_KEY` — the container's *storage-only*
+  key — and the CLI prefers env vars over your config profile. Management calls
+  then return an **empty list rather than an error**, which looks exactly like
+  "the namespace doesn't exist". `create-container.sh` copies those aside and
+  unsets them before any `scw` call.
+- **Never run `create-container.sh` under `bash -x`.** It would echo the GitHub
+  App private key and every secret. The script sets `set +x` defensively.
+- **`memory-limit-bytes` only accepts G/GB units** in the CLI, despite the name.
+- The CLI argument is `image`, not `registry-image`, and secret env vars are a
+  map (`secret-environment-variables.KEY=value`), not an indexed list.
+- **WebAuthn is bound to `RP_ID=admin.loconsole.eu`.** Passkeys will not work on
+  the raw `*.functions.fnc.fr-par.scw.cloud` endpoint — enrol only via the
+  custom domain.
 
 ## Recovering from a lockout
 
