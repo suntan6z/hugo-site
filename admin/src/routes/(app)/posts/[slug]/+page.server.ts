@@ -4,6 +4,7 @@ import { loadPost, savePost, LANGS, type Lang, type PostTranslation } from '$lib
 import { CATEGORIES } from '$lib/server/content/frontmatter.ts';
 import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
+import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const post = await loadPost(params.slug);
@@ -88,6 +89,10 @@ export const actions: Actions = {
 				deleteImages,
 				message: `${publish ? 'Publish' : 'Update'} ${params.slug}`
 			});
+			// Recorded so the dashboard can tell whether StaticHost has caught up.
+			// A draft save changes the built output too (the page disappears), so
+			// both count as something the build has to reflect.
+			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });
 			await audit(publish ? 'publish' : 'save', {
 				slug: params.slug,
 				sha,
