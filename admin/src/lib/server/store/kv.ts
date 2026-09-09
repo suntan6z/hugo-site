@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { IS_LOCAL, LOCAL_STATE_DIR } from '../env.ts';
+import { S3Client } from './s3client.ts';
 import { env } from '$env/dynamic/private';
 
 /**
@@ -21,7 +22,11 @@ export interface Store {
 
 /** Local mode: plain files under admin/.state. */
 class FsStore implements Store {
-	constructor(private root: string) {}
+	private readonly root: string;
+
+	constructor(root: string) {
+		this.root = root;
+	}
 
 	private file(key: string) {
 		if (key.includes('..')) throw new Error(`unsafe store key: ${key}`);
@@ -65,104 +70,38 @@ class FsStore implements Store {
 	}
 }
 
-/**
- * Deployed mode: Scaleway Object Storage over the S3 API, with SigV4 signed by
- * hand. The AWS SDK is ~200 packages for four HTTP verbs.
- */
+/** Deployed mode: Scaleway Object Storage, via the extracted SigV4 client. */
 class S3Store implements Store {
-	constructor(
-		private bucket: string,
-		private region: string,
-		private accessKey: string,
-		private secretKey: string
-	) {}
+	private readonly s3: S3Client;
 
-	private get host() {
-		return `s3.${this.region}.scw.cloud`;
-	}
-
-	private async signedFetch(
-		method: string,
-		key: string,
-		body?: string,
-		query = ''
-	): Promise<Response> {
-		const now = new Date();
-		const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-		const date = amzDate.slice(0, 8);
-		const payloadHash = crypto
-			.createHash('sha256')
-			.update(body ?? '')
-			.digest('hex');
-
-		const canonicalUri = `/${this.bucket}${key ? `/${key}` : ''}`
-			.split('/')
-			.map((s, i) => (i === 0 ? s : encodeURIComponent(s)))
-			.join('/');
-
-		const headers: Record<string, string> = {
-			host: this.host,
-			'x-amz-content-sha256': payloadHash,
-			'x-amz-date': amzDate
-		};
-		const signedHeaders = Object.keys(headers).sort().join(';');
-		const canonicalHeaders = Object.keys(headers)
-			.sort()
-			.map((h) => `${h}:${headers[h]}\n`)
-			.join('');
-
-		const canonicalRequest = [
-			method,
-			canonicalUri,
-			query,
-			canonicalHeaders,
-			signedHeaders,
-			payloadHash
-		].join('\n');
-
-		const scope = `${date}/${this.region}/s3/aws4_request`;
-		const stringToSign = [
-			'AWS4-HMAC-SHA256',
-			amzDate,
-			scope,
-			crypto.createHash('sha256').update(canonicalRequest).digest('hex')
-		].join('\n');
-
-		const hmac = (k: crypto.BinaryLike | Buffer, d: string) =>
-			crypto.createHmac('sha256', k).update(d).digest();
-		const signingKey = hmac(hmac(hmac(hmac(`AWS4${this.secretKey}`, date), this.region), 's3'), 'aws4_request');
-		const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
-
-		return fetch(`https://${this.host}${canonicalUri}${query ? `?${query}` : ''}`, {
-			method,
-			body,
-			headers: {
-				...headers,
-				Authorization: `AWS4-HMAC-SHA256 Credential=${this.accessKey}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
-			}
-		});
+	constructor(s3: S3Client) {
+		this.s3 = s3;
 	}
 
 	async get<T>(key: string): Promise<T | null> {
-		const r = await this.signedFetch('GET', `${key}.json`);
+		const r = await this.s3.send('GET', `${key}.json`);
 		if (r.status === 404) return null;
 		if (!r.ok) throw new Error(`store get ${key}: ${r.status} ${await r.text()}`);
 		return (await r.json()) as T;
 	}
 
 	async put(key: string, value: unknown): Promise<void> {
-		const r = await this.signedFetch('PUT', `${key}.json`, JSON.stringify(value, null, 2));
+		const r = await this.s3.send('PUT', `${key}.json`, JSON.stringify(value, null, 2));
 		if (!r.ok) throw new Error(`store put ${key}: ${r.status} ${await r.text()}`);
 	}
 
 	async del(key: string): Promise<void> {
-		const r = await this.signedFetch('DELETE', `${key}.json`);
+		const r = await this.s3.send('DELETE', `${key}.json`);
 		if (!r.ok && r.status !== 404) throw new Error(`store del ${key}: ${r.status}`);
 	}
 
 	async list(prefix: string): Promise<string[]> {
-		const q = `list-type=2&prefix=${encodeURIComponent(`${prefix}/`)}`;
-		const r = await this.signedFetch('GET', '', undefined, q);
+		const r = await this.s3.send(
+			'GET',
+			'',
+			undefined,
+			`list-type=2&prefix=${encodeURIComponent(`${prefix}/`)}`
+		);
 		if (!r.ok) throw new Error(`store list ${prefix}: ${r.status}`);
 		const xml = await r.text();
 		return [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)]
@@ -176,10 +115,12 @@ class S3Store implements Store {
 export const store: Store = IS_LOCAL
 	? new FsStore(LOCAL_STATE_DIR)
 	: new S3Store(
-			env.SCW_BUCKET ?? 'loconsole-admin-state',
-			env.SCW_REGION ?? 'fr-par',
-			env.SCW_ACCESS_KEY ?? '',
-			env.SCW_SECRET_KEY ?? ''
+			new S3Client({
+				bucket: env.SCW_BUCKET ?? 'loconsole-admin-state',
+				region: env.SCW_REGION ?? 'fr-par',
+				accessKey: env.SCW_ACCESS_KEY ?? '',
+				secretKey: env.SCW_SECRET_KEY ?? ''
+			})
 		);
 
 /** Append-only audit entries: one object each, since S3 has no compare-and-swap. */

@@ -2,12 +2,15 @@ import { github } from '../env.ts';
 import { installationToken, invalidateToken } from './auth.ts';
 
 export class GitHubError extends Error {
-	constructor(
-		message: string,
-		readonly status: number,
-		readonly body: string
-	) {
+	// Fields written out rather than as parameter properties, so every module
+	// stays loadable by Node's type-stripping (used by the test suite).
+	readonly status: number;
+	readonly body: string;
+
+	constructor(message: string, status: number, body: string) {
 		super(message);
+		this.status = status;
+		this.body = body;
 	}
 }
 
