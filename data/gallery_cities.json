@@ -1,11 +1,11 @@
 [
-  { "name": "Paris",             "slug": "paris",     "flag": "🇫🇷" },
-  { "name": "Bari",              "slug": "bari",      "flag": "🇮🇹" },
-  { "name": "Barcelona",         "slug": "barcelona", "flag": "🇪🇸" },
-  { "name": "Amsterdam",         "slug": "amsterdam", "flag": "🇳🇱" },
-  { "name": "Warsaw",            "slug": "warsaw",    "flag": "🇵🇱" },
-  { "name": "Valletta",          "slug": "valletta",  "flag": "🇲🇹" },
-  { "name": "Tirana",            "slug": "tirana",    "flag": "🇦🇱" },
-  { "name": "Sofia",             "slug": "sofia",     "flag": "🇧🇬" },
-  { "name": "Câmara de Lobos",   "slug": "camara-de-lobos", "flag": "🇵🇹" }
+  { "name": "Paris",           "slug": "paris",           "flag": "🇫🇷" },
+  { "name": "Bari",            "slug": "bari",            "flag": "🇮🇹" },
+  { "name": "Barcelona",       "slug": "barcelona",       "flag": "🇪🇸" },
+  { "name": "Amsterdam",       "slug": "amsterdam",       "flag": "🇳🇱" },
+  { "name": "Warsaw",          "slug": "warsaw",          "flag": "🇵🇱" },
+  { "name": "Valletta",        "slug": "valletta",        "flag": "🇲🇹" },
+  { "name": "Tirana",          "slug": "tirana",          "flag": "🇦🇱" },
+  { "name": "Sofia",           "slug": "sofia",           "flag": "🇧🇬" },
+  { "name": "Câmara de Lobos", "slug": "camara-de-lobos", "flag": "🇵🇹" }
 ]
