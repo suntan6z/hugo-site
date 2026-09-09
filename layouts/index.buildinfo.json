@@ -1,0 +1,57 @@
+{{- /*
+  Content inventory consumed by the admin portal (admin.loconsole.eu) to answer
+  one question: has the change I just pushed actually been built and deployed?
+
+  Deliberately NOT a git SHA. `.GitInfo` needs enableGitInfo plus a full clone,
+  and StaticHost's clone depth is not something this repo controls — a shallow
+  clone yields empty GitInfo with no error. A content inventory answers the real
+  question more directly and needs no git at all.
+
+  Reads from the default-language site (hugo.Sites index 0) regardless of which
+  language is rendering, so /en/, /fr/ and /it/ build-info.json are identical
+  and the portal can always read /en/.
+
+  Drafts never appear here: Hugo excludes them from the build, which is exactly
+  what makes this a record of what is actually published.
+*/ -}}
+{{- $en := index hugo.Sites 0 -}}
+
+{{- $posts := slice -}}
+{{- range where $en.RegularPages "Section" "blog" -}}
+  {{- $langs := slice -}}
+  {{- range .AllTranslations -}}
+    {{/* A translation flagged `untranslated` is a placeholder — hand-written or
+         synthesised by the content adapter — not a real translation. */}}
+    {{- if not .Params.untranslated -}}
+      {{- $langs = $langs | append .Language.Lang -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $slug := .Params.slug | default .File.ContentBaseName -}}
+  {{- $posts = $posts | append (dict
+        "slug"     $slug
+        "title"    .Title
+        "date"     (.Date.Format "2006-01-02")
+        "category" (.Params.category | default "")
+        "langs"    $langs
+        "featured" (ne (.Params.featured_image | default "") "")
+        "images"   (len (.Resources.ByType "image"))
+      ) -}}
+{{- end -}}
+
+{{- $gallery := slice -}}
+{{- range hugo.Data.gallery_cities -}}
+  {{- $slug := .slug -}}
+  {{- with $en.GetPage (printf "/gallery/%s" $slug) -}}
+    {{- $gallery = $gallery | append (dict
+          "slug"   $slug
+          "photos" (len (.Resources.ByType "image"))
+        ) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- dict
+      "builtAt" (now.UTC.Format "2006-01-02T15:04:05Z")
+      "hugo"    hugo.Version
+      "posts"   $posts
+      "gallery" $gallery
+    | jsonify (dict "indent" "  ") -}}

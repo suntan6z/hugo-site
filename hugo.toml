@@ -128,7 +128,7 @@ disableKinds = ["taxonomy", "term"]
 enableRobotsTXT = true
 
 [outputs]
-  home = ["HTML", "Sitemap", "ROBOTS"]
+  home = ["HTML", "Sitemap", "ROBOTS", "BUILDINFO"]
   section = ["HTML", "RSS"]
 
 [mediaTypes]
@@ -147,5 +147,15 @@ enableRobotsTXT = true
   [outputFormats.ROBOTS]
     mediaType = "text/plain"
     baseName = "robots"
+    isPlainText = true
+    notAlternative = true
+  # Content inventory read by the admin portal (admin.loconsole.eu) to tell
+  # whether a change it pushed has actually been built and deployed by
+  # StaticHost. Rendered by layouts/index.buildinfo.json. Because
+  # defaultContentLanguageInSubdir is on, this publishes to /en/build-info.json
+  # (and /fr/, /it/), not to the site root.
+  [outputFormats.BUILDINFO]
+    mediaType = "application/json"
+    baseName = "build-info"
     isPlainText = true
     notAlternative = true

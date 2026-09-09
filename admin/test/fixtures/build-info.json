@@ -1,0 +1,205 @@
+{
+  "builtAt": "2026-09-09T14:51:51Z",
+  "gallery": [
+    {
+      "photos": 14,
+      "slug": "paris"
+    },
+    {
+      "photos": 7,
+      "slug": "bari"
+    },
+    {
+      "photos": 15,
+      "slug": "barcelona"
+    },
+    {
+      "photos": 15,
+      "slug": "amsterdam"
+    },
+    {
+      "photos": 21,
+      "slug": "warsaw"
+    },
+    {
+      "photos": 13,
+      "slug": "valletta"
+    },
+    {
+      "photos": 11,
+      "slug": "tirana"
+    },
+    {
+      "photos": 13,
+      "slug": "sofia"
+    },
+    {
+      "photos": 12,
+      "slug": "camara-de-lobos"
+    }
+  ],
+  "hugo": "0.165.0",
+  "posts": [
+    {
+      "category": "Erasmus+",
+      "date": "2026-08-21",
+      "featured": false,
+      "images": 4,
+      "langs": [
+        "en"
+      ],
+      "slug": "colors-of-solidarity",
+      "title": "Colors of solidarity: Sofia, Bulagaria"
+    },
+    {
+      "category": "Cybersecurity",
+      "date": "2026-07-07",
+      "featured": false,
+      "images": 0,
+      "langs": [
+        "en"
+      ],
+      "slug": "chat-control-eu",
+      "title": "It's not over. Chat control... Again !"
+    },
+    {
+      "category": "Technology",
+      "date": "2026-02-13",
+      "featured": false,
+      "images": 0,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "understanding-the-fediverse",
+      "title": "Beyond Twitter and Facebook: Understanding the Fediverse"
+    },
+    {
+      "category": "Technology",
+      "date": "2026-02-12",
+      "featured": false,
+      "images": 0,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "ai-fatigue-is-real",
+      "title": "AI Fatigue is Real"
+    },
+    {
+      "category": "Technology",
+      "date": "2026-02-09",
+      "featured": false,
+      "images": 0,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "first-home-nas",
+      "title": "I \"Built\" My First Home NAS"
+    },
+    {
+      "category": "Cybersecurity",
+      "date": "2026-02-05",
+      "featured": false,
+      "images": 0,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "edward-snowden-mass-surveillance",
+      "title": "Edward Snowden: The Whistleblower Who Exposed Mass Surveillance"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2025-11-04",
+      "featured": false,
+      "images": 4,
+      "langs": [
+        "en"
+      ],
+      "slug": "out-the-shadow-3",
+      "title": "Out the Shadow TC3: Taranto, Italy"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2025-10-01",
+      "featured": false,
+      "images": 3,
+      "langs": [
+        "en"
+      ],
+      "slug": "out-the-shadow-2",
+      "title": "Out the Shadow TC2: Dobczyce, Poland"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2024-12-20",
+      "featured": false,
+      "images": 5,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "out-the-shadow",
+      "title": "Out the Shadow TC1: Dobczyce, Poland"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2021-11-29",
+      "featured": false,
+      "images": 1,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "active-citizenship-mythology",
+      "title": "Active Citizenship through Mythology: Pieria, Greece"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2021-09-10",
+      "featured": false,
+      "images": 4,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "digital-entrepreneurship-accelerator",
+      "title": "Digital Entrepreneurship Accelerator: Bansko, Bulgaria"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2021-08-04",
+      "featured": false,
+      "images": 1,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "breaking-wall-extremism",
+      "title": "Breaking the Wall of Extremism: Urdos, France"
+    },
+    {
+      "category": "Erasmus+",
+      "date": "2020-11-22",
+      "featured": false,
+      "images": 4,
+      "langs": [
+        "en",
+        "fr",
+        "it"
+      ],
+      "slug": "youth-in-contact",
+      "title": "Youth in Contact: Chérac, France"
+    }
+  ]
+}
