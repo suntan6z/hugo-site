@@ -1,4 +1,5 @@
-import { SignJWT, importPKCS8 } from 'jose';
+import { SignJWT } from 'jose';
+import { createPrivateKey } from 'node:crypto';
 import { github } from '../env.ts';
 
 /**
@@ -11,7 +12,10 @@ let cached: { token: string; expiresAt: number } | null = null;
 
 /** App-level JWT, RS256, used only to exchange for an installation token. */
 async function appJwt(): Promise<string> {
-	const key = await importPKCS8(github.privateKey, 'RS256');
+	// GitHub issues App keys in PKCS#1 ("BEGIN RSA PRIVATE KEY"), which jose's
+	// importPKCS8 rejects. node:crypto reads both PKCS#1 and PKCS#8, and jose
+	// accepts the resulting KeyObject directly.
+	const key = createPrivateKey(github.privateKey);
 	const now = Math.floor(Date.now() / 1000);
 	return new SignJWT({})
 		.setProtectedHeader({ alg: 'RS256' })

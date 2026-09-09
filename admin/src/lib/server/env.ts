@@ -20,7 +20,19 @@ const required = (name: string): string => {
 
 const optional = (name: string, fallback = ''): string => env[name] ?? fallback;
 
-export const MODE: Mode = env.GH_APP_ID ? 'github' : 'local';
+/**
+ * Mode is inferred from whether a GitHub App is configured, but ADMIN_MODE
+ * overrides it. That matters for local development: once the App credentials
+ * are present in .env, every save would otherwise commit to the real
+ * repository. Set ADMIN_MODE=local to keep writing to the working copy while
+ * still having the credentials on hand.
+ */
+export const MODE: Mode =
+	env.ADMIN_MODE === 'local' || env.ADMIN_MODE === 'github'
+		? env.ADMIN_MODE
+		: env.GH_APP_ID
+			? 'github'
+			: 'local';
 export const IS_LOCAL = MODE === 'local';
 
 /** Absolute path to the Hugo site root (the repo containing content/, layouts/). */
