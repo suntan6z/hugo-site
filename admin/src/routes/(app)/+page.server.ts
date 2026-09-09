@@ -2,14 +2,19 @@ import type { PageServerLoad } from './$types';
 import { fetchBuildInfo, readLastPublish, deployStatus } from '$lib/server/integrations/buildinfo.ts';
 import { listPosts } from '$lib/server/content/post.ts';
 import { integrations } from '$lib/server/env.ts';
+import { readQueue, submitQueued } from '$lib/server/integrations/indexnow.ts';
+import { audit } from '$lib/server/store/kv.ts';
+import { fail } from '@sveltejs/kit';
+import type { Actions } from './$types';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 
 export const load: PageServerLoad = async ({ url }) => {
-	const [info, last, posts] = await Promise.all([
+	const [info, last, posts, indexNowQueue] = await Promise.all([
 		fetchBuildInfo(url.searchParams.has('refresh')),
 		readLastPublish(),
-		listPosts()
+		listPosts(),
+		readQueue()
 	]);
 
 	const status = deployStatus(info, last);
@@ -36,6 +41,10 @@ export const load: PageServerLoad = async ({ url }) => {
 		posts: posts.slice(0, 8),
 		status,
 		siteUrl: integrations.siteUrl,
+		indexNow: {
+			configured: !!integrations.indexNowKey,
+			queued: indexNowQueue.map((q) => q.url)
+		},
 		fromManifest: !!info,
 		stats: {
 			total: posts.length,
@@ -44,4 +53,12 @@ export const load: PageServerLoad = async ({ url }) => {
 			translationDebt
 		}
 	};
+};
+
+export const actions: Actions = {
+	indexnow: async () => {
+		const r = await submitQueued();
+		await audit('indexnow-submit', { ok: r.ok, status: r.status, submitted: r.submitted });
+		return r.ok ? { indexNow: r.detail } : fail(502, { message: r.detail });
+	}
 };

@@ -1,5 +1,7 @@
 import { repo, type FileOp } from './repo.ts';
-import { FrontMatter, CATEGORIES, type Category } from './frontmatter.ts';
+import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
+
+export { fromForm };
 
 export const LANGS = ['en', 'fr', 'it'] as const;
 export type Lang = (typeof LANGS)[number];

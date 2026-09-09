@@ -21,6 +21,12 @@
 	let tab = $state<'en' | 'fr' | 'it'>('en');
 	let saving = $state(false);
 
+	// After a blocked publish the server returns the findings it rejected on;
+	// otherwise show the checks computed when the page loaded.
+	const findings = $derived(form?.findings ?? data.findings ?? []);
+	const errors = $derived(findings.filter((f) => f.severity === 'error'));
+	const warnings = $derived(findings.filter((f) => f.severity === 'warning'));
+
 	// Images staged in the browser. They are resized and re-encoded to WebP here,
 	// then appended to the form on submit so they land in the same commit as the
 	// Markdown.
@@ -106,6 +112,26 @@
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
 {#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
+
+{#if findings.length > 0}
+	<section class="findings">
+		<h2>
+			{errors.length > 0 ? `${errors.length} to fix before publishing` : `${warnings.length} suggestion${warnings.length === 1 ? '' : 's'}`}
+		</h2>
+		<ul>
+			{#each findings as f}
+				<li class={f.severity}>
+					<span class="sev">{f.severity === 'error' ? 'must fix' : 'suggestion'}</span>
+					{#if f.lang}<span class="lang">{f.lang}</span>{/if}
+					<span>{f.message}</span>
+				</li>
+			{/each}
+		</ul>
+		{#if errors.length === 0}
+			<p class="note">Suggestions never block publishing.</p>
+		{/if}
+	</section>
+{/if}
 
 <form method="POST" action="?/save" enctype="multipart/form-data" use:enhance={({ formData }) => {
 		for (const p of pending) formData.append('newimage', p.blob, p.name);
@@ -252,9 +278,19 @@
 		<button type="submit" name="intent" value="save" disabled={saving}>
 			{saving ? 'Saving…' : 'Save'}
 		</button>
-		<button type="submit" name="intent" value="publish" class="primary" disabled={saving}>
+		<button
+			type="submit"
+			name="intent"
+			value="publish"
+			class="primary"
+			disabled={saving || errors.length > 0}
+			title={errors.length > 0 ? 'Fix the blocking problems above first' : ''}
+		>
 			Publish
 		</button>
+		{#if errors.length > 0}
+			<span class="blocked">{errors.length} problem{errors.length === 1 ? '' : 's'} blocking publish</span>
+		{/if}
 	</div>
 </form>
 
@@ -284,6 +320,19 @@
 	.tabs i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: inline-block; }
 	.tabs i.on { background: var(--accent); }
 	.pane { display: grid; gap: 0.85rem; }
+	.findings { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+		padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
+	.findings h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em;
+		color: var(--muted); margin: 0 0 0.55rem; }
+	.findings ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+	.findings li { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.85rem; }
+	.findings .sev { flex: none; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+		font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px; }
+	.findings li.error .sev { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+	.findings li.warning .sev { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+	.findings .lang { flex: none; font-variant: small-caps; font-weight: 700; color: var(--muted); font-size: 0.75rem; }
+	.blocked { align-self: center; font-size: 0.8rem; color: var(--danger); }
+
 	fieldset.images { display: block; }
 	.picker { display: inline-block; cursor: pointer; }
 	.picker input { display: none; }
