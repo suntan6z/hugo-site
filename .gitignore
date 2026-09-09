@@ -8,3 +8,9 @@ functions/node_modules/
 functions/.serverless/
 functions/.env
 functions/*.zip
+
+# Admin portal (admin/)
+admin/node_modules/
+admin/.svelte-kit/
+admin/build/
+admin/.env
