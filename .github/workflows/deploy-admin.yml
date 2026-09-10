@@ -76,9 +76,20 @@ jobs:
           fi
 
           # Only the image changes here. Env vars and secrets live in Scaleway
-          # and are deliberately not managed from CI.
+          # and are deliberately not managed from CI. Setting `image` is itself
+          # what triggers a new deployment — the CLI has no `redeploy` flag, and
+          # the argument is `image`, not `registry-image`.
           scw container container update "$C_ID" region="$SCW_REGION" \
-            registry-image="$REGISTRY/$IMAGE:$TAG" redeploy=true
+            image="$REGISTRY/$IMAGE:$TAG"
+
+          # A silent no-op here is what let four deploys appear to succeed while
+          # the container stayed on an old image, so confirm the swap took.
+          RUNNING=$(scw container container get "$C_ID" region="$SCW_REGION" -o json | jq -r '.image')
+          echo "container image is now: $RUNNING"
+          case "$RUNNING" in
+            *":$TAG") ;;
+            *) echo "::error::image did not change (still $RUNNING)"; exit 1 ;;
+          esac
 
           for i in $(seq 1 30); do
             STATUS=$(scw container container get "$C_ID" region="$SCW_REGION" -o json | jq -r '.status')

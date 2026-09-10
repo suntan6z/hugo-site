@@ -76,7 +76,7 @@ EXISTING=$(scw container container list namespace-id="$NS_ID" region=$REGION -o 
 if [ -n "$EXISTING" ]; then
   echo "updating existing container $EXISTING"
   scw container container update "$EXISTING" region=$REGION \
-    image="$IMAGE" "${ENVS[@]}" "${SECRETS[@]}" redeploy=true
+    image="$IMAGE" "${ENVS[@]}" "${SECRETS[@]}"
 else
   echo "creating container $NAME from $IMAGE"
   scw container container create name=$NAME namespace-id="$NS_ID" region=$REGION \

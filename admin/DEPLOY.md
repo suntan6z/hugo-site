@@ -60,6 +60,15 @@ one. Run it whenever a value in `.env` changes.
 - **Never run `create-container.sh` under `bash -x`.** It would echo the GitHub
   App private key and every secret. The script sets `set +x` defensively.
 - **`memory-limit-bytes` only accepts G/GB units** in the CLI, despite the name.
+- **`scw container container update` takes `image`, not `registry-image`, and has
+  no `redeploy` flag at all.** Setting `image` is what triggers the deployment.
+  Getting this wrong once cost four apparently-successful CI runs that left the
+  container on an old image, and a production 500 when a rotated secret never
+  reached it. The workflow now reads the container's image back and fails if it
+  did not change.
+- **Never filter this script's output through `grep` to hide secrets.** Doing so
+  hides errors too — that is exactly how a failing update looked like a
+  successful one. Redact with `sed` over the full output instead.
 - The CLI argument is `image`, not `registry-image`, and secret env vars are a
   map (`secret-environment-variables.KEY=value`), not an indexed list.
 - **WebAuthn is bound to `RP_ID=admin.loconsole.eu`.** Passkeys will not work on
