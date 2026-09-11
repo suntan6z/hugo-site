@@ -1,0 +1,61 @@
+# Builds the site with the exact image and command StaticHost uses, read
+# from statichost.yml, so a template that only works on a newer local Hugo
+# fails here — visibly, with a log — instead of silently on StaticHost.
+#
+# Why: local Hugo comes from Homebrew and moves ahead of the pin (0.166 vs
+# 0.163.3 when this was added), and hugomods does not publish an image for
+# every release, so "keep local equal to production" cannot be relied on.
+# StaticHost builds main on its own servers and this repo cannot see that
+# build; this is the next best thing. Public repo, so Actions is free.
+name: Hugo build (pinned image)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "admin/**"
+      - "functions/**"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "admin/**"
+      - "functions/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with StaticHost's image
+        run: |
+          image=$(sed -nE 's/^image:[[:space:]]*"?([^"]+)"?[[:space:]]*$/\1/p' statichost.yml)
+          cmd=$(sed -nE 's/^command:[[:space:]]*"?([^"]+)"?[[:space:]]*$/\1/p' statichost.yml)
+          test -n "$image" && test -n "$cmd" || { echo "::error::could not read image/command from statichost.yml"; exit 1; }
+          echo "image:   $image"
+          echo "command: $cmd"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HUGO_CACHEDIR=/tmp/hugo_cache \
+            -v "$PWD:/src" -w /src \
+            --entrypoint /bin/sh \
+            "$image" -c "hugo version && $cmd --logLevel warn" 2>&1 | tee build.log
+          exit "${PIPESTATUS[0]}"
+
+      - name: Surface warnings
+        run: |
+          grep -E '^WARN' build.log | while read -r line; do echo "::warning::$line"; done || true
+
+      - name: Sanity-check the output
+        run: |
+          # The portal's build-status panel reads this manifest; if it is
+          # missing or empty, the portal can no longer tell what is live.
+          node -e '
+            const m = JSON.parse(require("fs").readFileSync("public/en/build-info.json", "utf8"));
+            if (!Array.isArray(m.posts) || m.posts.length === 0) throw new Error("no posts in build-info.json");
+            console.log(`build-info: ${m.posts.length} posts, hugo ${m.hugo}`);
+          '
+          for f in public/en/index.html public/fr/index.html public/it/index.html public/en/blog/index.html public/sitemap.xml; do
+            test -s "$f" || { echo "::error::missing $f"; exit 1; }
+          done
