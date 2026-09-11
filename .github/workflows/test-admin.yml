@@ -24,6 +24,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Front-matter round-trip suite
+      - working-directory: admin
+        run: npm ci
+      - name: Unit tests (incl. front-matter round-trip against real content)
         working-directory: admin
         run: npm test
+      - name: Integration tests (real app, throwaway site copy)
+        working-directory: admin
+        run: npm run test:integration
+      - name: Dependency audit
+        working-directory: admin
+        run: npm audit --omit=dev --audit-level=high

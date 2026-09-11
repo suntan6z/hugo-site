@@ -13,7 +13,8 @@
     "build": "vite build",
     "preview": "node build",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "node --test 'test/**/*.test.ts'"
+    "test": "node --test 'test/**/*.test.ts'",
+    "test:integration": "npm run build && node --test --test-concurrency=1 'test/**/*.integration.ts'"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.12",

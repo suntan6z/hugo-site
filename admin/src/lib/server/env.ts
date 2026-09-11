@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { env } from '$env/dynamic/private';
 
 /**
@@ -35,8 +36,15 @@ export const MODE: Mode =
 			: 'local';
 export const IS_LOCAL = MODE === 'local';
 
-/** Absolute path to the Hugo site root (the repo containing content/, layouts/). */
-export const SITE_ROOT = optional('SITE_ROOT', new URL('../../../..', import.meta.url).pathname);
+/**
+ * Absolute path to the Hugo site root (the repo containing content/, layouts/).
+ *
+ * Defaults to the parent of the working directory: npm runs the admin scripts
+ * from admin/, both under `vite dev` and `node build`. A path derived from
+ * import.meta.url would be wrong once the code is bundled into build/, which
+ * is exactly how the integration tests run it.
+ */
+export const SITE_ROOT = optional('SITE_ROOT', path.resolve(process.cwd(), '..'));
 
 /** Where per-viewer state lives in local mode. */
 export const LOCAL_STATE_DIR = optional('LOCAL_STATE_DIR', `${SITE_ROOT}/admin/.state`);
