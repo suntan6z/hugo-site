@@ -3,6 +3,17 @@ import { readSession } from '$lib/server/auth/session.ts';
 import { isPublicPath, denialFor } from '$lib/server/auth/access.ts';
 import { rateLimited, retryAfter, isRateLimitedPath } from '$lib/server/auth/ratelimit.ts';
 import { clientAddress } from '$lib/server/auth/client-address.ts';
+import { integrations } from '$lib/server/env.ts';
+
+// The article and newsletter previews show images the live site serves
+// (root-relative paths, the newsletter's lead image). Only that one origin.
+const SITE_ORIGIN = (() => {
+	try {
+		return new URL(integrations.siteUrl).origin;
+	} catch {
+		return '';
+	}
+})();
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Throttle the sign-in surface before doing any work for it. The address is
@@ -63,7 +74,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		'Content-Security-Policy',
 		[
 			"default-src 'self'",
-			"img-src 'self' data: blob:",
+			`img-src 'self' data: blob: ${SITE_ORIGIN}`.trim(),
 			"style-src 'self' 'unsafe-inline'",
 			"script-src 'self' 'unsafe-inline'",
 			"font-src 'self'",

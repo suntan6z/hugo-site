@@ -2,3 +2,4 @@
 # Generated from the site by scripts/sync-brand.mjs — the site is the source of truth.
 static/brand/
 src/lib/brand/brand.css
+src/lib/brand/site.css

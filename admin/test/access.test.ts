@@ -105,6 +105,13 @@ describe('denial shape', () => {
 		assert.deepEqual(denialFor('GET', '/posts/__data.json'), { kind: 'redirect', location: '/login?next=%2Fposts' });
 	});
 
+	test('an API call is refused with 401 even as a GET, never redirected to HTML', () => {
+		for (const m of ['GET', 'HEAD', 'PUT', 'DELETE']) {
+			assert.deepEqual(denialFor(m, '/api/drafts/first-home-nas'), { kind: 'unauthorised' }, m);
+		}
+		assert.deepEqual(denialFor('GET', '/api/whoami'), { kind: 'unauthorised' });
+	});
+
 	test('every non-GET method is refused', () => {
 		for (const m of ['POST', 'PUT', 'PATCH', 'DELETE']) {
 			assert.deepEqual(denialFor(m, '/posts'), { kind: 'unauthorised' });

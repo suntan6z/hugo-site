@@ -2,6 +2,8 @@
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 	import { prepareImage, formatBytes, ImageError, type PreparedImage } from '$lib/client/image';
+	import { onMount } from 'svelte';
+	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
 	let { data, form } = $props();
 
 	const LANGS = ['en', 'fr', 'it'] as const;
@@ -15,6 +17,7 @@
 		if (data.post.slug !== loaded) {
 			loaded = data.post.slug;
 			post = structuredClone(data.post);
+			untrack(resetAutosave);
 		}
 	});
 
@@ -101,6 +104,236 @@
 		);
 	}
 
+	/* ---------------------------------------------------------------- preview */
+
+	type View = 'write' | 'split' | 'preview';
+	let view = $state<View>('write');
+	let theme = $state<'light' | 'dark'>('light');
+
+	onMount(() => {
+		try {
+			const v = localStorage.getItem('editor:view');
+			if (v === 'write' || v === 'split' || v === 'preview') view = v;
+		} catch {}
+		const read = () =>
+			(theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+		read();
+		// Follow the header's theme toggle without waiting for the next keystroke.
+		const mo = new MutationObserver(read);
+		mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+		return () => mo.disconnect();
+	});
+
+	// Split needs the width; below it, a remembered "split" shows as Write
+	// rather than stacking a second copy of the article under the textarea.
+	let narrow = $state(false);
+	onMount(() => {
+		const mq = matchMedia('(max-width: 1100px)');
+		const read = () => (narrow = mq.matches);
+		read();
+		mq.addEventListener('change', read);
+		return () => mq.removeEventListener('change', read);
+	});
+	const shown = $derived<View>(narrow && view === 'split' ? 'write' : view);
+
+	function setView(v: View) {
+		view = v;
+		try { localStorage.setItem('editor:view', v); } catch {}
+	}
+
+	// Scroll position of the body textarea, shared with the preview in split view.
+	let syncRatio = $state<number | null>(null);
+	function onBodyScroll(e: Event) {
+		if (shown !== 'split') return;
+		const ta = e.currentTarget as HTMLTextAreaElement;
+		const max = ta.scrollHeight - ta.clientHeight;
+		syncRatio = max > 0 ? ta.scrollTop / max : 0;
+	}
+
+	const pendingUrls = $derived(Object.fromEntries(pending.map((p) => [p.name, p.previewUrl])));
+
+	/* --------------------------------------------------------------- autosave */
+
+	type Snapshot = ReturnType<typeof snapshotOf>;
+
+	function snapshotOf(p: typeof post) {
+		return {
+			date: p.date,
+			category: p.category,
+			draft: p.draft,
+			featured_image: p.featured_image ?? '',
+			partner_name: p.partner_name ?? '',
+			partner_url: p.partner_url ?? '',
+			partner_logo_url: p.partner_logo_url ?? '',
+			project_url: p.project_url ?? '',
+			translations: Object.fromEntries(
+				LANGS.map((l) => [l, {
+					title: p.translations[l].title,
+					description: p.translations[l].description,
+					body: p.translations[l].body,
+					untranslated: p.translations[l].untranslated,
+					eu_funding_text: p.translations[l].eu_funding_text ?? ''
+				}])
+			) as Record<'en' | 'fr' | 'it', { title: string; description: string; body: string; untranslated: boolean; eu_funding_text: string }>
+		};
+	}
+
+	/** djb2: fingerprints the committed article so a stale draft can be recognised. */
+	function fingerprint(s: string): string {
+		let h = 5381;
+		for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+		return (h >>> 0).toString(36);
+	}
+
+	type DraftRecord = { savedAt: string; baseHash: string; post: Snapshot; where: 'this device' | 'your account' };
+
+	let committed = $state('');
+	let baseHash = $state('');
+	let autosave = $state<'clean' | 'dirty' | 'local' | 'saving' | 'synced' | 'offline' | 'signedout'>('clean');
+	let syncedAt = $state<string | null>(null);
+	let offer = $state<DraftRecord | null>(null);
+	let ready = $state(false);
+
+	const localKey = () => `draft:${post.slug}`;
+
+	/** Sets the committed baseline for the article now loaded, then looks for drafts. */
+	function resetAutosave() {
+		committed = JSON.stringify(snapshotOf(post));
+		baseHash = fingerprint(committed);
+		autosave = 'clean';
+		syncedAt = null;
+		offer = null;
+		ready = false;
+		lookForDraft(post.slug);
+	}
+
+	async function lookForDraft(slug: string) {
+		// Look for unsaved work: this browser's copy, and the server's (which may
+		// come from another device). Offer the newest one that differs from what
+		// is committed.
+		const found: DraftRecord[] = [];
+		try {
+			const raw = localStorage.getItem(`draft:${slug}`);
+			if (raw) found.push({ ...JSON.parse(raw), where: 'this device' });
+		} catch {}
+		try {
+			const r = await fetch(`/api/drafts/${slug}`);
+			if (r.ok) {
+				const { draft } = await r.json();
+				if (draft) found.push({ ...draft, where: 'your account' });
+			}
+		} catch {}
+		if (slug !== post.slug) return; // navigated to another article meanwhile
+		const usable = found
+			.filter((d) => d?.post && JSON.stringify(d.post) !== committed)
+			.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+		if (usable.length) {
+			const newest = usable[0];
+			// The same draft seen in both places is "this device", not another.
+			const local = found.find((d) => d.where === 'this device');
+			offer = local && JSON.stringify(local.post) === JSON.stringify(newest.post) ? { ...newest, where: 'this device' } : newest;
+		}
+		ready = true;
+	}
+
+	function restoreDraft() {
+		if (!offer) return;
+		const d = offer.post;
+		Object.assign(post, {
+			date: d.date, category: d.category, draft: d.draft,
+			featured_image: d.featured_image || undefined,
+			partner_name: d.partner_name || undefined, partner_url: d.partner_url || undefined,
+			partner_logo_url: d.partner_logo_url || undefined, project_url: d.project_url || undefined
+		});
+		for (const l of LANGS) Object.assign(post.translations[l], d.translations[l]);
+		offer = null;
+	}
+
+	// Server writes run one at a time, so a slow PUT can never land after the
+	// DELETE that was meant to replace it.
+	let serverQueue: Promise<unknown> = Promise.resolve();
+	const serverOp = (fn: () => Promise<void>) => (serverQueue = serverQueue.then(fn, fn));
+
+	function forgetDraft() {
+		try { localStorage.removeItem(localKey()); } catch {}
+		serverOp(async () => {
+			await fetch(`/api/drafts/${post.slug}`, { method: 'DELETE' }).catch(() => {});
+		});
+	}
+
+	function discardDraft() {
+		offer = null;
+		forgetDraft();
+		autosave = 'clean';
+	}
+
+	// Two tiers: this browser immediately (survives Safari reloading the tab,
+	// even offline), and the server a few seconds later (survives a lost
+	// device and follows you between them). Neither commits, so neither costs
+	// a StaticHost build.
+	$effect(() => {
+		const snap = JSON.stringify(snapshotOf(post));
+		if (!ready || offer) return;
+		if (snap === committed) {
+			// Edited back to exactly what is committed: nothing left to keep.
+			if (untrack(() => autosave) !== 'clean') {
+				forgetDraft();
+				autosave = 'clean';
+			}
+			return;
+		}
+		autosave = 'dirty';
+		const local = setTimeout(() => {
+			try {
+				localStorage.setItem(localKey(), JSON.stringify({
+					savedAt: new Date().toISOString(), baseHash, post: JSON.parse(snap)
+				}));
+				autosave = 'local';
+			} catch {}
+		}, 500);
+		const remote = setTimeout(() => serverOp(async () => {
+			// The article may have been saved, or edited back, while queued.
+			if (autosave === 'clean') return;
+			autosave = 'saving';
+			try {
+				const r = await fetch(`/api/drafts/${post.slug}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ baseHash, post: JSON.parse(snap) })
+				});
+				if (r.status === 401) {
+					autosave = 'signedout';
+					return;
+				}
+				if (!r.ok) throw new Error(String(r.status));
+				syncedAt = (await r.json()).savedAt;
+				if (autosave === 'saving') autosave = 'synced';
+			} catch {
+				if (autosave === 'saving') autosave = 'offline';
+			}
+		}), 4000);
+		return () => { clearTimeout(local); clearTimeout(remote); };
+	});
+
+	/** After a real save, the committed version becomes the new baseline. */
+	function markCommitted() {
+		committed = JSON.stringify(snapshotOf(post));
+		baseHash = fingerprint(committed);
+		// The save already cleared the server copy; this also catches a PUT
+		// that was in flight while saving.
+		forgetDraft();
+		autosave = 'clean';
+	}
+
+	const staleOffer = $derived(!!offer && offer.baseHash !== baseHash);
+	const when = (iso: string) => {
+		const d = new Date(iso);
+		const today = new Date().toDateString() === d.toDateString();
+		return today
+			? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+			: d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+	};
+
 	const isErasmus = $derived(post.category === 'Erasmus+');
 	const t = $derived(post.translations[tab]);
 
@@ -139,6 +372,24 @@
 	</section>
 {/if}
 
+{#if offer}
+	<section class="restore" class:stale={staleOffer}>
+		<div>
+			<strong>Unsaved changes from {when(offer.savedAt)}</strong>
+			<span>
+				{offer.where === 'this device' ? 'Autosaved on this device.' : 'Autosaved to your account, possibly from another device.'}
+				{#if staleOffer}
+					The article has been saved since then — restoring would replace those newer changes.
+				{/if}
+			</span>
+		</div>
+		<div class="restore-actions">
+			<button type="button" class="btn-primary" onclick={restoreDraft}>Restore</button>
+			<button type="button" class="btn-outline" onclick={discardDraft}>Discard</button>
+		</div>
+	</section>
+{/if}
+
 <form method="POST" action="?/save" enctype="multipart/form-data" use:enhance={({ formData }) => {
 		for (const p of pending) formData.append('newimage', p.blob, p.name);
 		formData.set('deleteimages', JSON.stringify(removed));
@@ -150,6 +401,7 @@
 				pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
 				pending = [];
 				removed = [];
+				markCommitted();
 			}
 		};
 	}}>
@@ -242,6 +494,12 @@
 	</fieldset>
 
 	<div class="tabs">
+		<div class="view-switch" role="group" aria-label="Editor layout">
+			{#each [['write', 'Write'], ['split', 'Split'], ['preview', 'Preview']] as [v, label]}
+				<button type="button" class="pill" class:active={shown === v} class:split-only={v === 'split'}
+					onclick={() => setView(v as View)}>{label}</button>
+			{/each}
+		</div>
 		{#each LANGS as l}
 			<button type="button" class:active={tab === l} onclick={() => (tab = l)}>
 				{LANG_NAMES[l]}
@@ -268,9 +526,28 @@
 					Mark as not yet translated (shows the “read it in another language” notice)
 				</label>
 			{/if}
-			<label>Body
-				<textarea class="body" name="body_{l}" rows="24" bind:value={post.translations[l].body}></textarea>
-			</label>
+			<div class="writing" data-view={shown}>
+				<label class="body-field">Body
+					<textarea class="body" name="body_{l}" rows="24" bind:value={post.translations[l].body} onscroll={onBodyScroll}></textarea>
+				</label>
+				{#if l === tab && shown !== 'write'}
+					<div class="preview">
+						<span class="preview-label">Preview · approximate — the live site is the reference</span>
+						<ArticlePreview
+							body={post.translations[l].body}
+							title={post.translations[l].title}
+							date={post.date}
+							category={post.category}
+							lang={l}
+							slug={post.slug}
+							siteUrl={data.siteUrl}
+							pending={pendingUrls}
+							{theme}
+							syncRatio={shown === 'split' ? syncRatio : null}
+						/>
+					</div>
+				{/if}
+			</div>
 			{#if l !== 'en' && !post.translations[l].exists}
 				<p class="hint">
 					No {LANG_NAMES[l]} file yet. Leaving the title empty keeps it that way — Hugo generates
@@ -308,7 +585,19 @@
 		{#if errors.length > 0}
 			<span class="blocked">{errors.length} problem{errors.length === 1 ? '' : 's'} blocking publish</span>
 		{/if}
+		<span class="autosave {autosave}" aria-live="polite">
+			{#if autosave === 'dirty'}Unsaved changes
+			{:else if autosave === 'local'}Saved on this device
+			{:else if autosave === 'saving'}Syncing draft…
+			{:else if autosave === 'synced'}Draft synced{#if syncedAt}{' · '}{when(syncedAt)}{/if}
+			{:else if autosave === 'offline'}Offline — kept on this device
+			{:else if autosave === 'signedout'}Signed out — kept on this device. Sign in again in another tab, then keep typing.
+			{/if}
+		</span>
 	</div>
+	{#if pending.length > 0}
+		<p class="note pending-note">Images you have added are not autosaved — Save to keep them.</p>
+	{/if}
 </form>
 
 <section class="danger-zone">
@@ -348,12 +637,48 @@
 	.count { font-size: 0.72rem; color: var(--muted-foreground); }
 	.count.warn { color: var(--warn); }
 	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.5rem 0 0; }
-	.tabs { display: flex; gap: 0.3rem; margin: 1.75rem 0 0.9rem; border-bottom: 1px solid var(--border); }
-	.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 0.5rem 0.8rem; cursor: pointer; color: var(--muted-foreground); font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
-	.tabs button.active { color: var(--foreground); border-bottom-color: var(--primary); font-weight: 600; }
+	.tabs { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 1.75rem 0 0.9rem; border-bottom: 1px solid var(--border); }
+	.tabs > button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 0.5rem 0.8rem; cursor: pointer; color: var(--muted-foreground); font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+	.tabs > button.active { color: var(--foreground); border-bottom-color: var(--primary); font-weight: 600; }
 	.tabs i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); display: inline-block; }
 	.tabs i.on { background: var(--primary); }
 	.pane { display: grid; gap: 0.85rem; }
+	.restore {
+		display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+		margin: 0 0 1.25rem; padding: 0.9rem 1.1rem; border-radius: var(--radius);
+		background: var(--brand-yellow-soft); border: 1px solid var(--brand-yellow-deep);
+	}
+	.restore.stale { background: var(--warn-bg); border-color: var(--warn); }
+	.restore > div:first-child { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 14rem; }
+	.restore span { font-size: 0.84rem; color: var(--muted-foreground); }
+	.restore-actions { display: flex; gap: 0.5rem; }
+
+	.view-switch { display: flex; gap: 0.3rem; margin-right: auto; padding-bottom: 0.4rem; }
+	.view-switch .pill { font-size: 0.78rem; padding: 0.22rem 0.7rem; }
+
+	.writing { display: grid; gap: 1rem; }
+	.writing[data-view='split'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+	/* Preview-only keeps the textarea in the form (it must still submit) but out of sight. */
+	.writing[data-view='preview'] .body-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+	.preview { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+	.preview-label { font-size: 0.72rem; color: var(--muted-foreground); }
+	.preview { height: 75vh; }
+	.writing[data-view='split'] textarea.body { height: calc(75vh + 1.6rem); }
+	@media (max-width: 1100px) {
+		.split-only { display: none; }
+	}
+	@media (max-width: 560px) {
+		/* The layout switch gets its own row so all three languages fit. */
+		.view-switch { flex-basis: 100%; }
+		.tabs > button { padding: 0.5rem 0.6rem; }
+	}
+
+	.autosave { margin-left: auto; font-size: 0.8rem; color: var(--muted-foreground); align-self: center; }
+	.autosave.dirty { color: var(--warn); }
+	.autosave.synced, .autosave.local { color: var(--ok); }
+	.autosave.offline, .autosave.signedout { color: var(--warn); }
+	.pending-note { margin: 0.25rem 0 0; }
+
 	.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 	.linkish { background: none; border: 0; color: var(--danger); font-size: 0.85rem; cursor: pointer; padding: 0; }
 	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }

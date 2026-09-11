@@ -44,19 +44,23 @@ function paragraphs(text: string, style: string): string {
 }
 
 export function buildBroadcastHtml(input: BroadcastInput): string {
-	const ink = '#1c1a17';
-	const muted = '#6b6459';
-	const accent = '#1f5f4e';
-	const line = '#e4ded3';
+	// The site's tokens (static/css/main.css), as hex: email clients ignore
+	// CSS variables and most of hsl().
+	const ink = '#202429'; // --foreground
+	const muted = '#676f7e'; // --muted-foreground
+	const accent = '#943847'; // --primary
+	const line = '#e5e0dc'; // --border
+	const ground = '#f9f7f5'; // --background
+	const serif = "Fraunces,Georgia,'Times New Roman',serif";
 	const body = `margin:0 0 1em;font-size:16px;line-height:1.6;color:${ink}`;
 
 	return `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<body style="margin:0;padding:0;background:#faf8f4;">
+<body style="margin:0;padding:0;background:${ground};">
   <div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
 
-    <a href="${esc(input.siteUrl)}" style="text-decoration:none;color:${ink};font-weight:700;font-size:15px;">${esc(input.siteName)}</a>
+    <a href="${esc(input.siteUrl)}" style="text-decoration:none;color:${accent};font-family:${serif};font-weight:600;font-size:17px;">${esc(input.siteName)}</a>
 
     ${input.note ? `<div style="margin-top:24px;">${paragraphs(input.note, body)}</div>` : ''}
 
@@ -66,7 +70,7 @@ export function buildBroadcastHtml(input: BroadcastInput): string {
 					? `<a href="${esc(input.url)}"><img src="${esc(input.imageUrl)}" alt="" width="552" style="width:100%;max-width:552px;height:auto;border-radius:8px;display:block;margin-bottom:20px;" /></a>`
 					: ''
 			}
-      <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${ink};">
+      <h1 style="margin:0 0 12px;font-family:${serif};font-size:26px;font-weight:600;line-height:1.25;color:${ink};">
         <a href="${esc(input.url)}" style="color:${ink};text-decoration:none;">${esc(input.title)}</a>
       </h1>
       ${paragraphs(input.intro, `margin:0 0 20px;font-size:16px;line-height:1.6;color:${muted}`)}

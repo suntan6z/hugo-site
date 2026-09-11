@@ -190,7 +190,7 @@
 	.send .danger:disabled { opacity: 0.4; cursor: default; }
 
 	.preview { margin-top: 2rem; }
-	.preview iframe { width: 100%; height: 620px; border: 1px solid var(--border); border-radius: var(--radius); background: #faf8f4; }
+	.preview iframe { width: 100%; height: 620px; border: 1px solid var(--border); border-radius: var(--radius); background: #f9f7f5; }
 	.sent { list-style: none; padding: 0; margin: 0; font-size: 0.86rem; }
 	.sent li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
 	.sent .meta { color: var(--muted-foreground); white-space: nowrap; font-size: 0.8rem; }

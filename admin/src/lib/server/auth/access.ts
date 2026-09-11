@@ -51,10 +51,13 @@ export type Denial = { kind: 'redirect'; location: string } | { kind: 'unauthori
 
 /**
  * What to do with a signed-out request to a protected path: a browser loading
- * a page is sent to sign in; anything else — a form action, an API call — is
+ * a page is sent to sign in; anything else — a form action, any API call — is
  * refused outright, so an unauthenticated write can never reach its handler.
  */
 export function denialFor(method: string, pathname: string): Denial {
+	// An API caller is code, not a person: a redirect to an HTML sign-in page
+	// would be followed and misread, so it gets a plain 401 whatever the method.
+	if (/^\/api\//.test(pathname)) return { kind: 'unauthorised' };
 	if (method === 'GET' || method === 'HEAD') {
 		const isData = pathname.endsWith('/__data.json');
 		const target = isData ? pathname.replace(/\/?__data\.json$/, '') || '/' : pathname;

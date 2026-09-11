@@ -7,6 +7,7 @@ import { audit } from '$lib/server/store/kv.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import { preflight, errorsIn, warningsIn } from '$lib/server/seo/preflight.ts';
 import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
+import { clearDraft } from '$lib/server/content/drafts.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const post = await loadPost(params.slug);
@@ -143,6 +144,8 @@ export const actions: Actions = {
 			// A draft save changes the built output too (the page disappears), so
 			// both count as something the build has to reflect.
 			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });
+			// The committed version supersedes any autosaved work in progress.
+			await clearDraft(params.slug).catch(() => {});
 			if (publish) {
 				// Queued rather than submitted: StaticHost has not rebuilt yet, so
 				// the URL would still 404. The dashboard submits once it sees the
@@ -175,6 +178,7 @@ export const actions: Actions = {
 		try {
 			const { sha, files } = await deletePost(params.slug);
 			await dequeueSlug(params.slug);
+			await clearDraft(params.slug).catch(() => {});
 			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });
 			await audit('delete-post', { slug: params.slug, sha, files: files.length });
 		} catch (e) {
