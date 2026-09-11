@@ -32,6 +32,17 @@ jobs:
       # silently shipping and breaking Hugo's FR/IT placeholder pages.
       - working-directory: admin
         run: npm test
+      # Boots the production build against a throwaway copy of the site and
+      # drives it over HTTP: sign-in enforcement, CSRF, saving, uploads,
+      # translations, deletion. Nearly every serious bug found while building
+      # the portal lived in the seams these exercise and the unit tests miss.
+      - name: Integration tests (real app, throwaway site copy)
+        working-directory: admin
+        run: npm run test:integration
+      # Fails on a known high-severity vulnerability in a dependency that ships.
+      - name: Dependency audit
+        working-directory: admin
+        run: npm audit --omit=dev --audit-level=high
 
   deploy:
     needs: test
