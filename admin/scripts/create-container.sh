@@ -53,11 +53,16 @@ ENVS=(
   "environment-variables.ORIGIN=https://admin.loconsole.eu"
   "environment-variables.RP_ID=admin.loconsole.eu"
   "environment-variables.BODY_SIZE_LIMIT=12M"
-  # adapter-node: take the client address from the proxy's X-Forwarded-For.
-  # XFF_DEPTH=1 reads the right-most entry, the one Scaleway's edge appended —
-  # the left-most is whatever the client claimed, and trivially spoofed.
-  "environment-variables.ADDRESS_HEADER=X-Forwarded-For"
-  "environment-variables.XFF_DEPTH=1"
+  # adapter-node: the real client address, for the audit log and the sign-in
+  # rate limit. Verified against production rather than assumed:
+  #   - X-Forwarded-For carries the client then THREE Scaleway hops, and the
+  #     last hop rotates per request — XFF_DEPTH=1 recorded 100.96.x.x and made
+  #     every request look like a new visitor, so the rate limit never fired.
+  #   - A client-supplied X-Forwarded-For is prepended, so the left-most entry
+  #     is attacker-controlled.
+  #   - X-Envoy-External-Address is set by Scaleway's edge from the actual
+  #     connection, and a forged value is discarded and overwritten.
+  "environment-variables.ADDRESS_HEADER=X-Envoy-External-Address"
   "environment-variables.GH_APP_ID=$GH_APP_ID"
   "environment-variables.GH_INSTALLATION_ID=$GH_INSTALLATION_ID"
   "environment-variables.GH_OWNER=${GH_OWNER:-suntan6z}"

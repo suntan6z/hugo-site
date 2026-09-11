@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { clientAddress } from '$lib/server/auth/client-address.ts';
 
 /**
  * Shows the caller what the server sees of their connection: the resolved
@@ -10,11 +11,12 @@ import type { RequestHandler } from './$types';
  * Signed-in only (deny-by-default in hooks), and it only ever reflects the
  * caller's own request back to them.
  */
-export const GET: RequestHandler = async ({ request, getClientAddress }) => {
+export const GET: RequestHandler = async (event) => {
+	const { request } = event;
 	const pick = (h: string) => request.headers.get(h);
 	return json(
 		{
-			resolved: getClientAddress(),
+			resolved: clientAddress(event),
 			'x-forwarded-for': pick('x-forwarded-for'),
 			'x-real-ip': pick('x-real-ip'),
 			'x-envoy-external-address': pick('x-envoy-external-address'),
