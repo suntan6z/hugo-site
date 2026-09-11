@@ -5,18 +5,20 @@ import { takeChallenge } from '$lib/server/auth/challenge.ts';
 import { issueSession } from '$lib/server/auth/session.ts';
 import { readAuthState } from '$lib/server/auth/state.ts';
 import { audit } from '$lib/server/store/kv.ts';
+import { clientAddress } from '$lib/server/auth/client-address.ts';
 
-export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
+export const POST: RequestHandler = async (event) => {
+	const { request, cookies } = event;
 	const challenge = await takeChallenge(cookies, 'login');
 	if (!challenge) return json({ error: 'challenge expired, try again' }, { status: 400 });
 
 	try {
 		const cred = await verifyAuthentication(await request.json(), challenge);
 		await issueSession(cookies, (await readAuthState()).epoch);
-		await audit('login', { credential: cred.label, ip: getClientAddress() });
+		await audit('login', { credential: cred.label, ip: clientAddress(event) });
 		return json({ ok: true });
 	} catch (e) {
-		await audit('login-failed', { ip: getClientAddress(), reason: String(e) });
+		await audit('login-failed', { ip: clientAddress(event), reason: String(e) });
 		return json({ error: 'passkey not recognised' }, { status: 401 });
 	}
 };

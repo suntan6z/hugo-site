@@ -2,13 +2,14 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import { readSession } from '$lib/server/auth/session.ts';
 import { isPublicPath, denialFor } from '$lib/server/auth/access.ts';
 import { rateLimited, retryAfter, isRateLimitedPath } from '$lib/server/auth/ratelimit.ts';
+import { clientAddress } from '$lib/server/auth/client-address.ts';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	// Throttle the sign-in surface before doing any work for it. The client
-	// address is real only because ADDRESS_HEADER/XFF_DEPTH are set on the
-	// container; without them every request appears to come from the proxy.
+	// Throttle the sign-in surface before doing any work for it. The address is
+	// the real visitor only because ADDRESS_HEADER=X-Envoy-External-Address is
+	// set on the container (see scripts/create-container.sh for why that header).
 	if (isRateLimitedPath(event.url.pathname)) {
-		const ip = event.getClientAddress();
+		const ip = clientAddress(event);
 		if (rateLimited(ip)) {
 			return new Response(JSON.stringify({ error: 'Too many attempts. Wait a minute and try again.' }), {
 				status: 429,
