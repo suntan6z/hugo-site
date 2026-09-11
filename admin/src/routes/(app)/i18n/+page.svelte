@@ -108,47 +108,44 @@
 <style>
 	.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
-	.add { background: var(--accent); color: var(--accent-ink); padding: 0.45rem 0.85rem; border: 0;
+	.add { background: var(--primary); color: var(--primary-foreground); padding: 0.45rem 0.85rem; border: 0;
 		border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
-	.msg.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.warn { background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--warn); }
 
 	.tools { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
 	.tools > input { flex: 1; min-width: 12rem; padding: 0.5rem 0.65rem;
-		border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-	.check { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+		border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+	.check { display: flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--muted-foreground); white-space: nowrap; }
 	.check input { width: auto; }
-	.counts { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+	.counts { font-size: 0.8rem; color: var(--muted-foreground); margin-left: auto; }
 
-	.new { border: 1px solid var(--accent); border-radius: var(--radius); padding: 0.9rem 1rem;
+	.new { border: 1px solid var(--primary); border-radius: var(--radius); padding: 0.9rem 1rem;
 		display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.7rem; margin-bottom: 1.25rem; }
-	.new legend { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); padding: 0 0.35rem; }
+	.new legend { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--primary); padding: 0 0.35rem; }
 	.new .note { grid-column: 1 / -1; margin: 0; }
 
 	.grid { display: grid; grid-template-columns: minmax(min(11rem, 100%), 0.8fr) repeat(3, minmax(min(9rem, 100%), 1fr));
 		gap: 0.5rem; align-items: start; }
-	.head-row { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
-		padding-bottom: 0.4rem; border-bottom: 1px solid var(--line); margin-bottom: 0.5rem; }
-	.row { padding: 0.35rem 0; border-bottom: 1px solid var(--line); }
+	.head-row { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground);
+		padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+	.row { padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
 	.row.flagged { background: color-mix(in srgb, var(--warn) 7%, transparent); }
 	.k { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; padding-top: 0.4rem; }
 	.k code { font-size: 0.76rem; word-break: break-all; }
-	.ph { font-size: 0.68rem; color: var(--accent); font-family: ui-monospace, monospace; }
+	.ph { font-size: 0.68rem; color: var(--primary); font-family: ui-monospace, monospace; }
 	.problem { font-size: 0.68rem; color: var(--warn); }
-	.row input { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--line);
-		border-radius: 6px; background: var(--panel); font-size: 0.82rem; }
-	.row input.empty { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }
-	label { display: block; font-size: 0.8rem; color: var(--muted); }
-	label input { display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.6rem;
-		border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+	.row input { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border);
+		border-radius: 6px; background: var(--card); font-size: 0.82rem; }
+	.row input.empty { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
 
 	.actions { display: flex; align-items: center; gap: 0.9rem; margin-top: 1.25rem; position: sticky; bottom: 0;
-		padding: 1rem 0; background: linear-gradient(transparent, var(--bg) 35%); flex-wrap: wrap; }
-	.actions button { padding: 0.6rem 1.2rem; border: 0; border-radius: 8px; background: var(--accent);
-		color: var(--accent-ink); font-weight: 600; cursor: pointer; }
+		padding: 1rem 0; background: linear-gradient(transparent, var(--background) 35%); flex-wrap: wrap; }
+	.actions button { padding: 0.6rem 1.2rem; border: 0; border-radius: 8px; background: var(--primary);
+		color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
 	.actions button:disabled { opacity: 0.6; cursor: default; }
-	.note { font-size: 0.8rem; color: var(--muted); margin: 0; }
-	code { font-size: 0.85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+	.note { font-size: 0.8rem; color: var(--muted-foreground); margin: 0; }
+	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>

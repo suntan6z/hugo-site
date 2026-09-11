@@ -5,7 +5,9 @@ name: Deploy Admin Portal
 on:
   push:
     branches: [main]
-    paths: ["admin/**"]
+    # static/css and static/fonts are included because the portal derives its
+    # look from them: restyling the site should restyle the portal.
+    paths: ["admin/**", "static/css/**", "static/fonts/**", "static/img/logo.svg"]
   workflow_dispatch:
 
 env:
@@ -40,11 +42,13 @@ jobs:
       - name: Log in to Scaleway Container Registry
         run: echo "${{ secrets.SCW_SECRET_KEY }}" | docker login "$REGISTRY" -u nologin --password-stdin
 
+      # Built from the repository root: the portal derives its fonts, logo and
+      # colours from the site's static/ files at build time. The allow-list in
+      # admin/Dockerfile.dockerignore keeps the content images out of the build.
       - name: Build and push
-        working-directory: admin
         run: |
           TAG="${GITHUB_SHA::12}"
-          docker build -t "$REGISTRY/$IMAGE:$TAG" -t "$REGISTRY/$IMAGE:latest" .
+          docker build -f admin/Dockerfile -t "$REGISTRY/$IMAGE:$TAG" -t "$REGISTRY/$IMAGE:latest" .
           docker push "$REGISTRY/$IMAGE:$TAG"
           docker push "$REGISTRY/$IMAGE:latest"
           echo "TAG=$TAG" >> "$GITHUB_ENV"

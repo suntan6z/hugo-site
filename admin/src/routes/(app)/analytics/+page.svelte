@@ -167,16 +167,16 @@
 <style>
 	.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
-	.head button { padding: 0.4rem 0.8rem; border: 1px solid var(--line); border-radius: 8px;
-		background: var(--panel); font-size: 0.85rem; cursor: pointer; color: var(--muted); }
-	.head button:hover { color: var(--ink); }
-	h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 0.6rem; }
+	.head button { padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 8px;
+		background: var(--card); font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); }
+	.head button:hover { color: var(--foreground); }
+	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
 
-	.setup { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
-	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
+	.setup { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--foreground); }
 	.setup ol { margin: 0 0 0.75rem; padding-left: 1.2rem; font-size: 0.88rem; }
 	.setup li { margin-bottom: 0.35rem; }
-	.note { font-size: 0.82rem; color: var(--muted); margin: 0; }
+	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger);
 		padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.88rem; }
 
@@ -187,33 +187,33 @@
 		.axis { margin-left: 2.9rem; }
 	}
 
-	.explain { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+	.explain { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--primary);
 		border-radius: 0 var(--radius) var(--radius) 0; padding: 0.8rem 1rem; font-size: 0.86rem;
-		color: var(--muted); margin: 0 0 1.25rem; }
+		color: var(--muted-foreground); margin: 0 0 1.25rem; }
 
 	.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
-	.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+	.tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
 		padding: 1rem; display: flex; flex-direction: column; gap: 0.15rem; position: relative; }
 	.tile .n { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
-	.tile .l { font-size: 0.82rem; color: var(--muted); }
+	.tile .l { font-size: 0.82rem; color: var(--muted-foreground); }
 	.delta { position: absolute; top: 0.8rem; right: 0.9rem; font-size: 0.72rem; font-weight: 700; color: var(--danger); }
-	.delta.up { color: var(--accent); }
+	.delta.up { color: var(--ok); }
 
 	.chart { margin-bottom: 1.75rem; }
 	.track { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; align-items: end;
 		gap: 0.5rem; margin-bottom: 0.5rem; }
-	.track .scale { font-size: 0.68rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
-	.track .tracklabel { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+	.track .scale { font-size: 0.68rem; color: var(--muted-foreground); text-align: right; font-variant-numeric: tabular-nums; }
+	.track .tracklabel { font-size: 0.7rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.05em; }
 	.bars { display: flex; align-items: flex-end; gap: 2px; min-width: 0; height: 92px;
-		border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+		border-bottom: 1px solid var(--border); padding-bottom: 1px; }
 	.bars.short { height: 46px; }
 	/* min-width:0 so a long series (75 days and counting) compresses instead of
 	   forcing the whole page to scroll sideways on a phone. */
 	.col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
 	.bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 1px; }
-	.imp { background: color-mix(in srgb, var(--accent) 28%, transparent); }
-	.clk { background: var(--accent); }
-	.axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted);
+	.imp { background: color-mix(in srgb, var(--primary) 28%, transparent); }
+	.clk { background: var(--primary); }
+	.axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted-foreground);
 		margin: 0.3rem 0 0 3.7rem; }
 
 	/* 26rem, not 20: at two columns a 20rem minimum still left the tables too
@@ -223,19 +223,19 @@
 	.scroll { overflow-x: auto; }
 	table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; min-width: 20rem; }
 	th { text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase;
-		letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0.3rem 0.4rem; }
+		letter-spacing: 0.05em; color: var(--muted-foreground); border-bottom: 1px solid var(--border); padding: 0.3rem 0.4rem; }
 	th:not(:first-child), td.n { text-align: right; }
-	td { padding: 0.42rem 0.4rem; border-bottom: 1px solid var(--line); }
+	td { padding: 0.42rem 0.4rem; border-bottom: 1px solid var(--border); }
 	th:first-child, td:first-child { width: auto; }
 	th:not(:first-child), td:not(:first-child) { width: 4.5rem; }
 	td.q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	td.q a { text-decoration: none; }
 	td.q a:hover { text-decoration: underline; }
 	td.n { font-variant-numeric: tabular-nums; }
-	.langs { text-align: right; font-size: 0.72rem; color: var(--muted); }
+	.langs { text-align: right; font-size: 0.72rem; color: var(--muted-foreground); }
 	.langs span { margin-left: 0.4rem; font-variant: small-caps; }
-	.empty { font-size: 0.85rem; color: var(--muted); }
-	.fetched { font-size: 0.75rem; color: var(--muted); margin-top: 1.5rem; }
+	.empty { font-size: 0.85rem; color: var(--muted-foreground); }
+	.fetched { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 1.5rem; }
 	.fetched.stale { color: var(--warn); }
-	code { font-size: 0.85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>
