@@ -26,6 +26,10 @@ jobs:
           node-version: "24"
       - working-directory: admin
         run: npm ci
+      # Type errors do not fail a Vite build, so they would otherwise ship.
+      - name: Type check
+        working-directory: admin
+        run: npm run check
       - name: Unit tests (incl. front-matter round-trip against real content)
         working-directory: admin
         run: npm test

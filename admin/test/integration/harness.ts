@@ -110,7 +110,7 @@ export async function startFakeDeepL(): Promise<FakeDeepL> {
 		}
 		const translations = texts.map((t) => ({
 			text: t
-				.replace(/(^|>)([^<]*)/g, (_, a, x) => a + x.toUpperCase().replace(/&(AMP|LT|GT);/g, (e) => e.toLowerCase()))
+				.replace(/(^|>)([^<]*)/g, (_, a, x) => a + x.toUpperCase().replace(/&(AMP|LT|GT);/g, (e: string) => e.toLowerCase()))
 				.replace(/<k i="(\d+)"\/>/g, '<k i="$1"></k>')
 		}));
 		res.end(JSON.stringify({ translations }));
