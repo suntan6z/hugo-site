@@ -2,7 +2,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { S3Client } from '../src/lib/server/store/s3client.ts';
+import { S3Client, parseListPage, sigv4Encode } from '../src/lib/server/store/s3client.ts';
 
 /**
  * Live integration test against the real Scaleway bucket. Skipped entirely when
@@ -52,6 +52,24 @@ describe('S3Client against the live bucket', { skip: !configured && 'no Scaleway
 		const r = await s3.send('GET', '', undefined, 'list-type=2&prefix=test%2F');
 		assert.equal(r.status, 200);
 		assert.ok((await r.text()).includes(key), 'key missing from listing');
+	});
+
+	test('LIST pages: a continuation token is signed correctly and moves forward', async () => {
+		// Read-only. Two keys a page forces several pages out of audit/.
+		const seen: string[] = [];
+		let token: string | null = null;
+		for (let i = 0; i < 3; i++) {
+			const q: string = (token ? `continuation-token=${sigv4Encode(token)}&` : '') + 'list-type=2&max-keys=2&prefix=audit%2F';
+			const r = await s3.send('GET', '', undefined, q);
+			assert.equal(r.status, 200, `page ${i}: ${r.status}`);
+			const page = parseListPage(await r.text());
+			seen.push(...page.keys);
+			token = page.next;
+			if (!token) break;
+		}
+		assert.ok(seen.length >= 2, 'expected some audit entries');
+		assert.equal(new Set(seen).size, seen.length, 'a page repeated keys');
+		assert.deepEqual([...seen].sort(), seen, 'pages are not in ascending order');
 	});
 
 	test('GET of a missing key is 404, not a signature error', async () => {
