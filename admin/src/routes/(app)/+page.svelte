@@ -157,7 +157,7 @@
 	.deploy .when { margin-left: auto; text-align: right; display: flex; flex-direction: column; }
 	.deploy .hugo { font-size: 0.72rem; opacity: 0.75; }
 
-	.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.75rem; }
+	.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: 0.75rem; }
 	.tile {
 		background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
 		padding: 1rem; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 0.15rem;
