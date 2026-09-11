@@ -91,5 +91,8 @@ export const integrations = {
 	litlyxHost: optional('LITLYX_HOST', 'https://analytics.loconsole.eu'),
 	bingApiKey: optional('BING_API_KEY'),
 	indexNowKey: optional('INDEXNOW_KEY'),
+	deeplApiKey: optional('DEEPL_API_KEY'),
+	// Tests only: points the client at a stand-in server. Unset in production.
+	deeplApiUrl: optional('DEEPL_API_URL'),
 	siteUrl: optional('SITE_URL', 'https://lorenzo.loconsole.eu')
 };

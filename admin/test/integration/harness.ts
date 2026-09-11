@@ -11,6 +11,8 @@
  * Each lived in the seams between modules, which unit tests cannot see.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -80,7 +82,49 @@ export interface Portal {
 	exists(rel: string): boolean;
 }
 
-export async function startPortal(): Promise<Portal> {
+/**
+ * A stand-in for DeepL's /v2/translate and /v2/usage. It "translates" by
+ * upper-casing text outside tags — as DeepL must leave tags alone — and
+ * writes self-closing tags back in long form, as DeepL sometimes does, so
+ * the portal's reassembly is exercised for real. Every request is recorded.
+ */
+export interface FakeDeepL {
+	url: string;
+	requests: { path: string; auth: string | null; body: Record<string, unknown> | null }[];
+	close(): Promise<void>;
+}
+
+export async function startFakeDeepL(): Promise<FakeDeepL> {
+	const requests: FakeDeepL['requests'] = [];
+	const server = http.createServer(async (req, res) => {
+		let raw = '';
+		for await (const chunk of req) raw += chunk;
+		const body = raw ? JSON.parse(raw) : null;
+		requests.push({ path: req.url ?? '', auth: req.headers.authorization ?? null, body });
+		res.setHeader('Content-Type', 'application/json');
+		if (req.url === '/v2/usage') return res.end(JSON.stringify({ character_count: 1234, character_limit: 500000 }));
+		const texts: string[] = body?.text ?? [];
+		if (texts.some((t) => t.includes('QUOTA'))) {
+			res.statusCode = 456;
+			return res.end(JSON.stringify({ message: 'Quota exceeded' }));
+		}
+		const translations = texts.map((t) => ({
+			text: t
+				.replace(/(^|>)([^<]*)/g, (_, a, x) => a + x.toUpperCase().replace(/&(AMP|LT|GT);/g, (e) => e.toLowerCase()))
+				.replace(/<k i="(\d+)"\/>/g, '<k i="$1"></k>')
+		}));
+		res.end(JSON.stringify({ translations }));
+	});
+	await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+	const { port } = server.address() as AddressInfo;
+	return {
+		url: `http://127.0.0.1:${port}`,
+		requests,
+		close: () => new Promise((r) => server.close(() => r()))
+	};
+}
+
+export async function startPortal(opts: { env?: Record<string, string> } = {}): Promise<Portal> {
 	if (!fs.existsSync(path.join(ADMIN, 'build', 'index.js'))) {
 		throw new Error('No production build. Run `npm run build` first (test:integration does this).');
 	}
@@ -104,8 +148,10 @@ export async function startPortal(): Promise<Portal> {
 			SITE_ROOT: root,
 			LOCAL_STATE_DIR: state,
 			SESSION_SECRET: 'integration-tests-only-not-a-real-secret',
-			BODY_SIZE_LIMIT: '12M'
+			BODY_SIZE_LIMIT: '12M',
 			// Deliberately no GH_*, BING_*, RESEND_*: nothing can reach a real service.
+			// DeepL, when a test wants it, is the local stand-in above.
+			...opts.env
 		},
 		stdio: ['ignore', 'pipe', 'pipe']
 	});

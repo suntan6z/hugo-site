@@ -72,6 +72,14 @@
 			{#if data.integrations.indexNowQueued > 0}<span>— {data.integrations.indexNowQueued} URL(s) queued</span>{/if}
 		</li>
 		<li><i class:on={data.integrations.resend}></i> Resend {#if !data.integrations.resend}<span>— not configured</span>{/if}</li>
+		<li>
+			<i class:on={data.integrations.deepl}></i> DeepL translation
+			{#if !data.integrations.deepl}<span>— set DEEPL_API_KEY</span>
+			{:else if data.integrations.deeplUsage}
+				{@const u = data.integrations.deeplUsage}
+				<span>— {u.used.toLocaleString('en-GB')} of {u.limit.toLocaleString('en-GB')} characters used this month</span>
+			{/if}
+		</li>
 	</ul>
 	<p class="note">Site: <code>{data.siteUrl}</code> · Portal: <code>{data.origin}</code></p>
 </section>

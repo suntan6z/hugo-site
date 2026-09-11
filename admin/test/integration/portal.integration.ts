@@ -1,16 +1,21 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startPortal, type Portal } from './harness.ts';
+import { startPortal, startFakeDeepL, type Portal, type FakeDeepL } from './harness.ts';
 import { FrontMatter } from '../../src/lib/server/content/frontmatter.ts';
 
 let portal: Portal;
 let cookie: string;
+let deepl: FakeDeepL;
 
 before(async () => {
-	portal = await startPortal();
+	deepl = await startFakeDeepL();
+	portal = await startPortal({ env: { DEEPL_API_KEY: 'test-key:fx', DEEPL_API_URL: deepl.url } });
 	cookie = await portal.signIn();
 });
-after(async () => portal?.stop());
+after(async () => {
+	await portal?.stop();
+	await deepl?.close();
+});
 
 const LANGS = ['en', 'fr', 'it'] as const;
 const fileFor = (l: string) => (l === 'en' ? 'index.md' : `index.${l}.md`);
@@ -317,6 +322,97 @@ describe('autosaved drafts', () => {
 		assert.equal(r.type, 'success', r.raw);
 		const got = await (await portal.send('GET', '/api/drafts/first-home-nas', { cookie })).json();
 		assert.equal(got.draft, null);
+	});
+});
+
+describe('machine translation, against a stand-in DeepL', () => {
+	const english = () => {
+		const fm = FrontMatter.parse(portal.read('content/blog/out-the-shadow/index.md')!);
+		return {
+			title: String(fm.get('title')),
+			description: String(fm.get('description')),
+			body: fm.body,
+			eu_funding_text: String(fm.get('eu_funding_text'))
+		};
+	};
+	const translate = (json: unknown) => portal.send('POST', '/api/translate', { cookie, json });
+
+	test('signed out, it is refused and DeepL is never called', async () => {
+		const before = deepl.requests.length;
+		const r = await portal.send('POST', '/api/translate', { json: { to: 'fr', fields: english() } });
+		assert.equal(r.status, 401);
+		assert.equal(deepl.requests.length, before);
+	});
+
+	test('an article comes back translated, with every file name, URL and marker intact', async () => {
+		const src = english();
+		const r = await translate({ slug: 'out-the-shadow', to: 'fr', fields: src });
+		assert.equal(r.status, 200);
+		const { fields, characters, warnings } = await r.json();
+		assert.deepEqual(warnings, []);
+		assert.ok(characters > 5000);
+		assert.equal(fields.title, src.title.toUpperCase());
+		assert.equal(fields.eu_funding_text, src.eu_funding_text.toUpperCase());
+		// Images: same files in the same order, alt text translated.
+		const imgs = (md: string) => [...md.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)];
+		assert.deepEqual(imgs(fields.body).map((m) => m[2]), imgs(src.body).map((m) => m[2]));
+		assert.deepEqual(imgs(fields.body).map((m) => m[1]), imgs(src.body).map((m) => m[1].toUpperCase()));
+		assert.ok(fields.body.includes('<https://www.youtube.com/watch?v=06qwUUAAmX8>'), 'autolink altered');
+		// Paragraph structure is untouched: same blank lines in the same places.
+		assert.deepEqual(fields.body.split('\n').map((l: string) => l === ''), src.body.split('\n').map((l) => l === ''));
+	});
+
+	test('what reaches DeepL: the right options, and no file names or URLs', async () => {
+		const call = deepl.requests.findLast((q) => q.path === '/v2/translate')!;
+		assert.equal(call.auth, 'DeepL-Auth-Key test-key:fx');
+		assert.equal(call.body?.source_lang, 'EN');
+		assert.equal(call.body?.target_lang, 'FR');
+		assert.equal(call.body?.formality, 'prefer_more');
+		assert.equal(call.body?.tag_handling, 'xml');
+		assert.deepEqual(call.body?.ignore_tags, ['k']);
+		const sent = (call.body?.text as string[]).join('\n');
+		for (const leak of ['otstc1-1.jpg', 'youtube.com', 'https://']) assert.ok(!sent.includes(leak), leak);
+	});
+
+	test('Italian is drafted informally, matching how the Italian articles address readers', async () => {
+		await translate({ to: 'it', fields: { title: 'Hello', description: '', body: 'Do you see?' } });
+		assert.equal(deepl.requests.findLast((q) => q.path === '/v2/translate')!.body?.formality, 'prefer_less');
+	});
+
+	test('translating writes nothing to the site', async () => {
+		const before = LANGS.map((l) => portal.read(`content/blog/out-the-shadow/${fileFor(l)}`));
+		await translate({ slug: 'out-the-shadow', to: 'it', fields: english() });
+		LANGS.forEach((l, i) => assert.equal(portal.read(`content/blog/out-the-shadow/${fileFor(l)}`), before[i], l));
+	});
+
+	test('bad requests are refused before DeepL is called', async () => {
+		const before = deepl.requests.length;
+		assert.equal((await translate({ to: 'de', fields: { title: 'x', description: '', body: '' } })).status, 400);
+		assert.equal((await translate({ to: 'fr', fields: { title: '', description: '', body: '' } })).status, 400);
+		assert.equal((await translate({ to: 'fr', fields: { title: '', description: '', body: 'x'.repeat(150_001) } })).status, 413);
+		const plain = await fetch(`${portal.url}/api/translate`, {
+			method: 'POST',
+			headers: { Cookie: cookie, Origin: portal.url, 'Content-Type': 'text/plain' },
+			body: JSON.stringify({ to: 'fr', fields: { title: 'x', description: '', body: '' } })
+		});
+		assert.ok([403, 415].includes(plain.status), String(plain.status));
+		assert.equal(deepl.requests.length, before);
+	});
+
+	test('a DeepL failure is reported plainly, not as a crash', async () => {
+		const r = await portal.send('POST', '/api/translate', {
+			cookie,
+			json: { to: 'fr', fields: { title: 'QUOTA', description: '', body: '' } }
+		});
+		assert.equal(r.status, 502);
+		assert.match((await r.json()).message, /allowance is used up/);
+	});
+
+	test('the editor offers it, and settings shows the month’s usage', async () => {
+		const editor = await (await portal.get('/posts/out-the-shadow', { cookie })).text();
+		assert.match(editor, /Draft Français from English/);
+		const settings = await (await portal.get('/settings', { cookie })).text();
+		assert.match(settings, /1,234 of 500,000 characters/);
 	});
 });
 

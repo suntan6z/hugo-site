@@ -6,9 +6,15 @@ import { store, audit } from '$lib/server/store/kv.ts';
 import { MODE, auth, integrations } from '$lib/server/env.ts';
 import { readQueue } from '$lib/server/integrations/indexnow.ts';
 import { isConfigured as bingConfigured } from '$lib/server/integrations/bing.ts';
+import { isConfigured as deeplConfigured, usage as deeplUsage } from '$lib/server/integrations/deepl.ts';
+import { memo } from '$lib/server/cache.ts';
 
 export const load: PageServerLoad = async () => {
 	const state = await readAuthState();
+	// Best effort and cached: a slow or failing DeepL must not hold up this page.
+	const deepl = deeplConfigured()
+		? await memo('deepl:usage', 5 * 60_000, () => deeplUsage()).catch(() => null)
+		: null;
 	const auditKeys = await store.list('audit');
 	const recent = await Promise.all(
 		auditKeys.slice(-15).reverse().map((k) => store.get<Record<string, unknown>>(k))
@@ -28,7 +34,9 @@ export const load: PageServerLoad = async () => {
 			bing: bingConfigured(),
 			indexNow: !!integrations.indexNowKey,
 			indexNowQueued: (await readQueue()).length,
-			resend: !!integrations.resendApiKey
+			resend: !!integrations.resendApiKey,
+			deepl: deeplConfigured(),
+			deeplUsage: deepl
 		},
 		audit: recent.filter((e): e is Record<string, unknown> => !!e)
 	};
@@ -38,6 +46,10 @@ export const actions: Actions = {
 	removePasskey: async ({ request }) => {
 		const id = String((await request.formData()).get('id') ?? '');
 		const state = await readAuthState();
+	// Best effort and cached: a slow or failing DeepL must not hold up this page.
+	const deepl = deeplConfigured()
+		? await memo('deepl:usage', 5 * 60_000, () => deeplUsage()).catch(() => null)
+		: null;
 
 		// Removing the last credential would lock the account out of everything
 		// except the bootstrap-token recovery path.
