@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { IS_LOCAL, LOCAL_STATE_DIR } from '../env.ts';
-import { S3Client } from './s3client.ts';
+import { S3Client, parseListPage, sigv4Encode } from './s3client.ts';
 import { env } from '$env/dynamic/private';
 
 /**
@@ -96,16 +96,24 @@ class S3Store implements Store {
 	}
 
 	async list(prefix: string): Promise<string[]> {
-		const r = await this.s3.send(
-			'GET',
-			'',
-			undefined,
-			`list-type=2&prefix=${encodeURIComponent(`${prefix}/`)}`
-		);
-		if (!r.ok) throw new Error(`store list ${prefix}: ${r.status}`);
-		const xml = await r.text();
-		return [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)]
-			.map((m) => m[1])
+		// S3 returns at most 1,000 keys per page. Reading only the first page
+		// once froze the settings page's "Recent activity" on the oldest
+		// entries as soon as audit/ grew past that — hiding new sign-ins.
+		const keys: string[] = [];
+		let token: string | null = null;
+		for (let page = 0; page < 100; page++) {
+			// SigV4 signs the query verbatim: parameters sorted by name, strictly encoded.
+			const query: string =
+				(token ? `continuation-token=${sigv4Encode(token)}&` : '') +
+				`list-type=2&prefix=${sigv4Encode(`${prefix}/`)}`;
+			const r = await this.s3.send('GET', '', undefined, query);
+			if (!r.ok) throw new Error(`store list ${prefix}: ${r.status}`);
+			const parsed = parseListPage(await r.text());
+			keys.push(...parsed.keys);
+			token = parsed.next;
+			if (!token) break;
+		}
+		return keys
 			.filter((k) => k.endsWith('.json'))
 			.map((k) => k.slice(0, -5))
 			.sort();

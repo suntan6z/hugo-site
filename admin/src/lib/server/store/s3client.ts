@@ -97,3 +97,18 @@ export class S3Client {
 		});
 	}
 }
+
+const xmlText = (s: string) =>
+	s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+
+/** One ListObjectsV2 page: its keys, and the token for the next page if there is one. */
+export function parseListPage(xml: string): { keys: string[]; next: string | null } {
+	const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((m) => xmlText(m[1]));
+	const truncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+	const next = xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1];
+	return { keys, next: truncated && next ? xmlText(next) : null };
+}
+
+/** RFC 3986 encoding as SigV4 requires: encodeURIComponent leaves !'()* alone. */
+export const sigv4Encode = (s: string) =>
+	encodeURIComponent(s).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
