@@ -6,7 +6,8 @@
 	const nav = [
 		{ href: '/', label: 'Dashboard' },
 		{ href: '/posts', label: 'Articles' },
-		{ href: '/gallery', label: 'Gallery' }
+		{ href: '/gallery', label: 'Gallery' },
+		{ href: '/analytics', label: 'Search' }
 	];
 
 	async function signOut() {
