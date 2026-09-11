@@ -8,6 +8,7 @@
 		{ href: '/posts', label: 'Articles' },
 		{ href: '/gallery', label: 'Gallery' },
 		{ href: '/analytics', label: 'Search' },
+		{ href: '/newsletter', label: 'Newsletter' },
 		// Also in the nav so it survives the header link being hidden on phones.
 		{ href: '/settings', label: 'Settings' }
 	];
