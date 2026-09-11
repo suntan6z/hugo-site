@@ -7,7 +7,9 @@
 		{ href: '/', label: 'Dashboard' },
 		{ href: '/posts', label: 'Articles' },
 		{ href: '/gallery', label: 'Gallery' },
-		{ href: '/analytics', label: 'Search' }
+		{ href: '/analytics', label: 'Search' },
+		// Also in the nav so it survives the header link being hidden on phones.
+		{ href: '/settings', label: 'Settings' }
 	];
 
 	async function signOut() {
@@ -24,7 +26,6 @@
 		{/each}
 	</nav>
 	<div class="right">
-		<a class="settings" href="/settings" title="Settings">Settings</a>
 		{#if data.mode === 'local'}<span class="badge" title="Writing directly to the working copy on disk">local</span>{/if}
 		<button onclick={signOut}>Sign out</button>
 	</div>
@@ -37,7 +38,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		gap: 0.75rem;
+		flex-wrap: wrap;
 		padding: 0.7rem 1.25rem;
 		border-bottom: 1px solid var(--line);
 		background: var(--panel);
@@ -45,13 +47,11 @@
 		top: 0;
 		z-index: 5;
 	}
-	nav { display: flex; align-items: baseline; gap: 1.1rem; }
+	nav { display: flex; align-items: baseline; gap: 1.1rem; flex-wrap: wrap; min-width: 0; }
 	nav strong { letter-spacing: -0.01em; }
 	nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
 	nav a.active, nav a:hover { color: var(--ink); }
 	.right { display: flex; align-items: center; gap: 0.75rem; }
-	.settings { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
-	.settings:hover { color: var(--ink); }
 	.badge {
 		font-size: 0.7rem;
 		text-transform: uppercase;
@@ -73,4 +73,12 @@
 	}
 	button:hover { color: var(--ink); }
 	main { max-width: 60rem; margin: 0 auto; padding: 1.75rem 1.25rem 5rem; }
+
+	/* The portal is meant to be usable from a phone, and a header that cannot
+	   wrap was pushing the whole page sideways. */
+	@media (max-width: 640px) {
+		header { padding: 0.6rem 0.9rem; gap: 0.5rem; }
+		nav { gap: 0.85rem; font-size: 0.95rem; }
+		main { padding: 1.25rem 0.9rem 4rem; }
+	}
 </style>

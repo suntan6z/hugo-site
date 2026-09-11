@@ -26,12 +26,15 @@ export const load: PageServerLoad = async () => {
 				const prev = map.get(r.slug) ?? { slug: r.slug, clicks: 0, impressions: 0, langs: {} as Record<string, number> };
 				prev.clicks += r.clicks;
 				prev.impressions += r.impressions;
-				prev.langs[r.lang] = (prev.langs[r.lang] ?? 0) + r.clicks;
+				// Broken down by impressions, not clicks: a site early in its life
+				// has impressions long before it has clicks, and a language column
+				// of zeros would say nothing.
+				prev.langs[r.lang] = (prev.langs[r.lang] ?? 0) + r.impressions;
 				map.set(r.slug, prev);
 				return map;
 			}, new Map<string, { slug: string; clicks: number; impressions: number; langs: Record<string, number> }>())
 			.values()
-	].sort((a, b) => b.clicks - a.clicks);
+	].sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions);
 
 	const titles = Object.fromEntries(posts.map((p) => [p.slug, p.title]));
 	const totals = bing.data ? sum(bing.data.traffic) : { clicks: 0, impressions: 0 };

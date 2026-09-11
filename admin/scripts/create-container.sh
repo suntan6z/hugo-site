@@ -68,7 +68,18 @@ SECRETS=(
   "secret-environment-variables.SCW_ACCESS_KEY=$STORAGE_ACCESS_KEY"
   "secret-environment-variables.SCW_SECRET_KEY=$STORAGE_SECRET_KEY"
   "secret-environment-variables.INDEXNOW_KEY=${INDEXNOW_KEY:-}"
+  # Optional integrations. Passed as empty strings when unset, so removing a key
+  # from .env actually removes it from the container rather than leaving the old
+  # value behind.
+  "secret-environment-variables.BING_API_KEY=${BING_API_KEY:-}"
+  "secret-environment-variables.RESEND_API_KEY=${RESEND_API_KEY:-}"
 )
+
+# Report what will and will not be configured, so a silently missing key is
+# visible at the point of deploying rather than as an empty panel later.
+for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY; do
+  [ -n "${!v:-}" ] && echo "  $v: set" || echo "  $v: not set (feature stays disabled)"
+done
 
 EXISTING=$(scw container container list namespace-id="$NS_ID" region=$REGION -o json \
   | jq -r --arg n "$NAME" '.[] | select(.name==$n) | .id')

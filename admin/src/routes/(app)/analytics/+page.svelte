@@ -39,6 +39,19 @@
 {:else if bing.error}
 	<p class="msg err">{bing.error}</p>
 {:else if bing.data}
+	{#if data.totals.impressions > 0 && data.totals.clicks === 0}
+		<p class="explain">
+			Your pages have appeared in Bing results {fmt(data.totals.impressions)} times but have not
+			been clicked yet. At this stage impressions and average position are the numbers worth
+			watching — clicks follow once pages rank high enough to be seen.
+		</p>
+	{:else if data.totals.impressions === 0}
+		<p class="explain">
+			Bing has not shown your pages in any results yet. Indexing a new site takes weeks; the
+			IndexNow submissions on the dashboard tell Bing about changes sooner.
+		</p>
+	{/if}
+
 	<section class="tiles">
 		<div class="tile">
 			<span class="n">{fmt(data.totals.clicks)}</span>
@@ -89,7 +102,7 @@
 			{#if bing.data.queries.length === 0}
 				<p class="empty">No query data yet.</p>
 			{:else}
-				<table>
+				<div class="scroll"><table>
 					<thead><tr><th>Query</th><th>Clicks</th><th>Impr.</th><th title="Average position in results">Pos.</th></tr></thead>
 					<tbody>
 						{#each bing.data.queries.slice(0, 12) as q}
@@ -101,7 +114,7 @@
 							</tr>
 						{/each}
 					</tbody>
-				</table>
+				</table></div>
 			{/if}
 		</section>
 
@@ -110,13 +123,14 @@
 			{#if data.perPost.length === 0}
 				<p class="empty">No article pages have appeared in Bing results yet.</p>
 			{:else}
-				<table>
-					<thead><tr><th>Article</th><th>Clicks</th><th>By language</th></tr></thead>
+				<div class="scroll"><table>
+					<thead><tr><th>Article</th><th>Clicks</th><th>Impr.</th><th title="Impressions per language">By language</th></tr></thead>
 					<tbody>
 						{#each data.perPost as p}
 							<tr>
 								<td class="q"><a href="/posts/{p.slug}">{data.titles[p.slug] ?? p.slug}</a></td>
 								<td class="n">{fmt(p.clicks)}</td>
+								<td class="n">{fmt(p.impressions)}</td>
 								<td class="langs">
 									{#each Object.entries(p.langs).sort((a, b) => b[1] - a[1]) as [lang, clicks]}
 										<span>{lang} {clicks}</span>
@@ -125,7 +139,7 @@
 							</tr>
 						{/each}
 					</tbody>
-				</table>
+				</table></div>
 			{/if}
 		</section>
 	</div>
@@ -133,14 +147,14 @@
 	{#if bing.data.pages.length > 0}
 		<section>
 			<h2>All pages</h2>
-			<table>
+			<div class="scroll"><table>
 				<thead><tr><th>Page</th><th>Clicks</th><th>Impr.</th></tr></thead>
 				<tbody>
 					{#each bing.data.pages.slice(0, 12) as p}
 						<tr><td class="q">{shortUrl(p.url)}</td><td class="n">{fmt(p.clicks)}</td><td class="n">{fmt(p.impressions)}</td></tr>
 					{/each}
 				</tbody>
-			</table>
+			</table></div>
 		</section>
 	{/if}
 
@@ -166,7 +180,18 @@
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger);
 		padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.88rem; }
 
-	.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+	@media (max-width: 640px) {
+		.track { grid-template-columns: 2.4rem minmax(0, 1fr); }
+		.track .tracklabel { grid-column: 2; font-size: 0.65rem; }
+		.bars { gap: 1px; }
+		.axis { margin-left: 2.9rem; }
+	}
+
+	.explain { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+		border-radius: 0 var(--radius) var(--radius) 0; padding: 0.8rem 1rem; font-size: 0.86rem;
+		color: var(--muted); margin: 0 0 1.25rem; }
+
+	.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
 	.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
 		padding: 1rem; display: flex; flex-direction: column; gap: 0.15rem; position: relative; }
 	.tile .n { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
@@ -175,26 +200,35 @@
 	.delta.up { color: var(--accent); }
 
 	.chart { margin-bottom: 1.75rem; }
-	.track { display: grid; grid-template-columns: 3.2rem 1fr auto; align-items: end; gap: 0.5rem; margin-bottom: 0.5rem; }
+	.track { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; align-items: end;
+		gap: 0.5rem; margin-bottom: 0.5rem; }
 	.track .scale { font-size: 0.68rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 	.track .tracklabel { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-	.bars { display: flex; align-items: flex-end; gap: 2px; height: 92px;
+	.bars { display: flex; align-items: flex-end; gap: 2px; min-width: 0; height: 92px;
 		border-bottom: 1px solid var(--line); padding-bottom: 1px; }
 	.bars.short { height: 46px; }
-	.col { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+	/* min-width:0 so a long series (75 days and counting) compresses instead of
+	   forcing the whole page to scroll sideways on a phone. */
+	.col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
 	.bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 1px; }
 	.imp { background: color-mix(in srgb, var(--accent) 28%, transparent); }
 	.clk { background: var(--accent); }
 	.axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted);
 		margin: 0.3rem 0 0 3.7rem; }
 
-	.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.75rem; margin-bottom: 1.75rem; }
-	table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+	/* 26rem, not 20: at two columns a 20rem minimum still left the tables too
+	   narrow, and their content overlapped the next column instead of wrapping. */
+	.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr)); gap: 1.75rem; margin-bottom: 1.75rem; }
+	.cols > section { min-width: 0; }
+	.scroll { overflow-x: auto; }
+	table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; min-width: 20rem; }
 	th { text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase;
 		letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--line); padding: 0.3rem 0.4rem; }
 	th:not(:first-child), td.n { text-align: right; }
 	td { padding: 0.42rem 0.4rem; border-bottom: 1px solid var(--line); }
-	td.q { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	th:first-child, td:first-child { width: auto; }
+	th:not(:first-child), td:not(:first-child) { width: 4.5rem; }
+	td.q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	td.q a { text-decoration: none; }
 	td.q a:hover { text-decoration: underline; }
 	td.n { font-variant-numeric: tabular-nums; }
