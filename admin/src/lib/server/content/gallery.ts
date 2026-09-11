@@ -1,4 +1,5 @@
 import { repo, type FileOp } from './repo.ts';
+import { mapLimit } from '../cache.ts';
 import { LANGS, type Lang } from './post.ts';
 import {
 	parseCities, writeCities, parsePhotos, writePhotos,
@@ -30,12 +31,10 @@ export interface CityDetail extends GalleryCity {
 
 export async function listCities(): Promise<(GalleryCity & { photos: number })[]> {
 	const cities = parseCities(await repo.readText(CITIES_JSON));
-	const out: (GalleryCity & { photos: number })[] = [];
-	for (const c of cities) {
+	return mapLimit(cities, 6, async (c) => {
 		const files = await repo.listTree(cityDir(c.slug));
-		out.push({ ...c, photos: files.filter((f) => IMAGE_RE.test(f)).length });
-	}
-	return out;
+		return { ...c, photos: files.filter((f) => IMAGE_RE.test(f)).length };
+	});
 }
 
 const numericOrder = (a: string, b: string) => {

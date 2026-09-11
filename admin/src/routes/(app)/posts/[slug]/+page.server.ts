@@ -72,6 +72,11 @@ export const actions: Actions = {
 			});
 		}
 
+		// Explicit, per-language, and never inferred from an empty field.
+		const deleteTranslations = LANGS.filter(
+			(l) => l !== 'en' && f.get(`delete_translation_${l}`) === 'on'
+		);
+
 		const publish = f.get('intent') === 'publish';
 		const willBeDraft = publish ? false : f.get('draft') === 'on';
 
@@ -131,6 +136,7 @@ export const actions: Actions = {
 				translations,
 				newImages,
 				deleteImages,
+				deleteTranslations,
 				message: `${publish ? 'Publish' : 'Update'} ${params.slug}`
 			});
 			// Recorded so the dashboard can tell whether StaticHost has caught up.
