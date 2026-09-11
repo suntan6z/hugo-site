@@ -83,6 +83,23 @@ class LocalRepo implements Repo {
 		return out.sort();
 	}
 
+	/** Removes now-empty directories up to (but never including) the site root. */
+	private async pruneEmptyDirs(dir: string): Promise<void> {
+		const root = path.resolve(SITE_ROOT);
+		let cur = dir;
+		while (cur.startsWith(root + path.sep)) {
+			let entries: string[];
+			try {
+				entries = await fs.readdir(cur);
+			} catch {
+				return;
+			}
+			if (entries.length > 0) return;
+			await fs.rmdir(cur).catch(() => {});
+			cur = path.dirname(cur);
+		}
+	}
+
 	async commit(_message: string, ops: FileOp[]) {
 		// Moves are staged to temporary names first: renumbering a gallery swaps
 		// names that are still occupied (1->2 while 2->3), and a naive sequential
@@ -104,6 +121,10 @@ class LocalRepo implements Repo {
 			const full = this.abs(op.path);
 			if ('delete' in op) {
 				await fs.rm(full, { force: true });
+				// git has no concept of an empty directory, so the GitHub backend
+				// drops the folder implicitly. Mirror that on disk rather than
+				// leaving an empty bundle behind that nothing will ever clean up.
+				await this.pruneEmptyDirs(path.dirname(full));
 				continue;
 			}
 			await fs.mkdir(path.dirname(full), { recursive: true });

@@ -160,3 +160,36 @@ describe('form-boundary line endings', () => {
 		);
 	});
 });
+
+describe('empty front matter', () => {
+	test('a blank block parses rather than throwing', () => {
+		// Creating an article, and adding a first translation, both start here.
+		const fm = FrontMatter.empty();
+		assert.deepEqual(fm.keys(), []);
+		assert.equal(fm.body, '');
+	});
+
+	test('round-trips as exactly `---\\n---\\n`, with no stray blank line', () => {
+		assert.equal(FrontMatter.empty().serialize(), '---\n---\n');
+		assert.equal(FrontMatter.parse('---\n---\n').serialize(), '---\n---\n');
+	});
+
+	test('keys added to a blank block land in POST_ORDER', () => {
+		const fm = FrontMatter.empty();
+		fm.set('description', 'd');
+		fm.set('title', 't');
+		fm.set('date', '2026-09-11');
+		assert.deepEqual(fm.keys(), ['title', 'date', 'description']);
+	});
+
+	test('the result still satisfies Hugo’s front-matter regex', () => {
+		const fm = FrontMatter.empty();
+		fm.set('title', 'New');
+		fm.set('date', '2026-09-11');
+		const out = fm.setBody('\nBody.\n').serialize();
+		// Mirrors layouts/partials/auto-untranslated-pages.html.
+		assert.match(out, /^---\n[\s\S]*?\n---/);
+		assert.equal(out.startsWith('---\n'), true);
+		assert.equal(FrontMatter.parse(out).get('title'), 'New');
+	});
+});;
