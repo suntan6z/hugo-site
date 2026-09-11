@@ -69,6 +69,8 @@ export interface Portal {
 	stop(): Promise<void>;
 	signIn(): Promise<string>;
 	get(path: string, opts?: { cookie?: string }): Promise<Response>;
+	/** A JSON API call; `json` given as a string is sent verbatim (for malformed bodies). */
+	send(method: string, path: string, opts?: { cookie?: string; json?: unknown }): Promise<Response>;
 	action(
 		path: string,
 		fields: Record<string, string | Blob>,
@@ -144,6 +146,17 @@ export async function startPortal(): Promise<Portal> {
 			return fetch(`${url}${p}`, {
 				redirect: 'manual',
 				headers: opts.cookie ? { Cookie: opts.cookie } : {}
+			});
+		},
+		send(method, p, opts = {}) {
+			const headers: Record<string, string> = { Origin: url };
+			if (opts.cookie) headers.Cookie = opts.cookie;
+			if (opts.json !== undefined) headers['Content-Type'] = 'application/json';
+			return fetch(`${url}${p}`, {
+				method,
+				redirect: 'manual',
+				headers,
+				body: opts.json === undefined ? undefined : typeof opts.json === 'string' ? opts.json : JSON.stringify(opts.json)
 			});
 		},
 		async action(p, fields, opts = {}) {

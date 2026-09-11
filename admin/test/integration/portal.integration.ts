@@ -77,6 +77,14 @@ describe('access control on the running app', () => {
 		assert.notEqual(r.status, 200);
 	});
 
+	test('the CSP allows images from the live site, and from nowhere else external', async () => {
+		const csp = (await portal.get('/login')).headers.get('content-security-policy') ?? '';
+		const img = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('img-src'));
+		assert.equal(img, "img-src 'self' data: blob: https://lorenzo.loconsole.eu");
+		assert.match(csp, /frame-ancestors 'none'/);
+		assert.doesNotMatch(csp, /\*/);
+	});
+
 	test('a forged session cookie is rejected', async () => {
 		const r = await portal.get('/posts', { cookie: 'session=eyJhbGciOiJIUzI1NiJ9.eyJlcG9jaCI6MX0.forged' });
 		assert.equal(r.status, 303);
@@ -255,6 +263,60 @@ describe('articles, end to end', () => {
 		const ok = await portal.action('/posts/integration-test-post?/delete', { confirm: 'integration-test-post' }, { cookie });
 		assert.equal(ok.type, 'redirect', ok.raw);
 		assert.equal(portal.exists('content/blog/integration-test-post'), false, 'bundle directory left behind');
+	});
+});
+
+describe('autosaved drafts', () => {
+	const draft = { baseHash: 'abc123', post: { translations: { en: { title: 'Work in progress' } } } };
+
+	test('signed out, every drafts method is refused', async () => {
+		for (const method of ['GET', 'PUT', 'DELETE']) {
+			const r = await portal.send(method, '/api/drafts/first-home-nas', method === 'PUT' ? { json: draft } : {});
+			assert.equal(r.status, 401, method);
+		}
+	});
+
+	test('a draft round-trips, and deleting it leaves nothing', async () => {
+		const put = await portal.send('PUT', '/api/drafts/first-home-nas', { cookie, json: draft });
+		assert.equal(put.status, 200);
+		const { savedAt } = await put.json();
+		assert.ok(!Number.isNaN(Date.parse(savedAt)));
+
+		const got = await (await portal.send('GET', '/api/drafts/first-home-nas', { cookie })).json();
+		assert.deepEqual(got.draft, { savedAt, ...draft });
+
+		assert.equal((await portal.send('DELETE', '/api/drafts/first-home-nas', { cookie })).status, 204);
+		const gone = await (await portal.send('GET', '/api/drafts/first-home-nas', { cookie })).json();
+		assert.equal(gone.draft, null);
+	});
+
+	test('autosaving never touches the site files', async () => {
+		const before = portal.read('content/blog/first-home-nas/index.md');
+		await portal.send('PUT', '/api/drafts/first-home-nas', { cookie, json: draft });
+		assert.equal(portal.read('content/blog/first-home-nas/index.md'), before);
+		assert.equal(portal.exists('drafts'), false);
+		await portal.send('DELETE', '/api/drafts/first-home-nas', { cookie });
+	});
+
+	test('malformed, oversized and path-like requests are rejected', async () => {
+		const bad = (json: unknown, slug = 'first-home-nas') =>
+			portal.send('PUT', `/api/drafts/${slug}`, { cookie, json }).then((r) => r.status);
+		assert.equal(await bad('{not json'), 400);
+		assert.equal(await bad({ post: {} }), 400, 'missing baseHash');
+		assert.equal(await bad({ baseHash: 'x', post: null }), 400, 'null post');
+		assert.equal(await bad({ baseHash: 'x', post: { body: 'x'.repeat(1_100_000) } }), 413);
+		assert.equal(await bad(draft, 'Upper-Case'), 400);
+		// An encoded traversal must not reach the store at another key.
+		const r = await portal.send('GET', '/api/drafts/..%2Fauth%2Fcredentials', { cookie });
+		assert.ok([400, 404].includes(r.status), String(r.status));
+	});
+
+	test('saving the article for real discards its draft', async () => {
+		await portal.send('PUT', '/api/drafts/first-home-nas', { cookie, json: draft });
+		const r = await portal.action('/posts/first-home-nas?/save', editorForm('first-home-nas'), { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const got = await (await portal.send('GET', '/api/drafts/first-home-nas', { cookie })).json();
+		assert.equal(got.draft, null);
 	});
 });
 

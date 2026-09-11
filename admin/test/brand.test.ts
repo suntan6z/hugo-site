@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildBrandCss, extractBlock, extractFontFaces } from '../scripts/sync-brand.mjs';
+import { buildBrandCss, buildSiteCss, extractBlock, extractFontFaces } from '../scripts/sync-brand.mjs';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..');
 const siteCss = fs.readFileSync(path.join(REPO, 'static', 'css', 'main.css'), 'utf8');
@@ -58,5 +58,24 @@ describe('block extraction', () => {
 
 	test('a missing block is null rather than throwing', () => {
 		assert.equal(extractBlock('a {}', /:root\s*\{/), null);
+	});
+});
+
+describe('the preview stylesheet is the site\'s own', () => {
+	const out = buildSiteCss(siteCss);
+
+	test('identical to main.css apart from the font paths', () => {
+		const body = out.slice(out.indexOf('\n') + 1);
+		assert.equal(body.replace(/url\(\/brand\/fonts\//g, 'url(/fonts/'), siteCss);
+	});
+
+	test('carries the article body rules the preview depends on', () => {
+		assert.match(out, /\.post-body\s*\{/);
+		assert.match(out, /\.post-body img\s*\{/);
+		assert.match(out, /\.post-title\s*\{/);
+	});
+
+	test('no font still points at the site path', () => {
+		assert.ok(!out.includes('url(/fonts/'));
 	});
 });
