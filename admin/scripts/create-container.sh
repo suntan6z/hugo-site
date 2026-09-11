@@ -53,6 +53,11 @@ ENVS=(
   "environment-variables.ORIGIN=https://admin.loconsole.eu"
   "environment-variables.RP_ID=admin.loconsole.eu"
   "environment-variables.BODY_SIZE_LIMIT=12M"
+  # adapter-node: take the client address from the proxy's X-Forwarded-For.
+  # XFF_DEPTH=1 reads the right-most entry, the one Scaleway's edge appended —
+  # the left-most is whatever the client claimed, and trivially spoofed.
+  "environment-variables.ADDRESS_HEADER=X-Forwarded-For"
+  "environment-variables.XFF_DEPTH=1"
   "environment-variables.GH_APP_ID=$GH_APP_ID"
   "environment-variables.GH_INSTALLATION_ID=$GH_INSTALLATION_ID"
   "environment-variables.GH_OWNER=${GH_OWNER:-suntan6z}"
