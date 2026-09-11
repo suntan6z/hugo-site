@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { IS_LOCAL, SITE_ROOT, github } from '../env.ts';
 import { gh, GitHubError } from '../github/api.ts';
+import { memo, invalidateAll, DEFAULT_TTL_MS } from '../cache.ts';
 
 /** One file change inside a single atomic commit. */
 export type FileOp =
@@ -108,6 +109,7 @@ class LocalRepo implements Repo {
 			await fs.mkdir(path.dirname(full), { recursive: true });
 			await fs.writeFile(full, 'content' in op ? op.content : Buffer.from(op.bytes));
 		}
+		invalidateAll();
 		return { sha: 'local' };
 	}
 }
@@ -122,9 +124,39 @@ interface TreeEntry {
 }
 
 class GitHubRepo implements Repo {
+	/**
+	 * The whole recursive tree, cached. Every listing and every text read goes
+	 * through it, which turns "one Contents call per file" into "one tree call
+	 * plus a blob fetch per file" — and the blob fetches can then run in
+	 * parallel because the paths are already known.
+	 */
+	private tree(): Promise<Map<string, string>> {
+		return memo('gh:tree', DEFAULT_TTL_MS, async () => {
+			const r = await gh<{ tree: TreeEntry[]; truncated: boolean }>(
+				'GET',
+				`/git/trees/${github.branch}?recursive=1`
+			);
+			if (r.truncated) {
+				throw new Error('git tree response was truncated; repo has outgrown a single listing');
+			}
+			return new Map(
+				r.tree.filter((e) => e.type === 'blob' && e.sha).map((e) => [e.path, e.sha as string])
+			);
+		});
+	}
+
 	async readText(p: string) {
-		const bytes = await this.readBinary(p);
-		return bytes ? Buffer.from(bytes).toString('utf8') : null;
+		const sha = (await this.tree()).get(p);
+		// Not in the cached tree: either genuinely absent, or written since the
+		// tree was cached. Fall through to the Contents API to be sure.
+		if (!sha) {
+			const bytes = await this.readBinary(p);
+			return bytes ? Buffer.from(bytes).toString('utf8') : null;
+		}
+		const blob = await memo(`gh:blob:${sha}`, DEFAULT_TTL_MS, () =>
+			gh<{ content: string; encoding: string }>('GET', `/git/blobs/${sha}`)
+		);
+		return Buffer.from(blob.content, blob.encoding as BufferEncoding).toString('utf8');
 	}
 
 	async readBinary(p: string) {
@@ -141,18 +173,8 @@ class GitHubRepo implements Repo {
 	}
 
 	async listTree(prefix: string) {
-		const r = await gh<{ tree: TreeEntry[]; truncated: boolean }>(
-			'GET',
-			`/git/trees/${github.branch}?recursive=1`
-		);
-		if (r.truncated) {
-			throw new Error('git tree response was truncated; repo has outgrown a single listing');
-		}
 		const p = prefix.replace(/\/$/, '');
-		return r.tree
-			.filter((e) => e.type === 'blob' && e.path.startsWith(`${p}/`))
-			.map((e) => e.path)
-			.sort();
+		return [...(await this.tree()).keys()].filter((path) => path.startsWith(`${p}/`)).sort();
 	}
 
 	/**
@@ -167,16 +189,7 @@ class GitHubRepo implements Repo {
 		// A move reuses the source blob's SHA, so no bytes are transferred. The
 		// base tree is fetched once and shared by every move in the commit.
 		const moves = ops.filter((o): o is { path: string; moveFrom: string } => 'moveFrom' in o);
-		let blobByPath = new Map<string, string>();
-		if (moves.length) {
-			const full = await gh<{ tree: TreeEntry[] }>(
-				'GET',
-				`/git/trees/${head.tree.sha}?recursive=1`
-			);
-			blobByPath = new Map(
-				full.tree.filter((e) => e.type === 'blob' && e.sha).map((e) => [e.path, e.sha as string])
-			);
-		}
+		const blobByPath = moves.length ? await this.tree() : new Map<string, string>();
 
 		const tree: TreeEntry[] = [];
 		// Cap concurrency: a gallery city upload can be 20 blobs at once.
@@ -237,6 +250,7 @@ class GitHubRepo implements Repo {
 			}
 			throw e;
 		}
+		invalidateAll();
 		return { sha: commit.sha };
 	}
 }
