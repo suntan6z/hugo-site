@@ -24,6 +24,7 @@
 		{/each}
 	</nav>
 	<div class="right">
+		<a class="settings" href="/settings" title="Settings">Settings</a>
 		{#if data.mode === 'local'}<span class="badge" title="Writing directly to the working copy on disk">local</span>{/if}
 		<button onclick={signOut}>Sign out</button>
 	</div>
@@ -49,6 +50,8 @@
 	nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
 	nav a.active, nav a:hover { color: var(--ink); }
 	.right { display: flex; align-items: center; gap: 0.75rem; }
+	.settings { color: var(--muted); text-decoration: none; font-size: 0.85rem; }
+	.settings:hover { color: var(--ink); }
 	.badge {
 		font-size: 0.7rem;
 		text-transform: uppercase;

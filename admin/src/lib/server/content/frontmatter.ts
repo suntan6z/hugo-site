@@ -66,7 +66,10 @@ type Line =
 	| { kind: 'comment'; raw: string }
 	| { kind: 'blank'; raw: string };
 
-const FM_RE = /^---\n([\s\S]*?)\n---(\n?)/;
+// The `\n?` before the closing delimiter allows an empty block (`---\n---`),
+// which is what a brand-new file starts as. Without it, creating an article or
+// adding a first translation threw "no front-matter block".
+const FM_RE = /^---\n([\s\S]*?)\n?---(\n?)/;
 const PAIR_RE = /^([A-Za-z0-9_]+):[ \t]*(.*)$/;
 
 export class FrontMatterError extends Error {}
@@ -107,7 +110,8 @@ export class FrontMatter {
 		const m = FM_RE.exec(raw);
 		if (!m) throw new FrontMatterError('no `---` front-matter block at the start of the file');
 
-		const lines: Line[] = m[1].split('\n').map((raw): Line => {
+		// An empty block has no lines at all, as distinct from one blank line.
+		const lines: Line[] = (m[1] === '' ? [] : m[1].split('\n')).map((raw): Line => {
 			if (raw.trim() === '') return { kind: 'blank', raw };
 			if (/^[ \t]*#/.test(raw)) return { kind: 'comment', raw };
 			if (/^[ \t]/.test(raw)) return { kind: 'nested', raw };
@@ -121,7 +125,13 @@ export class FrontMatter {
 
 	/** Reconstructs the file. `serialize(parse(x)) === x` for any unmodified document. */
 	serialize(): string {
-		return `---\n${this.lines.map((l) => l.raw).join('\n')}\n---${this.closeEol}${this.bodyText}`;
+		const block = this.lines.length === 0 ? '' : `${this.lines.map((l) => l.raw).join('\n')}\n`;
+		return `---\n${block}---${this.closeEol}${this.bodyText}`;
+	}
+
+	/** A blank document, for creating a file that does not exist yet. */
+	static empty(): FrontMatter {
+		return FrontMatter.parse('---\n---\n');
 	}
 
 	/** Top-level keys, in document order. */
