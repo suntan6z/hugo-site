@@ -1,5 +1,5 @@
 ---
-title: "Colors of solidarity: Sofia, Bulagaria"
+title: "Colors of solidarity: Sofia, Bulgaria"
 date: 2026-08-21
 slug: "colors-of-solidarity"
 category: "Erasmus+"
