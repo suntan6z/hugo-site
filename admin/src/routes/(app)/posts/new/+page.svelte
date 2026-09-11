@@ -80,22 +80,18 @@
 
 <style>
 	.head { margin-bottom: 1.25rem; }
-	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted); }
+	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); }
 	h1 { font-size: 1.4rem; margin: 0.35rem 0 0; letter-spacing: -0.015em; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger);
 		padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	form { display: grid; gap: 1rem; max-width: 38rem; }
 	.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-	label { display: block; font-size: 0.8rem; color: var(--muted); }
-	input, select, textarea { display: block; width: 100%; margin-top: 0.25rem; padding: 0.55rem 0.65rem;
-		border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-	textarea { resize: vertical; }
-	.path { display: block; margin-top: 0.3rem; font-size: 0.75rem; color: var(--muted); font-family: ui-monospace, monospace; }
+	.path { display: block; margin-top: 0.3rem; font-size: 0.75rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
 	.path.bad { color: var(--danger); }
-	.count { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted); }
+	.count { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted-foreground); }
 	.count.warn { color: var(--warn); }
 	button { justify-self: start; padding: 0.6rem 1.2rem; border: 0; border-radius: 8px;
-		background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; }
+		background: var(--primary); color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
 	button:disabled { opacity: 0.5; cursor: default; }
-	.note { font-size: 0.82rem; color: var(--muted); margin: 0; }
+	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }
 </style>

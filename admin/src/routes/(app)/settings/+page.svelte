@@ -95,33 +95,33 @@
 
 <style>
 	h1 { font-size: 1.5rem; margin: 0 0 1.5rem; letter-spacing: -0.015em; }
-	h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 0.6rem; }
+	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
 	section { margin-bottom: 2.25rem; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
-	.msg.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.warn { background: color-mix(in srgb, var(--warn) 12%, transparent); border-left: 3px solid var(--warn);
 		padding: 0.7rem 0.9rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; margin: 0 0 0.9rem; }
 	.creds { list-style: none; padding: 0; margin: 0 0 0.9rem; }
 	.creds li { display: flex; align-items: center; justify-content: space-between;
-		padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+		padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.creds div { display: flex; flex-direction: column; gap: 0.1rem; }
-	.creds span { font-size: 0.78rem; color: var(--muted); }
-	button { padding: 0.45rem 0.9rem; border: 1px solid var(--line); border-radius: 8px;
-		background: var(--panel); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-	button:hover:not(:disabled) { border-color: var(--accent); }
+	.creds span { font-size: 0.78rem; color: var(--muted-foreground); }
+	button { padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 8px;
+		background: var(--card); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+	button:hover:not(:disabled) { border-color: var(--primary); }
 	button.danger { color: var(--danger); font-weight: 500; }
 	button:disabled { opacity: 0.4; cursor: default; }
-	.note { font-size: 0.8rem; color: var(--muted); margin: 0.6rem 0 0; }
+	.note { font-size: 0.8rem; color: var(--muted-foreground); margin: 0.6rem 0 0; }
 	.status { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; font-size: 0.87rem; }
-	.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--line);
+	.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--border);
 		display: inline-block; margin-right: 0.5rem; }
-	.status i.on { background: var(--accent); }
-	.status span { color: var(--muted); font-size: 0.82rem; }
+	.status i.on { background: var(--ok); }
+	.status span { color: var(--muted-foreground); font-size: 0.82rem; }
 	.audit { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; }
-	.audit li { display: flex; gap: 0.6rem; padding: 0.32rem 0; border-bottom: 1px solid var(--line); }
+	.audit li { display: flex; gap: 0.6rem; padding: 0.32rem 0; border-bottom: 1px solid var(--border); }
 	.audit .ev { font-weight: 600; min-width: 9rem; }
-	.audit .detail { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.audit .at { color: var(--muted); white-space: nowrap; }
-	code { font-size: 0.85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+	.audit .detail { color: var(--muted-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.audit .at { color: var(--muted-foreground); white-space: nowrap; }
+	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>

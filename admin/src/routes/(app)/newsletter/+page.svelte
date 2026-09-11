@@ -154,50 +154,45 @@
 <style>
 	.head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
-	.count { font-size: 0.88rem; color: var(--muted); }
-	.count strong { color: var(--ink); font-size: 1rem; }
+	.count { font-size: 0.88rem; color: var(--muted-foreground); }
+	.count strong { color: var(--foreground); font-size: 1rem; }
 	.count span { opacity: 0.8; }
-	h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 0.6rem; }
+	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
 
-	.setup { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
-	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
+	.setup { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--foreground); }
 	.setup ol { margin: 0 0 0.75rem; padding-left: 1.2rem; font-size: 0.88rem; }
 	.setup li { margin-bottom: 0.35rem; }
 
 	.msg { padding: 0.75rem 0.95rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
-	.msg.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.warn { background: color-mix(in srgb, var(--warn) 12%, transparent); border-left: 3px solid var(--warn);
 		padding: 0.7rem 0.9rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; margin: 0; }
 
 	form { display: grid; gap: 1rem; max-width: 44rem; }
 	.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 1rem; }
-	label { display: block; font-size: 0.8rem; color: var(--muted); }
 	.opt { opacity: 0.7; font-style: italic; }
-	input, select, textarea { display: block; width: 100%; margin-top: 0.25rem; padding: 0.55rem 0.65rem;
-		border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-	input[readonly] { color: var(--muted); }
-	textarea { resize: vertical; }
-	.count-hint { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted); }
+	.count-hint { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted-foreground); }
 	.count-hint.warn { color: var(--warn); background: none; border: 0; padding: 0; }
-	.note { font-size: 0.82rem; color: var(--muted); margin: 0; }
+	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }
 	.actions { display: flex; gap: 0.6rem; }
-	.actions button { padding: 0.5rem 1rem; border: 1px solid var(--line); border-radius: 8px;
-		background: var(--panel); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
+	.actions button { padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+		background: var(--card); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
 
-	.send { border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line)); border-radius: var(--radius);
+	.send { border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--radius);
 		padding: 0.9rem 1rem 1rem; display: grid; gap: 0.6rem; }
 	.send legend { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
 		color: var(--danger); padding: 0 0.35rem; }
-	.send p { font-size: 0.85rem; color: var(--muted); margin: 0; }
+	.send p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
 	.send .danger { justify-self: start; padding: 0.55rem 1.1rem; border: 1px solid var(--danger);
 		border-radius: 8px; background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
 	.send .danger:disabled { opacity: 0.4; cursor: default; }
 
 	.preview { margin-top: 2rem; }
-	.preview iframe { width: 100%; height: 620px; border: 1px solid var(--line); border-radius: var(--radius); background: #faf8f4; }
+	.preview iframe { width: 100%; height: 620px; border: 1px solid var(--border); border-radius: var(--radius); background: #faf8f4; }
 	.sent { list-style: none; padding: 0; margin: 0; font-size: 0.86rem; }
-	.sent li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--line); }
-	.sent .meta { color: var(--muted); white-space: nowrap; font-size: 0.8rem; }
-	code { font-size: 0.85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+	.sent li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+	.sent .meta { color: var(--muted-foreground); white-space: nowrap; font-size: 0.8rem; }
+	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>

@@ -1,8 +1,0 @@
-node_modules
-build
-.svelte-kit
-.state
-.env
-.env.*
-test
-*.md

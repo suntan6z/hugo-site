@@ -27,10 +27,10 @@
 
 <style>
 	main { max-width: 34rem; margin: 14vh auto; padding: 0 1.5rem; }
-	.code { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
+	.code { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted-foreground); }
 	h1 { font-size: 1.5rem; margin: 0.2rem 0 0.4rem; letter-spacing: -0.015em; }
-	.hint { color: var(--muted); margin: 0 0 1rem; }
-	pre { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--danger);
+	.hint { color: var(--muted-foreground); margin: 0 0 1rem; }
+	pre { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--danger);
 		border-radius: 0 8px 8px 0; padding: 0.7rem 0.9rem; font-size: 0.82rem;
 		white-space: pre-wrap; word-break: break-word; margin: 0 0 1.25rem; }
 	nav { display: flex; gap: 1rem; font-size: 0.9rem; }

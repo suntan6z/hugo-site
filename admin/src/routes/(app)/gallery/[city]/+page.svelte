@@ -198,53 +198,53 @@
 
 <style>
 	.head { margin-bottom: 1.25rem; }
-	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted); }
+	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); }
 	h1 { font-size: 1.4rem; margin: 0.35rem 0 0.15rem; letter-spacing: -0.015em; }
 	.flag { margin-right: 0.25rem; }
-	code { font-size: 0.78rem; color: var(--muted); font-family: ui-monospace, monospace; }
+	code { font-size: 0.78rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
-	.msg.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 
 	.bar { display: flex; align-items: center; gap: 0.9rem; position: sticky; top: 3rem; z-index: 4;
-		background: var(--bg); padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+		background: var(--background); padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.picker input { display: none; }
-	.picker span { display: inline-block; padding: 0.45rem 0.85rem; border: 1px dashed var(--line);
-		border-radius: 8px; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
-	.picker:hover span { color: var(--ink); border-color: var(--accent); }
-	.stats { font-size: 0.82rem; color: var(--muted); }
+	.picker span { display: inline-block; padding: 0.45rem 0.85rem; border: 1px dashed var(--border);
+		border-radius: 8px; font-size: 0.85rem; color: var(--muted-foreground); cursor: pointer; }
+	.picker:hover span { color: var(--foreground); border-color: var(--primary); }
+	.stats { font-size: 0.82rem; color: var(--muted-foreground); }
 	.stats em { color: var(--warn); font-style: normal; }
-	.stats strong { color: var(--accent); }
+	.stats strong { color: var(--primary); }
 	.bar .primary { margin-left: auto; padding: 0.5rem 1.1rem; border: 0; border-radius: 8px;
-		background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; }
+		background: var(--primary); color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
 	.bar .primary:disabled { opacity: 0.6; cursor: default; }
-	.note { font-size: 0.8rem; color: var(--muted); margin: 0.7rem 0 0.9rem; }
+	.note { font-size: 0.8rem; color: var(--muted-foreground); margin: 0.7rem 0 0.9rem; }
 	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.5rem 0 0; }
-	.empty { color: var(--muted); font-size: 0.9rem; }
+	.empty { color: var(--muted-foreground); font-size: 0.9rem; }
 
 	.photos { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
 	.photos li { display: grid; grid-template-columns: 1.6rem 96px 1fr auto; gap: 0.7rem; align-items: center;
-		border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem; background: var(--panel); cursor: grab; }
-	.photos li.new { border-color: var(--accent); }
+		border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; background: var(--card); cursor: grab; }
+	.photos li.new { border-color: var(--brand-yellow-deep); background: var(--brand-yellow-soft); }
 	.photos li.removing { opacity: 0.45; border-color: var(--danger); }
-	.pos { font-size: 0.75rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
-	.photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 5px; background: var(--bg); }
+	.pos { font-size: 0.75rem; color: var(--muted-foreground); text-align: center; font-variant-numeric: tabular-nums; }
+	.photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 5px; background: var(--background); }
 	.fields { display: grid; gap: 0.3rem; min-width: 0; }
 	.fields code em { font-style: normal; opacity: 0.8; }
-	.fields input { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--line);
-		border-radius: 6px; background: var(--bg); font-size: 0.82rem; }
-	.fields input.missing { border-color: color-mix(in srgb, var(--warn) 50%, var(--line)); }
+	.fields input { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border);
+		border-radius: 6px; background: var(--background); font-size: 0.82rem; }
+	.fields input.missing { border-color: color-mix(in srgb, var(--warn) 50%, var(--border)); }
 	.tools { display: flex; flex-direction: column; gap: 0.25rem; }
-	.tools button { font-size: 0.72rem; padding: 0.22rem 0.5rem; border: 1px solid var(--line);
-		border-radius: 5px; background: var(--panel); cursor: pointer; }
+	.tools button { font-size: 0.72rem; padding: 0.22rem 0.5rem; border: 1px solid var(--border);
+		border-radius: 5px; background: var(--card); cursor: pointer; }
 	.tools button:disabled { opacity: 0.35; cursor: default; }
 	.tools .danger { color: var(--danger); }
 
-	.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+	.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 	.linkish { background: none; border: 0; color: var(--danger); font-size: 0.85rem; cursor: pointer; padding: 0; }
 	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
-	.danger-zone p { font-size: 0.85rem; color: var(--muted); margin: 0; }
-	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+	.danger-zone p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
+	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
 	.danger-zone .danger { padding: 0.5rem 1rem; border: 1px solid var(--danger); border-radius: 8px;
 		background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
 	.danger-zone .danger:disabled { opacity: 0.4; cursor: default; }
