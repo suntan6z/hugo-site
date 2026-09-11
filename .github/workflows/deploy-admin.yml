@@ -27,6 +27,10 @@ jobs:
           node-version: "24"
       - working-directory: admin
         run: npm ci
+      # Type errors do not fail a Vite build, so they would otherwise ship.
+      - name: Type check
+        working-directory: admin
+        run: npm run check
       # Reads the real content/blog and content/gallery from the checkout, so a
       # front-matter serializer regression blocks the deploy rather than
       # silently shipping and breaking Hugo's FR/IT placeholder pages.

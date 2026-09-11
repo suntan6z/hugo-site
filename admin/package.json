@@ -12,7 +12,7 @@
     "prebuild": "node scripts/sync-brand.mjs",
     "build": "vite build",
     "preview": "node build",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "check": "node scripts/sync-brand.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
     "test": "node --test 'test/**/*.test.ts'",
     "test:integration": "npm run build && node --test --test-concurrency=1 'test/**/*.integration.ts'"
   },
