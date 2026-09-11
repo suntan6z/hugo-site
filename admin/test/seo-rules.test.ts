@@ -6,7 +6,11 @@ import { checkPost, errorsIn, warningsIn, type CheckablePost } from '../src/lib/
 import { FrontMatter } from '../src/lib/server/content/frontmatter.ts';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..');
+// Frozen for the unit tests, so assertions about "future" are deterministic.
 const TODAY = new Date('2026-09-09T12:00:00Z');
+// The corpus checks run against the real clock: a frozen date here would rot,
+// making any article written after it look future-dated.
+const NOW = new Date();
 
 const base = (over: Partial<CheckablePost> = {}): CheckablePost => ({
 	slug: 'a-post',
@@ -169,7 +173,7 @@ describe('against the real corpus', () => {
 
 	test('no published article has a blocking error', () => {
 		const broken = slugs
-			.map((s) => ({ slug: s, errors: errorsIn(checkPost(realPost(s), TODAY)) }))
+			.map((s) => ({ slug: s, errors: errorsIn(checkPost(realPost(s), NOW)) }))
 			.filter((r) => r.errors.length > 0);
 		assert.deepEqual(
 			broken.map((b) => `${b.slug}: ${b.errors.map((e) => e.id).join(', ')}`),
@@ -179,7 +183,7 @@ describe('against the real corpus', () => {
 	});
 
 	test('warnings are selective, not universal', () => {
-		const flagged = slugs.filter((s) => warningsIn(checkPost(realPost(s), TODAY)).some(
+		const flagged = slugs.filter((s) => warningsIn(checkPost(realPost(s), NOW)).some(
 			(w) => w.id !== 'no-featured'
 		));
 		// Two short descriptions and one long title today. A rule firing on every

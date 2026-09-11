@@ -163,7 +163,7 @@ export async function loadPost(slug: string): Promise<Post | null> {
  */
 async function renderFile(slug: string, shared: PostShared, t: PostTranslation): Promise<string> {
 	const existing = await repo.readText(`${bundleDir(slug)}/${fileFor(t.lang)}`);
-	const fm = existing ? FrontMatter.parse(existing) : FrontMatter.parse('---\n---\n');
+	const fm = existing ? FrontMatter.parse(existing) : FrontMatter.empty();
 
 	fm.set('title', t.title);
 	fm.set('date', shared.date);
@@ -235,4 +235,73 @@ export async function savePost(input: SavePostInput): Promise<{ sha: string }> {
 
 	if (ops.length === 0) return { sha: 'noop' };
 	return repo.commit(input.message, ops);
+}
+
+/** Slug rules: lowercase, digits and hyphens — it becomes the folder name. */
+export function slugify(title: string): string {
+	return title
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 70);
+}
+
+export class CreatePostError extends Error {}
+
+/**
+ * Creates a new bundle with only index.md, mirroring archetypes/blog.md.
+ *
+ * Starts as a draft, so a half-written article never reaches the live site
+ * just because it exists. Translations are deliberately not created: Hugo's
+ * content adapter synthesises the "not yet translated" pages, so an empty
+ * index.fr.md would be worse than no file at all.
+ */
+export async function createPost(input: {
+	title: string;
+	slug: string;
+	date: string;
+	category: Category;
+	description: string;
+}): Promise<{ sha: string }> {
+	if (!/^[a-z0-9-]+$/.test(input.slug)) {
+		throw new CreatePostError('Slug may contain only lowercase letters, digits and hyphens.');
+	}
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+		throw new CreatePostError('Date must be YYYY-MM-DD.');
+	}
+
+	const existing = await repo.listTree(bundleDir(input.slug));
+	if (existing.length > 0) {
+		throw new CreatePostError(`content/blog/${input.slug}/ already exists.`);
+	}
+
+	const fm = FrontMatter.empty();
+	fm.set('title', input.title);
+	fm.set('date', input.date);
+	fm.set('slug', input.slug);
+	fm.set('category', input.category);
+	fm.set('draft', true);
+	fm.set('description', input.description);
+
+	return repo.commit(`Create ${input.slug}`, [
+		{ path: `${bundleDir(input.slug)}/index.md`, content: fm.setBody('\n').serialize() }
+	]);
+}
+
+/**
+ * Deletes a whole bundle — every language file and every co-located image.
+ *
+ * Nothing else references a post by path, so no other file needs updating. The
+ * commit is the only record, which is why the caller demands typed confirmation.
+ */
+export async function deletePost(slug: string): Promise<{ sha: string; files: string[] }> {
+	const files = await repo.listTree(bundleDir(slug));
+	if (files.length === 0) throw new Error(`content/blog/${slug}/ does not exist.`);
+	const { sha } = await repo.commit(
+		`Delete ${slug}`,
+		files.map((path) => ({ path, delete: true as const }))
+	);
+	return { sha, files };
 }

@@ -21,6 +21,8 @@
 	// Removing a translation is a deliberate, per-language act — never a
 	// consequence of clearing the title field.
 	let removeTranslation = $state<Record<string, boolean>>({ fr: false, it: false });
+	let showDanger = $state(false);
+	let confirmSlug = $state('');
 
 	let tab = $state<'en' | 'fr' | 'it'>('en');
 	let saving = $state(false);
@@ -309,6 +311,25 @@
 	</div>
 </form>
 
+<section class="danger-zone">
+	<button type="button" class="linkish" onclick={() => (showDanger = !showDanger)}>
+		{showDanger ? 'Cancel' : 'Delete this article'}
+	</button>
+	{#if showDanger}
+		<form method="POST" action="?/delete" use:enhance>
+			<p>
+				Deletes every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'}
+				in <code>content/blog/{post.slug}/</code>. Recoverable only from git history. Type the slug
+				to confirm.
+			</p>
+			<input name="confirm" bind:value={confirmSlug} placeholder={post.slug} autocomplete="off" />
+			<button type="submit" class="danger" disabled={confirmSlug !== post.slug}>
+				Delete {post.slug}
+			</button>
+		</form>
+	{/if}
+</section>
+
 <style>
 	.head { margin-bottom: 1.25rem; }
 	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted); }
@@ -336,6 +357,15 @@
 	.tabs i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: inline-block; }
 	.tabs i.on { background: var(--accent); }
 	.pane { display: grid; gap: 0.85rem; }
+	.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+	.linkish { background: none; border: 0; color: var(--danger); font-size: 0.85rem; cursor: pointer; padding: 0; }
+	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
+	.danger-zone p { font-size: 0.85rem; color: var(--muted); margin: 0; }
+	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+	.danger-zone .danger { justify-self: start; padding: 0.5rem 1rem; border: 1px solid var(--danger);
+		border-radius: 8px; background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
+	.danger-zone .danger:disabled { opacity: 0.4; cursor: default; }
+
 	.findings { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
 		padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
 	.findings h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em;

@@ -36,6 +36,16 @@ export async function clearQueue(): Promise<void> {
 	await store.put(QUEUE_KEY, []);
 }
 
+/**
+ * Drops queued URLs for a slug. Submitting a page that has just been deleted
+ * would point Bing at a 404 and waste the daily quota.
+ */
+export async function dequeueSlug(slug: string): Promise<void> {
+	const queue = await readQueue();
+	const filtered = queue.filter((q) => !q.url.includes(`/blog/${slug}/`));
+	if (filtered.length !== queue.length) await store.put(QUEUE_KEY, filtered);
+}
+
 /** All language variants of a blog post, which are separate indexable URLs. */
 export function postUrls(slug: string, langs: string[]): string[] {
 	return langs.map((l) => `${integrations.siteUrl}/${l}/blog/${slug}/`);

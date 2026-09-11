@@ -1,12 +1,12 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { loadPost, savePost, LANGS, fromForm, type Lang, type PostTranslation } from '$lib/server/content/post.ts';
+import { loadPost, savePost, deletePost, LANGS, fromForm, type Lang, type PostTranslation } from '$lib/server/content/post.ts';
 import { CATEGORIES } from '$lib/server/content/frontmatter.ts';
 import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import { preflight, errorsIn, warningsIn } from '$lib/server/seo/preflight.ts';
-import { queueUrls, postUrls } from '$lib/server/integrations/indexnow.ts';
+import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const post = await loadPost(params.slug);
@@ -163,5 +163,23 @@ export const actions: Actions = {
 			if (e instanceof ConcurrentWriteError) return fail(409, { message: e.message });
 			return fail(500, { message: e instanceof Error ? e.message : String(e) });
 		}
+	},
+
+	delete: async ({ request, params }) => {
+		const f = await request.formData();
+		// Typing the slug is the confirmation: this removes every language file
+		// and every image in the bundle, recoverable only from git history.
+		if (fromForm(f.get('confirm')).trim() !== params.slug) {
+			return fail(400, { message: `Type "${params.slug}" to confirm deletion.` });
+		}
+		try {
+			const { sha, files } = await deletePost(params.slug);
+			await dequeueSlug(params.slug);
+			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });
+			await audit('delete-post', { slug: params.slug, sha, files: files.length });
+		} catch (e) {
+			return fail(500, { message: e instanceof Error ? e.message : String(e) });
+		}
+		redirect(303, '/posts');
 	}
 };
