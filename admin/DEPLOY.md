@@ -75,6 +75,17 @@ one. Run it whenever a value in `.env` changes.
   the raw `*.functions.fnc.fr-par.scw.cloud` endpoint — enrol only via the
   custom domain.
 
+## Optional integrations
+
+Each is off until its key is in `admin/.env`, then `./scripts/create-container.sh`
+(the script lists which are set). CI deploys never touch these.
+
+| Key | Enables | Where to get it |
+|---|---|---|
+| `BING_API_KEY` | Search stats on the dashboard | Bing Webmaster Tools → Settings → API access |
+| `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
+| `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`; 500,000 characters a month |
+
 ## Recovering from a lockout
 
 In order of escalation:

@@ -13,17 +13,17 @@ hugo server          # dev server with live reload at http://localhost:1313
 hugo --minify        # production build (rarely run by hand — see Deployment)
 ```
 
-There are no tests, linters, or a build toolchain beyond Hugo itself for the site proper. `functions/` (the Scaleway Functions backing the forms) is a separate, dependency-free Node project deployed via `functions/deploy.sh` — see `docs/forms-and-email.md`.
+There are no tests, linters, or a build toolchain beyond Hugo itself for the site proper. `functions/` (the Scaleway Functions backing the forms) is a separate, dependency-free Node project deployed via `functions/deploy.sh` — see `docs/forms-and-email.md`. `admin/` is the content portal, a separate Node project with its own tests — see **The admin portal** below.
 
 ## Deployment
 
-Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs the build on its own servers and serves the result. There is no CI for the Hugo build itself — the only CI in this repo is the Scaleway Functions' own scoped deploy workflow (see Architecture below), which never touches the Hugo site.
+Hosted on **StaticHost.eu**, which watches the GitHub repo: push to `main` and StaticHost runs the build on its own servers and serves the result. No CI deploys the Hugo site. `.github/workflows/hugo-build.yml` does *build* it on every push, with the exact image and command read from `statichost.yml`, as an early warning — it deploys nothing. The other workflows are scoped to `functions/**` and `admin/**` and never touch the site.
 
 **The Hugo version StaticHost uses is pinned explicitly in [`statichost.yml`](statichost.yml)** (repo root), not in StaticHost's dashboard. That file's presence makes StaticHost ignore its own dashboard "Hugo/Version/Build flags/Public directory" fields entirely — they become inert once `statichost.yml` exists. This was deliberate: StaticHost's dashboard version field is "hidden state" that isn't visible in the repo and silently drifted out of sync with local dev once (StaticHost defaulted to Hugo 0.150.0 while local dev was on 0.163.3, which broke the build the moment a template used an API introduced after 0.150 — `hugo.Sites`/`hugo.Data`/`.Language.Label`/`locale`+`label` config keys, all added in Hugo 0.156–0.158). Keeping the version in `statichost.yml` means it travels with the repo and is visible in `git blame`.
 
 **Image tag note:** `hugomods/hugo` (the Docker image family `statichost.yml` references) only publishes its convenient bare `ci-X.Y.Z` alias for a curated subset of releases — it did **not** have one for 0.163.3 at the time of writing. The full ingredient-tag (e.g. `debian-git-0.163.3`, used in `statichost.yml`) exists for every release instead. Per hugomods' own docs (docker.hugomods.com/docs/tags/): tags **without** a `std`/`reg` prefix are the Hugo **extended** edition (needed here for `.Resize` to webp on the hero image, matching the local `+extended` Hugo binary); `std`/`reg`-prefixed tags are the **non-extended** standard edition — don't swap these casually. When bumping the pinned version, search https://hub.docker.com/r/hugomods/hugo/tags for a matching `git-<version>` tag (no `std`/`reg` prefix) rather than assuming one exists.
 
-A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the StaticHost build succeeds — `statichost.yml` narrows that gap by pinning the exact same version, but the Docker *image* itself isn't something this repo can test without Docker installed locally.
+A local `hugo server`/`hugo build` succeeding does not, by itself, guarantee the StaticHost build succeeds. **Local Hugo drifts ahead of the pin** — it comes from Homebrew (0.166.0 at the time of writing, against the pinned 0.163.3), and hugomods doesn't publish an image for every release (none for 0.166.0), so exact parity can't be kept by hand. `hugo-build.yml` closes the gap instead: it runs the pinned image in GitHub Actions, so a template relying on a newer Hugo fails there with a readable log. Check that workflow after changing templates or `hugo.toml`.
 
 **Never commit `public/` or `resources/`** — both are git-ignored. StaticHost regenerates them on every deploy; tracking them causes build conflicts. The repo holds **source only**.
 
@@ -68,4 +68,30 @@ The site is trilingual — **English (default), French, Italian** — using Hugo
 
 ## Adding content
 
-New article: `hugo new blog/my-slug/index.md` (uses `archetypes/blog.md`, starts `draft: true`). Set the lead image as the first Markdown image in the body (becomes the thumbnail and social card), or set `featured_image` in front matter — the latter is required for the article to show a thumbnail in the homepage grid. To translate it, add `index.fr.md` / `index.it.md` in the same bundle (see Multilingual). Site-wide settings: title, social links, hero photo and résumé URL are in `hugo.toml` under the shared `[params]`; the homepage quote, meta description and nav menu are **per-language** under `[languages.<lang>]`.
+Articles are normally written in the admin portal (see below), which produces exactly what follows. By hand: `hugo new blog/my-slug/index.md` (uses `archetypes/blog.md`, starts `draft: true`). Set the lead image as the first Markdown image in the body (becomes the thumbnail and social card), or set `featured_image` in front matter — the latter is required for the article to show a thumbnail in the homepage grid. To translate it, add `index.fr.md` / `index.it.md` in the same bundle (see Multilingual). Site-wide settings: title, social links, hero photo and résumé URL are in `hugo.toml` under the shared `[params]`; the homepage quote, meta description and nav menu are **per-language** under `[languages.<lang>]`.
+
+## The admin portal (`admin/`)
+
+A SvelteKit app at **admin.loconsole.eu** (Scaleway Serverless Container) for writing and publishing without a code editor: article editor with preview, autosave and DeepL first drafts for FR/IT, gallery manager, UI-strings editor, newsletter broadcasts (Resend), Bing search stats, SEO pre-flight and IndexNow. Hugo ignores the directory. Deployment, secrets and recovery: [`admin/DEPLOY.md`](admin/DEPLOY.md).
+
+**It writes to this repo; it is not a CMS database.** Each save is one commit to `main` via a GitHub App (Git Data API: blobs → tree → commit → fast-forward ref, never force), and StaticHost builds it like any push. Work in progress is autosaved to object storage, not committed. Two consequences: expect commits authored by the app, and **any push touching only `admin/` still costs a StaticHost build** (StaticHost can't path-filter), so batch portal changes.
+
+```bash
+cd admin
+npm run dev               # http://localhost:5180 — LOCAL MODE: saves edit this working tree directly
+npm test                  # unit tests, incl. a front-matter round-trip over every real content file
+npm run test:integration  # builds, boots the real app against a throwaway copy of the site, drives it over HTTP
+npm run check             # types (a Vite build does not fail on type errors)
+```
+
+Local mode (no GitHub App configured) reads and writes the working tree and keeps state in `admin/.state/`; `ALLOW_DEV_LOGIN=1` in `admin/.env` skips the passkey. Saving an article in local dev really changes `content/` — review `git diff` before committing.
+
+**Contracts between the site and the portal** — change one side, check the other:
+- **Front matter is edited line by line, never re-serialised** (`admin/src/lib/server/content/frontmatter.ts`), preserving comments, key order and trailing newlines. Output must start with `---\n` at byte 0 or `layouts/partials/auto-untranslated-pages.html`'s regex silently stops generating the FR/IT placeholder pages. The round-trip test reads `content/blog/**` and `content/gallery/**` directly, which is why content changes also run the admin test workflow.
+- **`layouts/index.buildinfo.json` → `/en/build-info.json`** is a content manifest the portal polls to tell when a commit is live. Keep the `BUILDINFO` output format in `hugo.toml`.
+- **The category list is duplicated** in `CATEGORIES` in `frontmatter.ts` (see Categories above).
+- **The portal's look is generated from the site**: `admin/scripts/sync-brand.mjs` derives its tokens, fonts, logo and the preview's stylesheet from `static/css/main.css`, `static/fonts/` and `static/img/logo.svg`. Those paths also redeploy the portal.
+- **`data/gallery_*.json`** is rewritten by the portal in the existing hand-aligned format, and gallery cities get their `.fr.md`/`.it.md` stubs automatically.
+- **`static/<key>.txt`** is the IndexNow key file; it must match `INDEXNOW_KEY` (see `admin/DEPLOY.md`).
+
+**Security model:** passkeys only (WebAuthn, RP ID `admin.loconsole.eu`). Access is **deny-by-default** in `admin/src/hooks.server.ts`: a request without a session only reaches paths in the allow-list in `admin/src/lib/server/auth/access.ts`, so a new route is protected the moment it exists. Don't move this into layout `load` functions — SvelteKit doesn't run them before form actions, which is exactly how the first version left every action open. `admin/test/access.test.ts` walks the route tree and fails if anything new becomes public.
