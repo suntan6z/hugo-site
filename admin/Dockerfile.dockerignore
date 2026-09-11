@@ -1,0 +1,18 @@
+# Allow-list: ignore everything, then admit only what the build reads.
+*
+!admin/
+!static/css/main.css
+!static/fonts/
+!static/img/logo.svg
+!static/img/favicon.svg
+!static/img/favicon.png
+!static/img/favicon.ico
+
+admin/node_modules
+admin/build
+admin/.svelte-kit
+admin/.state
+admin/.env
+admin/.env.*
+admin/static/brand
+admin/test
