@@ -18,6 +18,10 @@
 		}
 	});
 
+	// Removing a translation is a deliberate, per-language act — never a
+	// consequence of clearing the title field.
+	let removeTranslation = $state<Record<string, boolean>>({ fr: false, it: false });
+
 	let tab = $state<'en' | 'fr' | 'it'>('en');
 	let saving = $state(false);
 
@@ -268,8 +272,19 @@
 			{#if l !== 'en' && !post.translations[l].exists}
 				<p class="hint">
 					No {LANG_NAMES[l]} file yet. Leaving the title empty keeps it that way — Hugo generates
-					the placeholder page automatically.
+					the “not yet translated” page automatically.
 				</p>
+			{:else if l !== 'en'}
+				<label class="check danger-check">
+					<input type="checkbox" name="delete_translation_{l}" bind:checked={removeTranslation[l]} />
+					Delete the {LANG_NAMES[l]} translation on save
+				</label>
+				{#if removeTranslation[l]}
+					<p class="hint">
+						<strong>{LANG_NAMES[l]} will be deleted.</strong> Hugo will fall back to the
+						“not yet translated” page. Recoverable only from git history.
+					</p>
+				{/if}
 			{/if}
 		</div>
 	{/each}
@@ -306,6 +321,7 @@
 	fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.75rem; }
 	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 0.35rem; }
 	label { display: block; font-size: 0.8rem; color: var(--muted); }
+	.danger-check { color: var(--danger); }
 	label.check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--ink); }
 	label.check input { width: auto; margin: 0; }
 	input, select, textarea { display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }

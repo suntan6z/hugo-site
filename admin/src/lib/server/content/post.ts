@@ -1,4 +1,5 @@
 import { repo, type FileOp } from './repo.ts';
+import { memo, mapLimit, DEFAULT_TTL_MS } from '../cache.ts';
 import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
 
 export { fromForm };
@@ -87,39 +88,43 @@ function readShared(slug: string, fm: FrontMatter): PostShared {
 
 /** Every blog bundle, newest first. */
 export async function listPosts(): Promise<PostSummary[]> {
-	const paths = await repo.listTree('content/blog');
-	const bySlug = new Map<string, string[]>();
-	for (const p of paths) {
-		const m = /^content\/blog\/([^/]+)\/(.+)$/.exec(p);
-		if (!m) continue; // section _index.md files and content adapters live one level up
-		const list = bySlug.get(m[1]) ?? [];
-		list.push(m[2]);
-		bySlug.set(m[1], list);
-	}
+	// Cached and parallel: one read per post done sequentially measured ~3.8s
+	// against the GitHub API for 13 posts, which dominated every page load.
+	return memo('posts:list', DEFAULT_TTL_MS, async () => {
+		const paths = await repo.listTree('content/blog');
+		const bySlug = new Map<string, string[]>();
+		for (const p of paths) {
+			const m = /^content\/blog\/([^/]+)\/(.+)$/.exec(p);
+			if (!m) continue; // section _index.md files and content adapters live one level up
+			const list = bySlug.get(m[1]) ?? [];
+			list.push(m[2]);
+			bySlug.set(m[1], list);
+		}
 
-	const out: PostSummary[] = [];
-	for (const [slug, files] of bySlug) {
-		const primary = files.includes('index.md')
-			? 'index.md'
-			: files.find((f) => /^index\..+\.md$/.test(f));
-		if (!primary) continue;
+		const entries = [...bySlug.entries()];
+		const out = await mapLimit(entries, 6, async ([slug, files]) => {
+			const primary = files.includes('index.md')
+				? 'index.md'
+				: files.find((f) => /^index\..+\.md$/.test(f));
+			if (!primary) return null;
 
-		const raw = await repo.readText(`${bundleDir(slug)}/${primary}`);
-		if (raw === null) continue;
-		const fm = FrontMatter.parse(raw);
+			const raw = await repo.readText(`${bundleDir(slug)}/${primary}`);
+			if (raw === null) return null;
+			const fm = FrontMatter.parse(raw);
 
-		const langs = LANGS.filter((l) => files.includes(fileFor(l)));
-
-		out.push({
-			...readShared(slug, fm),
-			title: String(fm.get('title') ?? slug),
-			description: String(fm.get('description') ?? ''),
-			langs,
-			imageCount: files.filter((f) => !f.endsWith('.md')).length
+			return {
+				...readShared(slug, fm),
+				title: String(fm.get('title') ?? slug),
+				description: String(fm.get('description') ?? ''),
+				langs: LANGS.filter((l) => files.includes(fileFor(l))),
+				imageCount: files.filter((f) => !f.endsWith('.md')).length
+			} satisfies PostSummary;
 		});
-	}
 
-	return out.sort((a, b) => b.date.localeCompare(a.date));
+		return out
+			.filter((p): p is PostSummary => p !== null)
+			.sort((a, b) => b.date.localeCompare(a.date));
+	});
 }
 
 /** One bundle with all its language files. */
@@ -127,19 +132,26 @@ export async function loadPost(slug: string): Promise<Post | null> {
 	const files = (await repo.listTree(bundleDir(slug))).map((p) => p.split('/').pop()!);
 	if (files.length === 0) return null;
 
+	// The three language files are independent reads; fetching them in sequence
+	// tripled the editor's load time for no reason.
+	const raws = await Promise.all(
+		LANGS.map((lang) => repo.readText(`${bundleDir(slug)}/${fileFor(lang)}`))
+	);
+
 	const translations = {} as Record<Lang, PostTranslation>;
 	let shared: PostShared | null = null;
-
-	for (const lang of LANGS) {
-		const raw = await repo.readText(`${bundleDir(slug)}/${fileFor(lang)}`);
+	for (let i = 0; i < LANGS.length; i++) {
+		const lang = LANGS[i];
+		const raw = raws[i];
 		if (raw === null) {
 			translations[lang] = empty(lang);
 			continue;
 		}
 		translations[lang] = readTranslation(lang, raw);
+		// Shared front matter is identical across languages; take the first found.
 		shared ??= readShared(slug, FrontMatter.parse(raw));
 	}
-	if (!shared) return null;
+	if (shared === null) return null;
 
 	return { ...shared, translations, images: files.filter((f) => !f.endsWith('.md')).sort() };
 }
@@ -178,6 +190,13 @@ export interface SavePostInput {
 	/** New or replaced images, keyed by filename within the bundle. */
 	newImages?: { name: string; bytes: Uint8Array }[];
 	deleteImages?: string[];
+	/**
+	 * Languages whose file should be removed. Deleting a translation is only
+	 * ever explicit: an empty title used to be enough to drop the file, which
+	 * meant one careless save could destroy a finished translation with no
+	 * confirmation and no way back short of git.
+	 */
+	deleteTranslations?: Lang[];
 	message: string;
 }
 
@@ -186,15 +205,22 @@ export async function savePost(input: SavePostInput): Promise<{ sha: string }> {
 	const { shared, translations } = input;
 	const ops: FileOp[] = [];
 
+	const removing = new Set(input.deleteTranslations ?? []);
 	for (const lang of LANGS) {
 		const t = translations[lang];
 		const path = `${bundleDir(shared.slug)}/${fileFor(lang)}`;
-		const hasContent = t.title.trim() !== '' && (t.body.trim() !== '' || t.untranslated);
 
+		if (removing.has(lang)) {
+			// English is the source of truth for a bundle and is never removable.
+			if (lang !== 'en' && t.exists) ops.push({ path, delete: true });
+			continue;
+		}
+
+		const hasContent = t.title.trim() !== '' && (t.body.trim() !== '' || t.untranslated);
 		if (!hasContent) {
-			// Nothing to publish in this language. Remove a file only if one exists;
-			// Hugo's content adapter will synthesise the placeholder page instead.
-			if (t.exists && lang !== 'en') ops.push({ path, delete: true });
+			// Nothing worth writing. An existing file is left alone: Hugo's content
+			// adapter already synthesises a placeholder page when a language is
+			// missing, so there is never a reason to delete one implicitly.
 			continue;
 		}
 		ops.push({ path, content: await renderFile(shared.slug, shared, t) });

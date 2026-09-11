@@ -1,4 +1,5 @@
 import { store } from '../store/kv.ts';
+import { memo, invalidate } from '../cache.ts';
 
 export interface StoredCredential {
 	id: string;
@@ -18,12 +19,20 @@ export interface AuthState {
 const KEY = 'auth/credentials';
 const EMPTY: AuthState = { epoch: 1, credentials: [] };
 
+/**
+ * Cached: every request verifies its session's epoch against this, which was a
+ * ~300ms object-storage round-trip on each page load. The portal is the only
+ * writer, and writeAuthState invalidates, so the TTL only bounds how long a
+ * credentials.json edited by hand in the Scaleway console stays unnoticed.
+ */
 export async function readAuthState(): Promise<AuthState> {
-	return (await store.get<AuthState>(KEY)) ?? EMPTY;
+	return memo('auth:state', 60_000, async () => (await store.get<AuthState>(KEY)) ?? EMPTY);
 }
 
 export async function writeAuthState(s: AuthState): Promise<void> {
 	await store.put(KEY, s);
+	// Enrolment and "sign out everywhere" must take effect immediately.
+	invalidate('auth:');
 }
 
 export async function addCredential(cred: StoredCredential): Promise<AuthState> {
