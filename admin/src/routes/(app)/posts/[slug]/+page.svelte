@@ -338,8 +338,8 @@
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.ok { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
-	.shared { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; align-items: end; }
-	fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.75rem; }
+	.shared { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: 0.75rem; align-items: end; }
+	fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.75rem; }
 	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 0 0.35rem; }
 	label { display: block; font-size: 0.8rem; color: var(--muted); }
 	.danger-check { color: var(--danger); }
@@ -390,7 +390,7 @@
 	.note { font-size: 0.78rem; color: var(--muted); margin: 0.5rem 0 0; }
 	.empty { font-size: 0.85rem; color: var(--muted); margin: 0.75rem 0 0; }
 	.grid { list-style: none; padding: 0; margin: 0.9rem 0 0; display: grid; gap: 0.75rem;
-		grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
+		grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); }
 	.grid li { border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem; display: grid; gap: 0.35rem; }
 	.grid li.new { border-color: var(--accent); }
 	.grid li.removing { opacity: 0.45; border-color: var(--danger); }
