@@ -27,6 +27,11 @@
 	}
 
 	:global(*) { box-sizing: border-box; }
+	/* The hidden attribute is only a user-agent display:none, which any author
+	   display rule overrides. The editor's language panes set display:grid, so
+	   all three languages rendered stacked at once and the tabs did nothing —
+	   from the first version until this was caught. Make hidden always win. */
+	:global([hidden]) { display: none !important; }
 	:global(body) {
 		margin: 0;
 		background: var(--background);
