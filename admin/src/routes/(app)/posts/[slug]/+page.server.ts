@@ -8,11 +8,12 @@ import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import { preflight, errorsIn, warningsIn } from '$lib/server/seo/preflight.ts';
 import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
 import { clearDraft } from '$lib/server/content/drafts.ts';
+import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const post = await loadPost(params.slug);
 	if (!post) error(404, `No article bundle at content/blog/${params.slug}`);
-	return { post, categories: CATEGORIES, findings: await preflight(post) };
+	return { post, categories: CATEGORIES, findings: await preflight(post), canTranslate: canTranslate() };
 };
 
 export const actions: Actions = {

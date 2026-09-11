@@ -334,6 +334,60 @@
 			: d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 	};
 
+	/* ------------------------------------------------------------ translation */
+
+	let translating = $state<'fr' | 'it' | null>(null);
+	let mtNote = $state<Record<string, { ok: boolean; text: string } | undefined>>({});
+
+	/** Fills a language pane with DeepL's translation of the English. Saves nothing. */
+	async function draftTranslation(l: 'fr' | 'it') {
+		const target = post.translations[l];
+		const en = post.translations.en;
+		if (
+			(target.title.trim() || target.body.trim()) &&
+			!confirm(`Replace the ${LANG_NAMES[l]} title, description and body with a machine translation of the English?`)
+		) return;
+		translating = l;
+		mtNote[l] = undefined;
+		try {
+			const r = await fetch('/api/translate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+				body: JSON.stringify({
+					slug: post.slug,
+					to: l,
+					fields: {
+						title: en.title,
+						description: en.description,
+						body: en.body,
+						eu_funding_text: isErasmus ? en.eu_funding_text : undefined
+					}
+				})
+			});
+			if (!r.ok) {
+				if (r.status === 401) throw new Error('Signed out — sign in again in another tab, then retry.');
+				throw new Error((await r.json().catch(() => null))?.message ?? `Translation failed (HTTP ${r.status}).`);
+			}
+			const { fields, characters, warnings } = await r.json();
+			target.title = fields.title;
+			target.description = fields.description;
+			target.body = fields.body;
+			if (typeof fields.eu_funding_text === 'string') target.eu_funding_text = fields.eu_funding_text;
+			// It is a real translation now, not a placeholder, and not to be deleted.
+			target.untranslated = false;
+			removeTranslation[l] = false;
+			mtNote[l] = {
+				ok: true,
+				text: `Drafted by DeepL (${characters.toLocaleString('en-GB')} characters). Nothing is saved yet — read it through, then Save.` +
+					(warnings.length ? ` ${warnings.join(' ')}` : '')
+			};
+		} catch (e) {
+			mtNote[l] = { ok: false, text: e instanceof Error ? e.message : String(e) };
+		} finally {
+			translating = null;
+		}
+	}
+
 	const isErasmus = $derived(post.category === 'Erasmus+');
 	const t = $derived(post.translations[tab]);
 
@@ -510,6 +564,20 @@
 
 	{#each LANGS as l}
 		<div class="pane" hidden={tab !== l}>
+			{#if l !== 'en'}
+				<div class="mt">
+					{#if data.canTranslate}
+						<button type="button" class="btn-outline" onclick={() => draftTranslation(l)}
+							disabled={translating !== null || !post.translations.en.body.trim()}>
+							{translating === l ? 'Translating…' : `Draft ${LANG_NAMES[l]} from English`}
+						</button>
+						<span>DeepL · a starting point to review, never saved on its own</span>
+					{:else}
+						<span>Machine translation is off — add <code>DEEPL_API_KEY</code> to enable “Draft from English”.</span>
+					{/if}
+				</div>
+				{#if mtNote[l]}<p class="mt-note" class:err={!mtNote[l]?.ok} role="status">{mtNote[l]?.text}</p>{/if}
+			{/if}
 			<label>Title<input name="title_{l}" bind:value={post.translations[l].title} /></label>
 			<label>Description
 				<textarea name="description_{l}" rows="2" bind:value={post.translations[l].description}></textarea>
@@ -672,6 +740,12 @@
 		.view-switch { flex-basis: 100%; }
 		.tabs > button { padding: 0.5rem 0.6rem; }
 	}
+
+	.mt { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.55rem 0.75rem; border: 1px dashed var(--border); border-radius: var(--radius); }
+	.mt span { font-size: 0.8rem; color: var(--muted-foreground); }
+	.mt .btn-outline { font-size: 0.85rem; padding: 0.35rem 0.85rem; }
+	.mt-note { margin: 0; font-size: 0.84rem; color: var(--ok); }
+	.mt-note.err { color: var(--danger); }
 
 	.autosave { margin-left: auto; font-size: 0.8rem; color: var(--muted-foreground); align-self: center; }
 	.autosave.dirty { color: var(--warn); }
