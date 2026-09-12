@@ -1,6 +1,6 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { loadPost, savePost, deletePost, LANGS, fromForm, type Lang, type PostTranslation } from '$lib/server/content/post.ts';
+import { loadPost, savePost, deletePost, renamePost, RenamePostError, LANGS, fromForm, type Lang, type PostTranslation } from '$lib/server/content/post.ts';
 import { CATEGORIES } from '$lib/server/content/frontmatter.ts';
 import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
@@ -10,10 +10,18 @@ import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/index
 import { clearDraft } from '$lib/server/content/drafts.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, url }) => {
 	const post = await loadPost(params.slug);
 	if (!post) error(404, `No article bundle at content/blog/${params.slug}`);
-	return { post, categories: CATEGORIES, findings: await preflight(post), canTranslate: canTranslate() };
+	return {
+		post,
+		categories: CATEGORIES,
+		findings: await preflight(post),
+		canTranslate: canTranslate(),
+		// Set by the rename action's redirect, so the new page says what happened.
+		renamedFrom: url.searchParams.get('renamed'),
+		renamedRedirect: url.searchParams.get('kept') !== '0'
+	};
 };
 
 export const actions: Actions = {
@@ -164,6 +172,41 @@ export const actions: Actions = {
 			});
 			return { success: true, sha, published: publish, findings: warningsIn(findings) };
 		} catch (e) {
+			if (e instanceof ConcurrentWriteError) return fail(409, { message: e.message });
+			return fail(500, { message: e instanceof Error ? e.message : String(e) });
+		}
+	},
+
+	rename: async ({ request, params }) => {
+		const f = await request.formData();
+		const next = fromForm(f.get('slug')).trim().toLowerCase();
+		// The redirect is opt-out, not opt-in: without it the old address keeps
+		// serving the old page forever, because StaticHost never prunes.
+		const keepOld = fromForm(f.get('redirect')) !== 'off';
+
+		const post = await loadPost(params.slug);
+		if (!post) return fail(404, { message: 'Article not found.' });
+
+		try {
+			const r = await renamePost(params.slug, next, { redirect: keepOld });
+			// The old URLs are dead and the new ones are not built yet, so the
+			// queue is rebuilt around the new slug rather than pinged now.
+			await dequeueSlug(params.slug);
+			if (!post.draft) await queueUrls(postUrls(next, LANGS.filter((l) => post.translations[l].exists)));
+			await clearDraft(params.slug).catch(() => {});
+			await recordPublish({ sha: r.sha, at: new Date().toISOString(), slug: next });
+			await audit('rename-post', {
+				from: params.slug,
+				to: next,
+				sha: r.sha,
+				files: r.moved,
+				relinked: r.relinked,
+				redirect: r.redirected
+			});
+			redirect(303, `/posts/${next}?renamed=${encodeURIComponent(params.slug)}${keepOld ? '' : '&kept=0'}`);
+		} catch (e) {
+			if (isRedirect(e)) throw e;
+			if (e instanceof RenamePostError) return fail(400, { message: e.message });
 			if (e instanceof ConcurrentWriteError) return fail(409, { message: e.message });
 			return fail(500, { message: e instanceof Error ? e.message : String(e) });
 		}
