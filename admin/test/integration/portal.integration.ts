@@ -425,6 +425,113 @@ describe('machine translation, against a stand-in DeepL', () => {
 	});
 });
 
+describe('focus mode: many answers, one commit', () => {
+	const SLUG = 'focus-subject';
+
+	before(async () => {
+		await portal.action(
+			'/posts/new?/create',
+			{ title: 'Focus Subject', category: 'Personal', date: '2026-05-05', description: 'short' },
+			{ cookie }
+		);
+		// An image with no alt text, and a description outside the range: two tasks.
+		await portal.action(
+			`/posts/${SLUG}?/save`,
+			editorForm(SLUG, { body_en: '\nBefore.\n\n![](photo.jpg)\n\nAfter.\n', draft: 'on' }),
+			{ cookie }
+		);
+	});
+
+	const tasks = async () => {
+		const html = await (await portal.get('/focus', { cookie })).text();
+		return html;
+	};
+
+	test('signed out, the queue and its actions are refused', async () => {
+		assert.equal((await portal.get('/focus')).status, 303);
+		assert.equal((await portal.action('/focus?/answer', { id: 'x', kind: 'description' })).status, 401);
+		assert.equal((await portal.action('/focus?/finish', {})).status, 401);
+	});
+
+	test('the queue offers the work, one card at a time', async () => {
+		const html = await tasks();
+		assert.match(html, /to go/);
+		// The first card is a single task, not a list of them.
+		assert.equal((html.match(/Skip for now/g) ?? []).length, 1);
+	});
+
+	test('answering writes nothing to the repo, only to the batch', async () => {
+		const before = portal.read(`content/blog/${SLUG}/index.md`);
+		const r = await portal.action(
+			'/focus?/answer',
+			{ id: `alt-text:${SLUG}:en:photo.jpg`, kind: 'alt-text', slug: SLUG, lang: 'en', image: 'photo.jpg', value: 'A described photo' },
+			{ cookie }
+		);
+		assert.equal(r.type, 'success', r.raw);
+		assert.equal(portal.read(`content/blog/${SLUG}/index.md`), before, 'answering wrote to the file');
+		assert.match(await tasks(), /1 waiting to publish/);
+	});
+
+	test('a second answer joins the same batch', async () => {
+		const r = await portal.action(
+			'/focus?/answer',
+			{ id: `description:${SLUG}:en`, kind: 'description', slug: SLUG, lang: 'en', value: 'x'.repeat(130) },
+			{ cookie }
+		);
+		assert.equal(r.type, 'success', r.raw);
+		assert.match(await tasks(), /2 waiting to publish/);
+	});
+
+	test('leaving writes every answer at once, and the article stays valid', async () => {
+		const r = await portal.action('/focus?/finish', {}, { cookie });
+		assert.equal(r.type, 'redirect', r.raw);
+		assert.match(r.location ?? '', /^\/\?tidied=2/);
+
+		const raw = portal.read(`content/blog/${SLUG}/index.md`)!;
+		assert.match(raw, /!\[A described photo\]\(photo\.jpg\)/, 'alt text not written');
+		assert.match(raw, /\ndescription: "x{130}"\n/, 'description not written');
+		assert.doesNotThrow(() => FrontMatter.parse(raw), 'the portal cannot re-read its own output');
+		// The rest of the body is untouched.
+		assert.match(raw, /Before\.\n\n!\[A described photo\]\(photo\.jpg\)\n\nAfter\./);
+	});
+
+	test('the batch is empty afterwards, so nothing is written twice', async () => {
+		const html = await tasks();
+		assert.doesNotMatch(html, /waiting to publish/);
+		const r = await portal.action('/focus?/finish', {}, { cookie });
+		assert.equal(r.type, 'redirect');
+		assert.equal(r.location, '/');
+	});
+
+	test('a skipped task stops being offered', async () => {
+		const first = await tasks();
+		const id = first.match(/name="id" value="([^"]+)"/)?.[1];
+		assert.ok(id, 'no task on offer to skip');
+		const kind = first.match(/name="kind" value="([^"]+)"/)?.[1] ?? '';
+		await portal.action('/focus?/skip', { id: id!, kind }, { cookie });
+		assert.doesNotMatch(await tasks(), new RegExp(`value="${id!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+	});
+
+	test('discarding a batch throws the answers away', async () => {
+		const before = portal.read(`content/blog/${SLUG}/index.md`);
+		await portal.action(
+			'/focus?/answer',
+			{ id: `description:${SLUG}:fr`, kind: 'description', slug: SLUG, lang: 'fr', value: 'y'.repeat(130) },
+			{ cookie }
+		);
+		const r = await portal.action('/focus?/discard', {}, { cookie });
+		assert.equal(r.type, 'redirect');
+		assert.equal(portal.read(`content/blog/${SLUG}/index.md`), before);
+		assert.doesNotMatch(await tasks(), /waiting to publish/);
+	});
+
+	test('the home screen counts the same queue', async () => {
+		const html = await (await portal.get('/', { cookie })).text();
+		assert.match(html, /Worth doing/i);
+		assert.match(html, /Start/);
+	});
+});
+
 describe('reviewing a save before making it', () => {
 	const SLUG = 'review-subject';
 
