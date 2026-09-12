@@ -84,7 +84,7 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 |---|---|---|
 | `BING_API_KEY` | Search stats on the dashboard | Bing Webmaster Tools → Settings → API access |
 | `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
-| `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`; 500,000 characters a month |
+| `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`. Settings shows the month's allowance and what is left of it |
 
 ## Recovering from a lockout
 
