@@ -36,6 +36,7 @@
 
 	let tab = $state<'en' | 'fr' | 'it'>('en');
 	let saving = $state(false);
+	let reviewing = $state(false);
 
 	// After a blocked publish the server returns the findings it rejected on;
 	// otherwise show the checks computed when the page loaded.
@@ -410,6 +411,36 @@
 	</div>
 </div>
 
+{#if form?.review}
+	{@const r = form.review}
+	<section class="review">
+		<h2>
+			{r.changes.length === 0 ? 'Nothing to commit' : `${r.changes.length} file${r.changes.length === 1 ? '' : 's'} would change`}
+			<span class="msgline">{r.message}{r.draft ? ' · stays a draft' : ''}</span>
+		</h2>
+		{#if r.changes.length === 0}
+			<p class="hint">This article is already exactly as written here.</p>
+		{/if}
+		{#each r.changes as c}
+			<article class="file">
+				<header>
+					<code>{c.path}</code>
+					<span class="status {c.status}">{c.status}</span>
+					{#if c.bytes}<span class="hint">{formatBytes(c.bytes)}</span>
+					{:else if !c.tooBig}<span class="counts"><span class="plus">+{c.added}</span> <span class="minus">−{c.removed}</span></span>{/if}
+				</header>
+				{#if c.tooBig}
+					<p class="hint">Too large to show line by line.</p>
+				{:else if c.hunks.length}
+					<!-- Each line is its own block element, so no newlines belong between them. -->
+					<pre>{#each c.hunks as h, i}{#if i > 0}<span class="gap">⋯</span>{/if}{#each h.changes as ch}<span class={ch.kind}>{ch.kind === 'add' ? '+' : ch.kind === 'remove' ? '−' : ' '} {ch.line}</span>{/each}{/each}</pre>
+				{/if}
+			</article>
+		{/each}
+		<p class="hint">Nothing has been written yet — this is what Save or Publish would commit.</p>
+	</section>
+{/if}
+
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
 {#if data.renamedFrom}
 	<p class="msg ok">
@@ -458,14 +489,19 @@
 	</section>
 {/if}
 
-<form method="POST" action="?/save" enctype="multipart/form-data" use:enhance={({ formData }) => {
+<form method="POST" action="?/save" enctype="multipart/form-data" use:enhance={({ formData, action }) => {
 		for (const p of pending) formData.append('newimage', p.blob, p.name);
 		formData.set('deleteimages', JSON.stringify(removed));
-		saving = true;
+		// Reviewing posts the same form to a different action. It writes nothing,
+		// so it must not clear the staged images or the autosaved draft.
+		const isReview = action.search === '?/review';
+		if (isReview) reviewing = true;
+		else saving = true;
 		return async ({ update, result }) => {
 			await update({ reset: false });
 			saving = false;
-			if (result.type === 'success') {
+			reviewing = false;
+			if (result.type === 'success' && !isReview) {
 				pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
 				pending = [];
 				removed = [];
@@ -667,6 +703,9 @@
 		{#if errors.length > 0}
 			<span class="blocked">{errors.length} problem{errors.length === 1 ? '' : 's'} blocking publish</span>
 		{/if}
+		<button type="submit" formaction="?/review" class="btn-outline" disabled={saving || reviewing}>
+			{reviewing ? 'Checking…' : 'Review changes'}
+		</button>
 		<span class="autosave {autosave}" aria-live="polite">
 			{#if autosave === 'dirty'}Unsaved changes
 			{:else if autosave === 'local'}Saved on this device
@@ -809,6 +848,23 @@
 	.mt .btn-outline { font-size: 0.85rem; padding: 0.35rem 0.85rem; }
 	.mt-note { margin: 0; font-size: 0.84rem; color: var(--ok); }
 	.mt-note.err { color: var(--danger); }
+
+	.review { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0 0 1.25rem; }
+	.review h2 { font-size: 0.95rem; margin: 0 0 0.75rem; display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+	.review .msgline { font-weight: 400; font-size: 0.8rem; color: var(--muted-foreground); }
+	.file { border-top: 1px solid var(--border); padding: 0.7rem 0 0.2rem; }
+	.file header { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.4rem; }
+	.status { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; background: var(--muted); color: var(--muted-foreground); }
+	.status.added { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+	.status.deleted { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+	.counts { font-size: 0.75rem; font-family: ui-monospace, monospace; }
+	.plus { color: var(--ok); }
+	.minus { color: var(--danger); }
+	.review pre { margin: 0; padding: 0.5rem 0.6rem; background: var(--muted); border-radius: 6px; font-size: 0.76rem; line-height: 1.5; overflow-x: auto; font-family: ui-monospace, monospace; }
+	.review pre span { display: block; white-space: pre; }
+	.review pre .add { color: var(--ok); }
+	.review pre .remove { color: var(--danger); }
+	.review pre .gap { color: var(--muted-foreground); }
 
 	.autosave { margin-left: auto; font-size: 0.8rem; color: var(--muted-foreground); align-self: center; }
 	.autosave.dirty { color: var(--warn); }

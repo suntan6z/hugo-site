@@ -416,6 +416,76 @@ describe('machine translation, against a stand-in DeepL', () => {
 	});
 });
 
+describe('reviewing a save before making it', () => {
+	const SLUG = 'review-subject';
+
+	before(async () => {
+		const r = await portal.action(
+			'/posts/new?/create',
+			{ title: 'Review Subject', category: 'Personal', date: '2026-04-04', description: 'd' },
+			{ cookie }
+		);
+		assert.equal(r.type, 'redirect', r.raw);
+	});
+
+	test('signed out, it is refused', async () => {
+		const r = await portal.action('/posts/first-home-nas?/review', editorForm('first-home-nas'), {});
+		assert.equal(r.status, 401);
+	});
+
+	test('an unchanged article reviews as nothing to commit', async () => {
+		const r = await portal.action('/posts/first-home-nas?/review', editorForm('first-home-nas'), { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.deepEqual((r.data?.review as { changes: unknown[] }).changes, []);
+	});
+
+	test('an edit shows as one changed line in one file, and writes nothing', async () => {
+		const before = portal.read('content/blog/first-home-nas/index.md');
+		const r = await portal.action(
+			'/posts/first-home-nas?/review',
+			editorForm('first-home-nas', { description_en: 'A description used only for the review test.' }),
+			{ cookie }
+		);
+		assert.equal(r.type, 'success', r.raw);
+		const changes = (r.data?.review as { changes: { path: string; status: string; added: number; removed: number; hunks: { changes: { kind: string; line: string }[] }[] }[] }).changes;
+		assert.equal(changes.length, 1);
+		assert.equal(changes[0].path, 'content/blog/first-home-nas/index.md');
+		assert.equal(changes[0].status, 'modified');
+		assert.deepEqual([changes[0].added, changes[0].removed], [1, 1]);
+		const added = changes[0].hunks.flatMap((h) => h.changes).filter((c) => c.kind === 'add');
+		assert.deepEqual(added.map((c) => c.line), ['description: "A description used only for the review test."']);
+		// The whole point: reviewing is not saving.
+		assert.equal(portal.read('content/blog/first-home-nas/index.md'), before, 'review wrote to the file');
+	});
+
+	test('what it previews is exactly what the save then writes', async () => {
+		const form = editorForm(SLUG, { body_en: '\nReviewed body.\n', draft: 'on' });
+		const preview = await portal.action(`/posts/${SLUG}?/review`, form, { cookie });
+		const changes = (preview.data?.review as { changes: { path: string }[] }).changes;
+		const saved = await portal.action(`/posts/${SLUG}?/save`, form, { cookie });
+		assert.equal(saved.type, 'success', saved.raw);
+		// Every file the preview named actually changed, and no other file did.
+		assert.deepEqual(changes.map((c) => c.path), [`content/blog/${SLUG}/index.md`]);
+		assert.ok(portal.read(`content/blog/${SLUG}/index.md`)!.includes('Reviewed body.'));
+		const after = await portal.action(`/posts/${SLUG}?/review`, form, { cookie });
+		assert.deepEqual((after.data?.review as { changes: unknown[] }).changes, [], 'saving did not settle the diff');
+	});
+
+	test('a new image is listed by size, not diffed', async () => {
+		const pixel = Uint8Array.from(atob('UklGRhIAAABXRUJQVlA4TAYAAAAvQWxvAGs='), (c) => c.charCodeAt(0));
+		const form: Record<string, string | Blob> = { ...editorForm(SLUG, { draft: 'on' }) };
+		form.newimage = new File([pixel], 'review-pixel.webp', { type: 'image/webp' });
+		const r = await portal.action(`/posts/${SLUG}?/review`, form, { cookie, multipart: true });
+		assert.equal(r.type, 'success', r.raw);
+		const changes = (r.data?.review as { changes: { path: string; status: string; bytes?: number }[] }).changes;
+		const img = changes.find((c) => c.path.endsWith('review-pixel.webp'));
+		assert.ok(img, `image missing from the review: ${JSON.stringify(changes.map((c) => c.path))}`);
+		assert.equal(img!.status, 'added');
+		assert.ok((img!.bytes ?? 0) > 0);
+		assert.equal(portal.exists(`content/blog/${SLUG}/review-pixel.webp`), false, 'review uploaded the image');
+	});
+});
+
 describe('renaming an article', () => {
 	// A bundle to move around, created and torn down by these tests alone.
 	const OLD = 'rename-me', NEW = 'renamed-post';
