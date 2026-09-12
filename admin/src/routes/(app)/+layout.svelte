@@ -3,12 +3,11 @@
 	import { goto } from '$app/navigation';
 	let { children, data } = $props();
 
+	// No entry for "/": the logo is the way home, the way it is everywhere else.
 	const nav = [
-		{ href: '/', label: 'Dashboard' },
 		{ href: '/posts', label: 'Articles' },
 		{ href: '/gallery', label: 'Gallery' },
 		{ href: '/analytics', label: 'Search' },
-		{ href: '/newsletter', label: 'Newsletter' },
 		{ href: '/i18n', label: 'Strings' }
 	];
 
