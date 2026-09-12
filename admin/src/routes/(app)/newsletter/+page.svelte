@@ -3,7 +3,8 @@
 	import { untrack } from 'svelte';
 	let { data, form } = $props();
 
-	let slug = $state(untrack(() => form?.values?.slug ?? data.posts[0]?.slug ?? ''));
+	// An article asked for by ?slug= wins: that is why this page was opened.
+	let slug = $state(untrack(() => form?.values?.slug ?? data.chosen?.slug ?? data.posts[0]?.slug ?? ''));
 	let subject = $state(untrack(() => form?.values?.subject ?? ''));
 	let title = $state(untrack(() => form?.values?.title ?? ''));
 	let intro = $state(untrack(() => form?.values?.intro ?? ''));
@@ -57,6 +58,14 @@
 			from the same verified sender its welcome email uses.
 		</p>
 	</section>
+
+	{#if data.preview}
+		<!-- Rendering the email needs no key: only sending it does. -->
+		<section class="preview">
+			<h2>Preview<span class="as-is"> · {data.chosen?.title}</span></h2>
+			<iframe title="Newsletter preview" srcdoc={data.preview} sandbox=""></iframe>
+		</section>
+	{/if}
 {:else}
 	{#if form?.sent}
 		<p class="msg ok">
@@ -130,10 +139,10 @@
 		</fieldset>
 	</form>
 
-	{#if form?.preview}
+	{#if form?.preview || data.preview}
 		<section class="preview">
-			<h2>Preview</h2>
-			<iframe title="Newsletter preview" srcdoc={form.preview} sandbox=""></iframe>
+			<h2>Preview{#if !form?.preview}<span class="as-is"> · as it stands</span>{/if}</h2>
+			<iframe title="Newsletter preview" srcdoc={form?.preview ?? data.preview} sandbox=""></iframe>
 		</section>
 	{/if}
 
@@ -153,6 +162,7 @@
 {/if}
 
 <style>
+	.as-is { font-weight: 400; color: var(--muted-foreground); font-size: 0.8rem; }
 	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); display: block; margin-bottom: 0.35rem; }
 	.head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }

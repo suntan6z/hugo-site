@@ -81,7 +81,12 @@ export const auth = {
 		? optional('SESSION_SECRET', 'dev-only-insecure-session-secret-32b')
 		: required('SESSION_SECRET'),
 	/** Gates first-run passkey enrolment. Absent in local mode = enrolment open. */
-	bootstrapToken: optional('BOOTSTRAP_TOKEN')
+	bootstrapToken: optional('BOOTSTRAP_TOKEN'),
+	/**
+	 * Lets the scheduled workflow ask the portal to carry out scheduled
+	 * publishing. Unset means the endpoint does not answer at all.
+	 */
+	cronToken: optional('CRON_TOKEN'),
 };
 
 export const integrations = {

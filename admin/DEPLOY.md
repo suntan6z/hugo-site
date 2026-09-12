@@ -85,6 +85,25 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 | `BING_API_KEY` | Search stats on the dashboard | Bing Webmaster Tools → Settings → API access |
 | `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
 | `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`. Settings shows the month's allowance and what is left of it |
+| `CRON_TOKEN` | Scheduled publishing, and sending its newsletter once the site is live | `openssl rand -hex 32`. **The same value must also be a GitHub repository secret named `CRON_TOKEN`** (Settings → Secrets and variables → Actions), because `.github/workflows/scheduled-publish.yml` presents it. Without it the endpoint answers 404 to everyone |
+
+## Scheduled publishing
+
+`scheduled-publish.yml` runs every 15 minutes and asks `POST /api/cron` to
+carry out anything due. That endpoint is the one route that answers without a
+session — it is gated on `CRON_TOKEN`, takes no parameters, and only performs
+work scheduled from inside the portal; a wrong or missing token gets a 404 so
+it does not even admit to existing.
+
+Two things worth knowing:
+
+- **GitHub disables scheduled workflows after 60 days without repository
+  activity.** The portal also runs anything due whenever you open it, so a
+  stopped schedule delays publishing rather than losing it. Re-enable it from
+  the Actions tab.
+- **The newsletter is sent on a later pass than the publish**, once
+  `/en/build-info.json` shows the article is actually live. Otherwise the link
+  in the email 404s for every subscriber until StaticHost finishes.
 
 ## Recovering from a lockout
 

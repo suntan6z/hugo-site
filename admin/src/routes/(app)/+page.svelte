@@ -40,9 +40,17 @@
 	let insights = $state<Insights | null>(null);
 	type Health = { name: string; ok: boolean; ms: number; cold?: boolean; error?: string };
 	let fns = $state<Health[] | null>(null);
+	let ranDue = $state<{ published: string[]; announced: string[] } | null>(null);
 	onMount(() => {
 		fetch('/api/insights').then((r) => r.json()).then((d) => (insights = d)).catch(() => {});
 		fetch('/api/health/functions').then((r) => r.json()).then((d) => (fns = d.functions)).catch(() => {});
+		// Catches up anything the scheduled workflow missed while you were away.
+		fetch('/api/schedule/run', { method: 'POST' })
+			.then((r) => r.json())
+			.then((d) => {
+				if (d.published?.length || d.announced?.length) ranDue = d;
+			})
+			.catch(() => {});
 	});
 
 	const shortPath = (u: string) => u.replace(/^https?:\/\/[^/]+/, '') || '/';
@@ -57,6 +65,13 @@
 		<a href="/?refresh" title="Check again">refresh</a>
 	</p>
 </header>
+
+{#if ranDue}
+	<p class="msg ok">
+		{#if ranDue.published.length}Published on schedule: {ranDue.published.join(', ')}.{/if}
+		{#if ranDue.announced.length} Newsletter sent for {ranDue.announced.join(', ')}.{/if}
+	</p>
+{/if}
 
 {#if data.tidied > 0}
 	<p class="msg ok">{data.tidied} small {data.tidied === 1 ? 'fix' : 'fixes'} published in one go.</p>
