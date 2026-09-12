@@ -4,28 +4,34 @@ import { LANGS, type Lang } from './langs.ts';
  * The pure half of renaming an article: what the old address should serve
  * afterwards, and how other articles' links to it are rewritten.
  *
- * Why redirects are not optional in practice: StaticHost does not prune files
- * that a build no longer produces (the same reason content/legacy-*.md exists),
- * so after a rename the old URL keeps serving the old page at 200 forever —
- * stale, duplicated in search results, and never 404ing into static/404.html.
- * A redirect stub republishes that exact path as a meta-refresh instead.
+ * Why redirects are not optional here: static/404.html bounces a path that is
+ * missing its language prefix to /en/<path>, but deliberately leaves a path
+ * that already has one alone — so a renamed /en/blog/<old>/ is not covered by
+ * it. StaticHost also never prunes files a build no longer produces, so
+ * without a stub the old URL keeps serving the old page at 200 forever:
+ * stale, duplicated in search results, and never reaching the 404 fallback.
  *
  * Free of I/O so the suite can drive it directly.
  */
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-/** Where a renamed article's old address lives, one file per language prefix. */
-export const redirectPath = (oldSlug: string, lang: Lang) => `content/redirect-blog-${oldSlug}-${lang}.md`;
+/**
+ * Where a renamed article's old address lives, one file per language prefix.
+ *
+ * They live in their own headless section so the content root stays the list
+ * of real pages: `url` forces the output path regardless of where the file is.
+ */
+export const redirectPath = (oldSlug: string, lang: Lang) => `content/redirects/blog-${oldSlug}-${lang}.md`;
 
 export function redirectStub(oldSlug: string, newSlug: string, lang: Lang): string {
-	// Mirrors layouts/legacy-redirect/single.html's contract: `url` forces this
-	// exact path (bypassing language prefixing), `redirect_to` is where it goes,
-	// and build.list keeps it out of the sitemap and the search index.
+	// Mirrors layouts/redirect/single.html's contract: `url` forces this exact
+	// path (bypassing language prefixing), `redirect_to` is where it goes, and
+	// build.list keeps it out of the sitemap and the search index.
 	return [
 		'---',
 		'title: "Redirecting…"',
-		'type: "legacy-redirect"',
+		'type: "redirect"',
 		`url: "/${lang}/blog/${oldSlug}/"`,
 		`redirect_to: "/${lang}/blog/${newSlug}/"`,
 		'build:',
