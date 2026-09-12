@@ -1,11 +1,12 @@
 import { repo, type FileOp } from './repo.ts';
 import { memo, mapLimit, DEFAULT_TTL_MS } from '../cache.ts';
 import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
+import { SLUG_RE, redirectStubs, rewriteLinks, repointStub } from './rename.ts';
+import { LANGS, type Lang } from './langs.ts';
 
 export { fromForm };
 
-export const LANGS = ['en', 'fr', 'it'] as const;
-export type Lang = (typeof LANGS)[number];
+export { LANGS, type Lang } from './langs.ts';
 
 /** English keeps the plain name; other languages get a locale-suffixed sibling. */
 export const fileFor = (lang: Lang) => (lang === 'en' ? 'index.md' : `index.${lang}.md`);
@@ -249,6 +250,7 @@ export function slugify(title: string): string {
 }
 
 export class CreatePostError extends Error {}
+export class RenamePostError extends Error {}
 
 /**
  * Creates a new bundle with only index.md, mirroring archetypes/blog.md.
@@ -288,6 +290,77 @@ export async function createPost(input: {
 	return repo.commit(`Create ${input.slug}`, [
 		{ path: `${bundleDir(input.slug)}/index.md`, content: fm.setBody('\n').serialize() }
 	]);
+}
+
+/**
+ * Moves an article to a new slug, in one commit.
+ *
+ * A rename is four edits that must not be separable: the bundle moves, the
+ * `slug` front matter follows it in every language, other articles' links are
+ * repointed, and the old address gets a redirect (see rename.ts for why that
+ * matters on StaticHost). Images move by blob SHA rather than being re-read
+ * and re-uploaded, so renaming a bundle of photos costs no more than a text one.
+ */
+export async function renamePost(
+	oldSlug: string,
+	newSlug: string,
+	opts: { redirect?: boolean } = {}
+): Promise<{ sha: string; moved: number; relinked: string[]; redirected: boolean }> {
+	if (!SLUG_RE.test(newSlug)) {
+		throw new RenamePostError('The address may contain only lowercase letters, digits and single hyphens.');
+	}
+	if (newSlug === oldSlug) throw new RenamePostError('That is already the address.');
+	if (newSlug.length > 80) throw new RenamePostError('That address is too long.');
+
+	const files = await repo.listTree(bundleDir(oldSlug));
+	if (files.length === 0) throw new RenamePostError(`content/blog/${oldSlug}/ does not exist.`);
+	if ((await repo.listTree(bundleDir(newSlug))).length > 0) {
+		throw new RenamePostError(`content/blog/${newSlug}/ already exists.`);
+	}
+
+	const ops: FileOp[] = [];
+	for (const path of files) {
+		const name = path.slice(bundleDir(oldSlug).length + 1);
+		const to = `${bundleDir(newSlug)}/${name}`;
+		if (!name.endsWith('.md')) {
+			// Images: move the blob, never re-upload it.
+			ops.push({ path: to, moveFrom: path });
+			continue;
+		}
+		const raw = await repo.readText(path);
+		if (raw === null) continue;
+		const fm = FrontMatter.parse(raw);
+		// Only rewrite the key when it is actually there: an absent slug means
+		// Hugo derives it from the folder, which has just moved anyway.
+		if (fm.has('slug')) fm.set('slug', newSlug);
+		fm.setBody(rewriteLinks(fm.body, oldSlug, newSlug));
+		ops.push({ path: to, content: fm.serialize() }, { path, delete: true });
+	}
+
+	// Links from other articles, and any redirect an earlier rename left behind.
+	const relinked: string[] = [];
+	for (const path of await repo.listTree('content')) {
+		if (!path.endsWith('.md') || path.startsWith(`${bundleDir(oldSlug)}/`)) continue;
+		const raw = await repo.readText(path);
+		if (raw === null || !raw.includes(`/blog/${oldSlug}`)) continue;
+		const next = path.startsWith('content/blog/')
+			? (() => {
+					const fm = FrontMatter.parse(raw);
+					const body = rewriteLinks(fm.body, oldSlug, newSlug);
+					return body === fm.body ? null : fm.setBody(body).serialize();
+				})()
+			: repointStub(raw, oldSlug, newSlug);
+		if (next && next !== raw) {
+			ops.push({ path, content: next });
+			relinked.push(path);
+		}
+	}
+
+	const redirect = opts.redirect !== false;
+	if (redirect) ops.push(...redirectStubs(oldSlug, newSlug));
+
+	const { sha } = await repo.commit(`Rename ${oldSlug} to ${newSlug}`, ops);
+	return { sha, moved: files.length, relinked, redirected: redirect };
 }
 
 /**
