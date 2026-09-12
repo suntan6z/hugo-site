@@ -9,7 +9,16 @@ let deepl: FakeDeepL;
 
 before(async () => {
 	deepl = await startFakeDeepL();
-	portal = await startPortal({ env: { DEEPL_API_KEY: 'test-key:fx', DEEPL_API_URL: deepl.url } });
+	portal = await startPortal({
+		env: {
+			DEEPL_API_KEY: 'test-key:fx',
+			DEEPL_API_URL: deepl.url,
+			// Never ping the real Scaleway functions from a test: one stand-in
+			// that answers correctly, one address nothing listens on.
+			CONTACT_FN_URL: deepl.url,
+			NEWSLETTER_FN_URL: 'http://127.0.0.1:1'
+		}
+	});
 	cookie = await portal.signIn();
 });
 after(async () => {
@@ -594,6 +603,43 @@ describe('renaming an article', () => {
 		assert.equal(portal.exists('content/redirect-blog-renamed-twice-en.md'), false);
 		assert.ok(portal.exists('content/blog/renamed-bare/index.md'));
 		await portal.action('/posts/renamed-bare?/delete', { confirm: 'renamed-bare' }, { cookie });
+	});
+});
+
+describe('the activity log and the form health check', () => {
+	test('signed out, neither is reachable', async () => {
+		assert.equal((await portal.get('/audit')).status, 303);
+		assert.equal((await portal.send('GET', '/api/health/functions')).status, 401);
+	});
+
+	test('the log records what the portal did, newest first', async () => {
+		const html = await (await portal.get('/audit', { cookie })).text();
+		// Everything these tests have done should be in here.
+		for (const event of ['create-post', 'rename-post', 'save', 'translate', 'delete-post']) {
+			assert.match(html, new RegExp(event), `missing ${event}`);
+		}
+		const first = html.indexOf('rename-post');
+		const createdAt = html.indexOf('create-post');
+		assert.ok(first > 0 && createdAt > 0);
+	});
+
+	test('the log filters by event, and an unknown event shows nothing', async () => {
+		const filtered = await (await portal.get('/audit?event=rename-post', { cookie })).text();
+		assert.match(filtered, /rename-post/);
+		assert.doesNotMatch(filtered.split('<ul class="log">')[1] ?? '', /translate/);
+		const none = await (await portal.get('/audit?event=nothing-like-this', { cookie })).text();
+		assert.match(none, /Nothing recorded/);
+	});
+
+	test('a healthy form and an unreachable one are told apart', async () => {
+		const r = await portal.send('GET', '/api/health/functions', { cookie });
+		assert.equal(r.status, 200);
+		const { functions } = (await r.json()) as { functions: { name: string; ok: boolean; error?: string }[] };
+		const contact = functions.find((f) => f.name === 'Contact form')!;
+		const news = functions.find((f) => f.name === 'Newsletter signup')!;
+		assert.equal(contact.ok, true, JSON.stringify(contact));
+		assert.equal(news.ok, false);
+		assert.ok(news.error, 'an unreachable function should say why');
 	});
 });
 
