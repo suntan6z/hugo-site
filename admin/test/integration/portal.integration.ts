@@ -416,6 +416,117 @@ describe('machine translation, against a stand-in DeepL', () => {
 	});
 });
 
+describe('renaming an article', () => {
+	// A bundle to move around, created and torn down by these tests alone.
+	const OLD = 'rename-me', NEW = 'renamed-post';
+
+	before(async () => {
+		const r = await portal.action(
+			'/posts/new?/create',
+			{ title: 'Rename Me', category: 'Personal', date: '2026-03-03', description: 'd' },
+			{ cookie }
+		);
+		assert.equal(r.type, 'redirect', r.raw);
+		// Give it a French translation and an image reference, so the move has
+		// more than one file to keep in step.
+		await portal.action(
+			`/posts/${OLD}?/save`,
+			editorForm(OLD, { title_fr: 'Renomme-moi', description_fr: 'd', body_fr: '\nCorps.\n', draft: 'on' }),
+			{ cookie }
+		);
+		// A near-miss neighbour that must NOT be rewritten. It has to exist, or
+		// the link check below rejects the save that sets the link up.
+		await portal.action(
+			'/posts/new?/create',
+			{ title: 'Rename Me 2', category: 'Personal', date: '2026-03-04', description: 'd' },
+			{ cookie }
+		);
+		// Another article links to it; that link must follow the rename.
+		await portal.action(
+			'/posts/first-home-nas?/save',
+			editorForm('first-home-nas', {
+				body_en: `\nSee [the other one](/en/blog/${OLD}/) and [not this](/en/blog/${OLD}-2/).\n`
+			}),
+			{ cookie }
+		);
+	});
+
+	test('signed out, it is refused and nothing moves', async () => {
+		const r = await portal.action(`/posts/${OLD}?/rename`, { slug: 'stolen' }, {});
+		assert.equal(r.status, 401);
+		assert.ok(portal.exists(`content/blog/${OLD}/index.md`));
+		assert.equal(portal.exists('content/blog/stolen'), false);
+	});
+
+	test('a bad address is refused before anything is touched', async () => {
+		for (const slug of ['Bad Slug', 'bad--slug', '-bad', 'bad-', 'café', '', OLD]) {
+			const r = await portal.action(`/posts/${OLD}?/rename`, { slug }, { cookie });
+			assert.equal(r.type, 'failure', `${slug}: ${r.raw.slice(0, 120)}`);
+		}
+		assert.ok(portal.exists(`content/blog/${OLD}/index.md`));
+	});
+
+	test('an address already in use is refused', async () => {
+		const r = await portal.action(`/posts/${OLD}?/rename`, { slug: 'first-home-nas' }, { cookie });
+		assert.equal(r.type, 'failure');
+		assert.match(String(r.data?.message), /already exists/);
+		assert.ok(portal.read('content/blog/first-home-nas/index.md')!.includes('title:'), 'target was overwritten');
+	});
+
+	test('the bundle moves, the front matter follows, and the old folder is gone', async () => {
+		const r = await portal.action(`/posts/${OLD}?/rename`, { slug: NEW, redirect: 'on' }, { cookie });
+		assert.equal(r.type, 'redirect', r.raw);
+		assert.equal(r.location, `/posts/${NEW}?renamed=${OLD}`);
+
+		assert.equal(portal.exists(`content/blog/${OLD}`), false, 'old bundle left behind');
+		for (const f of ['index.md', 'index.fr.md']) {
+			const raw = portal.read(`content/blog/${NEW}/${f}`);
+			assert.ok(raw, `${f} missing`);
+			assert.equal(FrontMatter.parse(raw!).get('slug'), NEW, `${f} still claims the old slug`);
+		}
+	});
+
+	test('the old address redirects, in every language, and stays out of the sitemap', async () => {
+		for (const lang of LANGS) {
+			const raw = portal.read(`content/redirect-blog-${OLD}-${lang}.md`);
+			assert.ok(raw, `no redirect for ${lang}`);
+			const fm = FrontMatter.parse(raw!);
+			assert.equal(fm.get('type'), 'legacy-redirect');
+			assert.equal(fm.get('url'), `/${lang}/blog/${OLD}/`);
+			assert.equal(fm.get('redirect_to'), `/${lang}/blog/${NEW}/`);
+			assert.match(raw!, /list: false/);
+		}
+	});
+
+	test('links from other articles follow, and near-misses are left alone', async () => {
+		const body = portal.read('content/blog/first-home-nas/index.md')!;
+		assert.ok(body.includes(`/en/blog/${NEW}/`), 'link not repointed');
+		assert.ok(body.includes(`/en/blog/${OLD}-2/`), 'a different article was rewritten');
+		assert.equal(body.includes(`(/en/blog/${OLD}/)`), false);
+	});
+
+	test('the renamed article opens at its new address, and the old one 404s', async () => {
+		assert.equal((await portal.get(`/posts/${NEW}`, { cookie })).status, 200);
+		assert.equal((await portal.get(`/posts/${OLD}`, { cookie })).status, 404);
+	});
+
+	test('renaming again repoints the first redirect instead of chaining', async () => {
+		const r = await portal.action(`/posts/${NEW}?/rename`, { slug: 'renamed-twice', redirect: 'on' }, { cookie });
+		assert.equal(r.type, 'redirect', r.raw);
+		const first = portal.read(`content/redirect-blog-${OLD}-en.md`)!;
+		assert.equal(FrontMatter.parse(first).get('redirect_to'), '/en/blog/renamed-twice/');
+		assert.equal(FrontMatter.parse(first).get('url'), `/en/blog/${OLD}/`, 'the address it answers on moved');
+	});
+
+	test('opting out leaves no redirect behind', async () => {
+		const r = await portal.action('/posts/renamed-twice?/rename', { slug: 'renamed-bare', redirect: 'off' }, { cookie });
+		assert.equal(r.type, 'redirect', r.raw);
+		assert.equal(portal.exists('content/redirect-blog-renamed-twice-en.md'), false);
+		assert.ok(portal.exists('content/blog/renamed-bare/index.md'));
+		await portal.action('/posts/renamed-bare?/delete', { confirm: 'renamed-bare' }, { cookie });
+	});
+});
+
 describe('gallery and strings', () => {
 	test('reordering renumbers the files and captions follow them', async () => {
 		const photos = JSON.parse(portal.read('data/gallery_photos.json')!) as { image_url: string; caption: string }[];

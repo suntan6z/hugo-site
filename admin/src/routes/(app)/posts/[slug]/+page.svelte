@@ -25,6 +25,13 @@
 	// consequence of clearing the title field.
 	let removeTranslation = $state<Record<string, boolean>>({ fr: false, it: false });
 	let showDanger = $state(false);
+	let showRename = $state(false);
+	let newSlug = $state('');
+	let keepRedirect = $state(true);
+	let renaming = $state(false);
+	// Same rule the server enforces, so the button is only live for an address
+	// the server will actually accept.
+	const slugOk = $derived(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(newSlug) && newSlug !== post.slug && newSlug.length <= 80);
 	let confirmSlug = $state('');
 
 	let tab = $state<'en' | 'fr' | 'it'>('en');
@@ -404,6 +411,13 @@
 </div>
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
+{#if data.renamedFrom}
+	<p class="msg ok">
+		Moved from <code>{data.renamedFrom}</code>. The old address
+		{#if data.renamedRedirect}redirects here once the site rebuilds.{:else}is no longer served by this article.{/if}
+	</p>
+{/if}
+
 {#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
 
 {#if findings.length > 0}
@@ -668,6 +682,48 @@
 	{/if}
 </form>
 
+<section class="rename">
+	<button type="button" class="linkish" onclick={() => { showRename = !showRename; newSlug = showRename ? post.slug : ''; }}>
+		{showRename ? 'Cancel' : 'Change the web address'}
+	</button>
+	{#if showRename}
+		<form method="POST" action="?/rename" use:enhance={() => { renaming = true; return async ({ update }) => { await update(); renaming = false; }; }}>
+			<p>
+				Moves the whole bundle — every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'} —
+				and updates any article that links here, in one commit.
+			</p>
+			<label>New address
+				<input name="slug" bind:value={newSlug} autocomplete="off" spellcheck="false" placeholder={post.slug} />
+			</label>
+			<p class="urls">
+				{#if slugOk}
+					<code>{data.siteUrl}/en/blog/{newSlug}/</code>
+				{:else if newSlug && newSlug !== post.slug}
+					<span class="bad">Lowercase letters, digits and single hyphens only.</span>
+				{/if}
+			</p>
+			<label class="check">
+				<!-- The intent travels in a hidden field: an unticked checkbox submits
+				     nothing at all, which would read as "no answer" and keep the redirect. -->
+				<input type="hidden" name="redirect" value={keepRedirect ? 'on' : 'off'} />
+				<input type="checkbox" bind:checked={keepRedirect} />
+				Leave a redirect at the old address
+			</label>
+			<p class="hint">
+				{#if keepRedirect}
+					Anyone following an old link — a newsletter, a search result, someone else's page — lands on the new one.
+				{:else}
+					<strong>Old links break.</strong> The old address keeps serving the old copy until the host is cleaned out,
+					because a build never removes files it no longer produces.
+				{/if}
+			</p>
+			<button type="submit" class="btn-primary" disabled={!slugOk || renaming}>
+				{renaming ? 'Moving…' : 'Change address'}
+			</button>
+		</form>
+	{/if}
+</section>
+
 <section class="danger-zone">
 	<button type="button" class="linkish" onclick={() => (showDanger = !showDanger)}>
 		{showDanger ? 'Cancel' : 'Delete this article'}
@@ -699,6 +755,13 @@
 	fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.75rem; }
 	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); padding: 0 0.35rem; }
 	.danger-check { color: var(--danger); }
+	.rename { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+	.rename form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; }
+	.rename p { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
+	.rename .urls { min-height: 1.2rem; }
+	.rename .urls code { color: var(--ok); }
+	.rename .bad { color: var(--danger); font-size: 0.82rem; }
+	.rename label { width: 100%; }
 	label.check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--foreground); }
 	label.check input { width: auto; margin: 0; }
 	textarea.body { font-family: ui-monospace, "SF Mono", monospace; font-size: 0.84rem; line-height: 1.6; }
