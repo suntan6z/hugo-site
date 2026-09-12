@@ -567,10 +567,10 @@ describe('renaming an article', () => {
 
 	test('the old address redirects, in every language, and stays out of the sitemap', async () => {
 		for (const lang of LANGS) {
-			const raw = portal.read(`content/redirect-blog-${OLD}-${lang}.md`);
+			const raw = portal.read(`content/redirects/blog-${OLD}-${lang}.md`);
 			assert.ok(raw, `no redirect for ${lang}`);
 			const fm = FrontMatter.parse(raw!);
-			assert.equal(fm.get('type'), 'legacy-redirect');
+			assert.equal(fm.get('type'), 'redirect');
 			assert.equal(fm.get('url'), `/${lang}/blog/${OLD}/`);
 			assert.equal(fm.get('redirect_to'), `/${lang}/blog/${NEW}/`);
 			assert.match(raw!, /list: false/);
@@ -592,7 +592,7 @@ describe('renaming an article', () => {
 	test('renaming again repoints the first redirect instead of chaining', async () => {
 		const r = await portal.action(`/posts/${NEW}?/rename`, { slug: 'renamed-twice', redirect: 'on' }, { cookie });
 		assert.equal(r.type, 'redirect', r.raw);
-		const first = portal.read(`content/redirect-blog-${OLD}-en.md`)!;
+		const first = portal.read(`content/redirects/blog-${OLD}-en.md`)!;
 		assert.equal(FrontMatter.parse(first).get('redirect_to'), '/en/blog/renamed-twice/');
 		assert.equal(FrontMatter.parse(first).get('url'), `/en/blog/${OLD}/`, 'the address it answers on moved');
 	});
@@ -600,7 +600,7 @@ describe('renaming an article', () => {
 	test('opting out leaves no redirect behind', async () => {
 		const r = await portal.action('/posts/renamed-twice?/rename', { slug: 'renamed-bare', redirect: 'off' }, { cookie });
 		assert.equal(r.type, 'redirect', r.raw);
-		assert.equal(portal.exists('content/redirect-blog-renamed-twice-en.md'), false);
+		assert.equal(portal.exists('content/redirects/blog-renamed-twice-en.md'), false);
 		assert.ok(portal.exists('content/blog/renamed-bare/index.md'));
 		await portal.action('/posts/renamed-bare?/delete', { confirm: 'renamed-bare' }, { cookie });
 	});
