@@ -4,10 +4,10 @@ import { SLUG_RE, redirectPath, redirectStub, redirectStubs, rewriteLinks, repoi
 import { FrontMatter } from '../src/lib/server/content/frontmatter.ts';
 
 describe('the redirect left at the old address', () => {
-	test('is a legacy-redirect page pinned to the exact old path', () => {
+	test('is a redirect page pinned to the exact old path', () => {
 		const raw = redirectStub('old-name', 'new-name', 'fr');
 		const fm = FrontMatter.parse(raw);
-		assert.equal(fm.get('type'), 'legacy-redirect');
+		assert.equal(fm.get('type'), 'redirect');
 		assert.equal(fm.get('url'), '/fr/blog/old-name/');
 		assert.equal(fm.get('redirect_to'), '/fr/blog/new-name/');
 		// Verified against a real Hugo build: this publishes at /fr/blog/old-name/
@@ -19,11 +19,11 @@ describe('the redirect left at the old address', () => {
 	test('covers every language, since each prefix served its own page', () => {
 		const stubs = redirectStubs('old-name', 'new-name');
 		assert.deepEqual(stubs.map((s) => s.path), [
-			'content/redirect-blog-old-name-en.md',
-			'content/redirect-blog-old-name-fr.md',
-			'content/redirect-blog-old-name-it.md'
+			'content/redirects/blog-old-name-en.md',
+			'content/redirects/blog-old-name-fr.md',
+			'content/redirects/blog-old-name-it.md'
 		]);
-		assert.equal(redirectPath('x', 'it'), 'content/redirect-blog-x-it.md');
+		assert.equal(redirectPath('x', 'it'), 'content/redirects/blog-x-it.md');
 	});
 });
 
