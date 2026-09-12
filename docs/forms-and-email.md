@@ -20,3 +20,9 @@ The Resend Templates referenced by ID (`contact-form-notification`, `contact-for
 To change the backend logic (e.g. swap Resend for another provider, or adjust validation), edit `functions/contact.js` / `newsletter.js` and re-run `functions/deploy.sh` (or push to `main`, which triggers the same via CI).
 
 If you add any new external endpoint here, also update the CSP `connect-src` directive in `static/_headers` or the request will be blocked in production.
+
+## Checking they still work
+
+The portal's dashboard runs the same CORS preflight a browser makes before submitting either form, and checks the answer allows the site's origin — so a silently broken contact form shows up there rather than in a message that never arrives. These functions scale to zero, so a first check after a quiet spell can report the container waking up ("was asleep") rather than a fault.
+
+**Newsletter broadcasts** are separate from the signup handler above: the portal talks to Resend directly, with its own key, and sends to the same audience this signup form fills. See the portal's **Newsletter** page.

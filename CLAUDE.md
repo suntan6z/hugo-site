@@ -88,6 +88,20 @@ npm run check             # types (a Vite build does not fail on type errors)
 
 Local mode (no GitHub App configured) reads and writes the working tree and keeps state in `admin/.state/`; `ALLOW_DEV_LOGIN=1` in `admin/.env` skips the passkey. Saving an article in local dev really changes `content/` — review `git diff` before committing.
 
+**How the server code is laid out, and why.** Every hard piece of logic lives in a **pure module** — no `$env`, no repo, no network — paired with a thin module that does the talking:
+
+| pure (unit-tested directly) | does the I/O |
+|---|---|
+| `content/frontmatter.ts`, `content/rename.ts`, `diff.ts` | `content/post.ts`, `content/repo.ts` |
+| `content/gallery-data.ts` | `content/gallery.ts` |
+| `integrations/bing-parse.ts` | `integrations/bing.ts` |
+| `integrations/newsletter-email.ts` | `integrations/resend.ts` |
+| `translate/markdown-xml.ts` | `integrations/deepl.ts` |
+| `seo/rules.ts` | `seo/preflight.ts` |
+| `auth/access.ts`, `auth/ratelimit.ts` | `auth/session.ts`, `auth/state.ts` |
+
+That is why `npm test` can drive front-matter serialisation, machine-translation round-trips, the diff, the SEO rules and the access allow-list with no key, no network and no build step — SvelteKit's `$env` cannot even be imported by the plain Node test runner, so a pure module that starts importing it breaks its own tests immediately. **Keep new logic on the pure side and let the thin module pass it data.** Site-wide values that several domains need (`langs.ts`) sit at the root of `lib/server/`, not inside one domain folder.
+
 **Contracts between the site and the portal** — change one side, check the other:
 - **Front matter is edited line by line, never re-serialised** (`admin/src/lib/server/content/frontmatter.ts`), preserving comments, key order and trailing newlines. Output must start with `---\n` at byte 0 or `layouts/partials/auto-untranslated-pages.html`'s regex silently stops generating the FR/IT placeholder pages. The round-trip test reads `content/blog/**` and `content/gallery/**` directly, which is why content changes also run the admin test workflow.
 - **`layouts/index.buildinfo.json` → `/en/build-info.json`** is a content manifest the portal polls to tell when a commit is live. Keep the `BUILDINFO` output format in `hugo.toml`.

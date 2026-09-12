@@ -1,6 +1,14 @@
 # Site Settings
 
-Most site-wide settings live in `hugo.toml` under `[params]` and `[menu]`:
+## Interface strings
+
+Every visible string that is not article text — button labels, section headings, the newsletter box, the search modal — lives in `i18n/{en,fr,it}.toml`. Edit them in the portal under **Strings**: it shows all three languages side by side and refuses to save unless a key exists in every one, which is the failure mode worth guarding (a key missing from `it.toml` renders as an empty string on the Italian site, silently).
+
+By hand: add the key to all three files. Keys are case-sensitive.
+
+## `hugo.toml`
+
+Site-wide settings live under `[params]` and `[menu]`:
 
 | Key | What it controls |
 |-----|-------------------|
@@ -12,6 +20,8 @@ Most site-wide settings live in `hugo.toml` under `[params]` and `[menu]`:
 | `params.quote` / `params.quoteAuthor` / `params.quoteArticle` | Quote shown on the homepage and the article it links to |
 | `params.litlyxProjectId` / `params.litlyxBrokerHost` | Self-hosted Litlyx analytics config (only loads outside the dev server) |
 | `menu.main` | Navigation items and their order |
+
+Per-language settings — the meta description, the homepage quote and the nav menu — live under `[languages.<lang>]` instead, not in the shared `[params]`.
 
 The homepage hero image is `assets/img/hero.webp` (referenced directly in templates, not via a config param).
 

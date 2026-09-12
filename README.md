@@ -11,6 +11,7 @@ The site has been redesigned and rebuilt many times since I first started tinker
 - **[Resend](https://resend.com/)** — transactional email delivery for the contact form and newsletter
 - **[Litlyx](https://litlyx.com/)** — self-hosted, cookieless analytics
 - **[StaticHost.eu](https://www.statichost.eu/)** — hosting; builds and deploys on every push to `main`
+- **A small admin portal of my own** at `admin.loconsole.eu` — where I actually write, translate and publish these days: a Markdown editor with live preview, machine-translated first drafts, the photo gallery, the newsletter and search stats, running on a Scaleway container and committing straight to this repo
 
 All UX design was completed by me, with a little inspiration here and there.
 

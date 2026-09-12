@@ -14,8 +14,8 @@
  * Free of SvelteKit imports so the suite can drive it directly.
  */
 
-export { LANGS, type Lang } from './langs.ts';
-import { LANGS, type Lang } from './langs.ts';
+export { LANGS, type Lang } from '../langs.ts';
+import { LANGS, type Lang } from '../langs.ts';
 
 type Line =
 	| { kind: 'key'; key: string; raw: string }

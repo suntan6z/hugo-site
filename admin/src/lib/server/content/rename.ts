@@ -1,4 +1,4 @@
-import { LANGS, type Lang } from './langs.ts';
+import { LANGS, type Lang } from '../langs.ts';
 
 /**
  * The pure half of renaming an article: what the old address should serve
