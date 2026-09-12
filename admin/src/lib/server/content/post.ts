@@ -2,6 +2,7 @@ import { repo, type FileOp } from './repo.ts';
 import { memo, mapLimit, DEFAULT_TTL_MS } from '../cache.ts';
 import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
 import { SLUG_RE, redirectStubs, rewriteLinks, repointStub } from './rename.ts';
+import { fileChange, type FileChange } from './diff.ts';
 import { LANGS, type Lang } from './langs.ts';
 
 export { fromForm };
@@ -203,6 +204,19 @@ export interface SavePostInput {
 
 /** Writes a whole post — every language plus images — as ONE commit. */
 export async function savePost(input: SavePostInput): Promise<{ sha: string }> {
+	const ops = await planSave(input);
+	if (ops.length === 0) return { sha: 'noop' };
+	return repo.commit(input.message, ops);
+}
+
+/**
+ * The file operations a save would perform, without performing them.
+ *
+ * Split out so the editor can show the exact commit before it happens:
+ * previewing and saving then cannot drift apart, because they are the same
+ * code path.
+ */
+export async function planSave(input: SavePostInput): Promise<FileOp[]> {
 	const { shared, translations } = input;
 	const ops: FileOp[] = [];
 
@@ -233,9 +247,33 @@ export async function savePost(input: SavePostInput): Promise<{ sha: string }> {
 	for (const name of input.deleteImages ?? []) {
 		ops.push({ path: `${bundleDir(shared.slug)}/${name}`, delete: true });
 	}
+	return ops;
+}
 
-	if (ops.length === 0) return { sha: 'noop' };
-	return repo.commit(input.message, ops);
+/** Turns a planned save into a reviewable list of changes against what is committed. */
+export async function describePlan(ops: FileOp[]): Promise<FileChange[]> {
+	const out = await Promise.all(
+		ops.map(async (op): Promise<FileChange> => {
+			if ('bytes' in op) {
+				const existing = await repo.readText(op.path).catch(() => null);
+				return {
+					path: op.path,
+					status: existing === null ? 'added' : 'modified',
+					added: 0,
+					removed: 0,
+					hunks: [],
+					bytes: op.bytes.byteLength
+				};
+			}
+			const before = await repo.readText(op.path);
+			if ('moveFrom' in op) {
+				// A move carries no new bytes: show it as the arrival of the old file.
+				return { path: op.path, status: 'added', added: 0, removed: 0, hunks: [], movedFrom: op.moveFrom };
+			}
+			return fileChange(op.path, before, 'delete' in op ? null : op.content);
+		})
+	);
+	return out.filter((c) => c.status !== 'unchanged');
 }
 
 /** Slug rules: lowercase, digits and hyphens — it becomes the folder name. */

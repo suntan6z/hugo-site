@@ -1,6 +1,9 @@
 import { error, fail, redirect, isRedirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { loadPost, savePost, deletePost, renamePost, RenamePostError, LANGS, fromForm, type Lang, type PostTranslation } from '$lib/server/content/post.ts';
+import {
+	loadPost, savePost, planSave, describePlan, deletePost, renamePost, RenamePostError,
+	LANGS, fromForm, type Lang, type PostTranslation, type SavePostInput
+} from '$lib/server/content/post.ts';
 import { CATEGORIES } from '$lib/server/content/frontmatter.ts';
 import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
@@ -24,71 +27,124 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	};
 };
 
+/**
+ * Reads the editor's form into everything a save needs.
+ *
+ * Shared by the save action and the review action so that what is previewed
+ * and what is written can never drift: they are built from the same parse.
+ */
+type Parsed =
+	| { ok: false; status: number; message: string }
+	| {
+			ok: true;
+			input: SavePostInput;
+			candidate: Parameters<typeof preflight>[0];
+			publish: boolean;
+			willBeDraft: boolean;
+	  };
+
+async function parseEditorForm(f: FormData, slug: string): Promise<Parsed> {
+	const str = (k: string) => fromForm(f.get(k)).trim();
+
+	const category = str('category');
+	if (!(CATEGORIES as readonly string[]).includes(category)) {
+		return { ok: false, status: 400, message: `"${category}" is not one of the four valid categories.` };
+	}
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(str('date'))) {
+		return { ok: false, status: 400, message: 'Date must be YYYY-MM-DD.' };
+	}
+
+	const existing = await loadPost(slug);
+	if (!existing) return { ok: false, status: 404, message: 'Article not found.' };
+
+	const translations = {} as Record<Lang, PostTranslation>;
+	for (const lang of LANGS) {
+		translations[lang] = {
+			lang,
+			exists: existing.translations[lang].exists,
+			title: str(`title_${lang}`),
+			description: str(`description_${lang}`),
+			body: fromForm(f.get(`body_${lang}`)),
+			untranslated: f.get(`untranslated_${lang}`) === 'on',
+			eu_funding_text: str(`eu_funding_text_${lang}`) || undefined
+		};
+	}
+
+	// Images arrive already resized and re-encoded to WebP by the browser
+	// (src/lib/client/image.ts), because the site's render hook serves bundle
+	// resources at their committed size.
+	const newImages: { name: string; bytes: Uint8Array }[] = [];
+	for (const entry of f.getAll('newimage')) {
+		if (!(entry instanceof File) || entry.size === 0) continue;
+		if (entry.size > 4 * 1024 * 1024) {
+			return { ok: false, status: 400, message: `${entry.name} is over 4 MB after processing.` };
+		}
+		newImages.push({ name: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) });
+	}
+
+	let deleteImages: string[] = [];
+	try {
+		deleteImages = JSON.parse(String(f.get('deleteimages') ?? '[]'));
+	} catch {
+		deleteImages = [];
+	}
+	// Never delete a file the post still references.
+	const bodies = LANGS.map((l) => translations[l].body).join('\n');
+	const stillUsed = deleteImages.filter(
+		(n) => bodies.includes(n) || str('featured_image') === n || str('partner_logo_url') === n
+	);
+	if (stillUsed.length) {
+		return {
+			ok: false,
+			status: 400,
+			message: `Still referenced, so not deleted: ${stillUsed.join(', ')}. Remove the reference first.`
+		};
+	}
+
+	// Explicit, per-language, and never inferred from an empty field.
+	const deleteTranslations = LANGS.filter((l) => l !== 'en' && f.get(`delete_translation_${l}`) === 'on');
+
+	const publish = f.get('intent') === 'publish';
+	const willBeDraft = publish ? false : f.get('draft') === 'on';
+
+	const shared = {
+		slug,
+		date: str('date'),
+		category: category as (typeof CATEGORIES)[number],
+		draft: willBeDraft,
+		featured_image: str('featured_image') || undefined,
+		partner_name: str('partner_name') || undefined,
+		partner_url: str('partner_url') || undefined,
+		partner_logo_url: str('partner_logo_url') || undefined,
+		project_url: str('project_url') || undefined
+	};
+
+	return {
+		ok: true,
+		publish,
+		willBeDraft,
+		input: {
+			shared,
+			translations,
+			newImages,
+			deleteImages,
+			deleteTranslations,
+			message: `${publish ? 'Publish' : 'Update'} ${slug}`
+		},
+		candidate: {
+			...existing,
+			...shared,
+			translations,
+			images: [...existing.images.filter((i) => !deleteImages.includes(i)), ...newImages.map((i) => i.name)]
+		}
+	};
+}
+
 export const actions: Actions = {
 	save: async ({ request, params }) => {
-		const f = await request.formData();
-		const str = (k: string) => fromForm(f.get(k)).trim();
-
-		const category = str('category');
-		if (!(CATEGORIES as readonly string[]).includes(category)) {
-			return fail(400, { message: `"${category}" is not one of the four valid categories.` });
-		}
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(str('date'))) {
-			return fail(400, { message: 'Date must be YYYY-MM-DD.' });
-		}
-
-		const existing = await loadPost(params.slug);
-		if (!existing) return fail(404, { message: 'Article not found.' });
-
-		const translations = {} as Record<Lang, PostTranslation>;
-		for (const lang of LANGS) {
-			translations[lang] = {
-				lang,
-				exists: existing.translations[lang].exists,
-				title: str(`title_${lang}`),
-				description: str(`description_${lang}`),
-				body: fromForm(f.get(`body_${lang}`)),
-				untranslated: f.get(`untranslated_${lang}`) === 'on',
-				eu_funding_text: str(`eu_funding_text_${lang}`) || undefined
-			};
-		}
-
-		// Images arrive already resized and re-encoded to WebP by the browser
-		// (src/lib/client/image.ts), because the site's render hook serves bundle
-		// resources at their committed size.
-		const newImages: { name: string; bytes: Uint8Array }[] = [];
-		for (const entry of f.getAll('newimage')) {
-			if (!(entry instanceof File) || entry.size === 0) continue;
-			if (entry.size > 4 * 1024 * 1024) {
-				return fail(400, { message: `${entry.name} is over 4 MB after processing.` });
-			}
-			newImages.push({ name: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) });
-		}
-
-		let deleteImages: string[] = [];
-		try {
-			deleteImages = JSON.parse(String(f.get('deleteimages') ?? '[]'));
-		} catch {
-			deleteImages = [];
-		}
-		// Never delete a file the post still references.
-		const bodies = LANGS.map((l) => translations[l].body).join('\n');
-		const stillUsed = deleteImages.filter(
-			(n) => bodies.includes(n) || str('featured_image') === n || str('partner_logo_url') === n
-		);
-		if (stillUsed.length) {
-			return fail(400, {
-				message: `Still referenced, so not deleted: ${stillUsed.join(', ')}. Remove the reference first.`
-			});
-		}
-
-		// Explicit, per-language, and never inferred from an empty field.
-		const deleteTranslations = LANGS.filter(
-			(l) => l !== 'en' && f.get(`delete_translation_${l}`) === 'on'
-		);
-
-		const publish = f.get('intent') === 'publish';
-		const willBeDraft = publish ? false : f.get('draft') === 'on';
+		const parsed = await parseEditorForm(await request.formData(), params.slug);
+		if (!parsed.ok) return fail(parsed.status, { message: parsed.message });
+		const { input, candidate, publish, willBeDraft } = parsed;
 
 		/**
 		 * The gate is about whether the result will be publicly visible, not
@@ -103,23 +159,6 @@ export const actions: Actions = {
 		 */
 		let findings: Awaited<ReturnType<typeof preflight>> = [];
 		if (!willBeDraft) {
-			const candidate = {
-				...existing,
-				slug: params.slug,
-				date: str('date'),
-				category: category as (typeof CATEGORIES)[number],
-				draft: willBeDraft,
-				featured_image: str('featured_image') || undefined,
-				partner_name: str('partner_name') || undefined,
-				partner_url: str('partner_url') || undefined,
-				partner_logo_url: str('partner_logo_url') || undefined,
-				project_url: str('project_url') || undefined,
-				translations,
-				images: [
-					...existing.images.filter((i) => !deleteImages.includes(i)),
-					...newImages.map((i) => i.name)
-				]
-			};
 			findings = await preflight(candidate);
 			const errs = errorsIn(findings);
 			if (errs.length > 0) {
@@ -131,24 +170,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const { sha } = await savePost({
-				shared: {
-					slug: params.slug,
-					date: str('date'),
-					category: category as (typeof CATEGORIES)[number],
-					draft: willBeDraft,
-					featured_image: str('featured_image') || undefined,
-					partner_name: str('partner_name') || undefined,
-					partner_url: str('partner_url') || undefined,
-					partner_logo_url: str('partner_logo_url') || undefined,
-					project_url: str('project_url') || undefined
-				},
-				translations,
-				newImages,
-				deleteImages,
-				deleteTranslations,
-				message: `${publish ? 'Publish' : 'Update'} ${params.slug}`
-			});
+			const { sha } = await savePost(input);
 			// Recorded so the dashboard can tell whether StaticHost has caught up.
 			// A draft save changes the built output too (the page disappears), so
 			// both count as something the build has to reflect.
@@ -160,21 +182,39 @@ export const actions: Actions = {
 				// the URL would still 404. The dashboard submits once it sees the
 				// deploy go live.
 				const langs = LANGS.filter(
-					(l) => translations[l].title.trim() && !translations[l].untranslated
+					(l) => input.translations[l].title.trim() && !input.translations[l].untranslated
 				);
 				await queueUrls(postUrls(params.slug, langs));
 			}
 			await audit(publish ? 'publish' : 'save', {
 				slug: params.slug,
 				sha,
-				images: newImages.map((i) => i.name),
-				removed: deleteImages
+				images: (input.newImages ?? []).map((i) => i.name),
+				removed: input.deleteImages
 			});
 			return { success: true, sha, published: publish, findings: warningsIn(findings) };
 		} catch (e) {
 			if (e instanceof ConcurrentWriteError) return fail(409, { message: e.message });
 			return fail(500, { message: e instanceof Error ? e.message : String(e) });
 		}
+	},
+
+	/**
+	 * The exact commit this form would make, without making it. Same parse and
+	 * same planner as the save itself, so the preview cannot lie.
+	 */
+	review: async ({ request, params }) => {
+		const parsed = await parseEditorForm(await request.formData(), params.slug);
+		if (!parsed.ok) return fail(parsed.status, { message: parsed.message });
+		const changes = await describePlan(await planSave(parsed.input));
+		return {
+			review: {
+				changes,
+				message: parsed.input.message,
+				publish: parsed.publish,
+				draft: parsed.willBeDraft
+			}
+		};
 	},
 
 	rename: async ({ request, params }) => {
