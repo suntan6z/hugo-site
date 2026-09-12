@@ -1,13 +1,12 @@
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import {
-	isConfigured, audienceSummary, sentBroadcasts, sendBroadcast, previewBroadcast
+	isConfigured, audienceSummary, sentBroadcasts, sendBroadcast, previewBroadcast, SITE_NAME
 } from '$lib/server/integrations/resend.ts';
 import { listPosts, fromForm } from '$lib/server/content/post.ts';
 import { integrations } from '$lib/server/env.ts';
 import { audit } from '$lib/server/store/kv.ts';
 
-const SITE_NAME = 'Lorenzo Loconsole';
 
 /** Published, English, newest first — what a broadcast can be built from. */
 async function sendablePosts() {
@@ -23,7 +22,7 @@ async function sendablePosts() {
 		}));
 }
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ url }) => {
 	const configured = isConfigured();
 	const [posts, sent, audience] = await Promise.all([
 		sendablePosts(),
@@ -31,7 +30,31 @@ export const load: PageServerLoad = async () => {
 		configured ? audienceSummary().catch(() => null) : Promise.resolve(null)
 	]);
 
-	return { configured, posts, sent, audience, siteName: SITE_NAME, siteUrl: integrations.siteUrl };
+	// Arriving from an article's schedule panel: that article, already chosen,
+	// with the email rendered so "what will it look like" is answered on arrival.
+	const asked = url.searchParams.get('slug');
+	const chosen = posts.find((p) => p.slug === asked) ?? null;
+	const preview = chosen
+		? previewBroadcast({
+				title: chosen.title,
+				intro: chosen.description,
+				url: chosen.url,
+				imageUrl: chosen.featured ? `${integrations.siteUrl}/en/blog/${chosen.slug}/${chosen.featured}` : undefined,
+				siteName: SITE_NAME,
+				siteUrl: integrations.siteUrl
+			})
+		: null;
+
+	return {
+		configured,
+		posts,
+		sent,
+		audience,
+		siteName: SITE_NAME,
+		siteUrl: integrations.siteUrl,
+		chosen,
+		preview
+	};
 };
 
 function inputFrom(f: FormData, posts: Awaited<ReturnType<typeof sendablePosts>>) {

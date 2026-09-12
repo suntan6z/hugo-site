@@ -41,6 +41,24 @@
 	// One editor per language pane, so switching tabs keeps each one's state.
 	let editors = $state<Record<string, RichEditor | undefined>>({});
 
+	/* ------------------------------------------------------------- scheduling */
+	let showSchedule = $state(false);
+	let scheduleAt = $state('');
+	let alsoNewsletter = $state(false);
+	// The browser sends what its own clock means, so the server can store UTC.
+	const offset = -new Date().getTimezoneOffset();
+	const whenLocal = (iso: string) =>
+		new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+	// Default to tomorrow morning, the most likely answer.
+	function openSchedule() {
+		showSchedule = !showSchedule;
+		if (!showSchedule || scheduleAt) return;
+		const d = new Date();
+		d.setDate(d.getDate() + 1);
+		d.setHours(9, 0, 0, 0);
+		scheduleAt = new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+	}
+
 	// After a blocked publish the server returns the findings it rejected on;
 	// otherwise show the checks computed when the page loaded.
 	const findings = $derived(form?.findings ?? data.findings ?? []);
@@ -449,6 +467,8 @@
 {/if}
 
 {#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
+{#if form?.scheduled}<p class="msg ok">Scheduled for {whenLocal(form.at)}{form.newsletter ? ', newsletter included' : ''}.</p>{/if}
+{#if form?.unscheduled}<p class="msg ok">No longer scheduled.</p>{/if}
 
 {#if findings.length > 0}
 	<section class="findings">
@@ -731,6 +751,49 @@
 	{/if}
 </form>
 
+<section class="schedule">
+	{#if data.scheduled?.state === 'pending'}
+		<p class="scheduled-now">
+			<strong>Publishing {whenLocal(data.scheduled.at)}</strong>
+			{#if data.scheduled.newsletter}· the newsletter goes out once it is live{/if}
+		</p>
+		<form method="POST" action="?/unschedule" use:enhance>
+			<button type="submit" class="linkish">Cancel that</button>
+		</form>
+	{:else if data.scheduled?.state === 'published' && data.scheduled.newsletter}
+		<p class="scheduled-now">Published. The newsletter goes out as soon as the site has rebuilt.</p>
+	{:else if data.scheduled?.error}
+		<p class="msg err">Scheduled publishing failed: {data.scheduled.error}</p>
+	{:else}
+		<button type="button" class="linkish" onclick={openSchedule}>
+			{showSchedule ? 'Cancel' : 'Publish this later'}
+		</button>
+		{#if showSchedule}
+			<form method="POST" action="?/schedule" use:enhance>
+				<input type="hidden" name="offset" value={offset} />
+				<label>When
+					<input type="datetime-local" name="at" bind:value={scheduleAt} />
+				</label>
+				<label class="check">
+					<input type="checkbox" name="newsletter" bind:checked={alsoNewsletter} disabled={!data.canSendNewsletter} />
+					Send the newsletter too
+				</label>
+				<p class="hint">
+					{#if !data.canSendNewsletter}
+						Sending needs RESEND_API_KEY.
+					{:else if alsoNewsletter}
+						It goes out after the site has actually rebuilt, so the link in it works.
+						<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
+					{:else}
+						The article goes live on its own; nothing is emailed.
+					{/if}
+				</p>
+				<button type="submit" class="btn-primary">Schedule it</button>
+			</form>
+		{/if}
+	{/if}
+</section>
+
 <section class="rename">
 	<button type="button" class="linkish" onclick={() => { showRename = !showRename; newSlug = showRename ? post.slug : ''; }}>
 		{showRename ? 'Cancel' : 'Change the web address'}
@@ -804,6 +867,10 @@
 	fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.75rem; }
 	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); padding: 0 0.35rem; }
 	.danger-check { color: var(--danger); }
+	.schedule { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+	.schedule form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; margin-top: 0.6rem; }
+	.schedule .hint { margin: 0; font-size: 0.84rem; color: var(--muted-foreground); }
+	.scheduled-now { margin: 0 0 0.3rem; font-size: 0.9rem; }
 	.rename { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 	.rename form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; }
 	.rename p { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }

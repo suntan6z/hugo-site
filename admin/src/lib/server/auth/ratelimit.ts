@@ -44,4 +44,6 @@ export function resetRateLimits(): void {
 /** The sign-in surface: where an unauthenticated caller can make us do work. */
 export const isRateLimitedPath = (pathname: string) =>
 	/^\/api\/auth\/(options|verify|enroll-options|enroll-verify)\/?$/.test(pathname) ||
-	/^\/enroll\/?$/.test(pathname);
+	/^\/enroll\/?$/.test(pathname) ||
+	// Token-gated, but it is the other door that opens without a session.
+	/^\/api\/cron\/?$/.test(pathname);

@@ -31,7 +31,10 @@ const INTENDED_PUBLIC = new Set([
 	'/api/auth/enroll-options',
 	'/api/auth/enroll-verify',
 	'/api/auth/logout',
-	'/api/auth/dev-login'
+	'/api/auth/dev-login',
+	// Not session-gated but token-gated: a scheduler cannot hold a passkey.
+	// It takes no parameters and only performs work scheduled from inside.
+	'/api/cron'
 ]);
 
 describe('every route is protected unless deliberately public', () => {

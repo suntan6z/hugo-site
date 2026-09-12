@@ -18,6 +18,8 @@ export * from './newsletter-email.ts';
  */
 
 const API = 'https://api.resend.com';
+/** The name a broadcast comes from, shared by the newsletter page and the scheduler. */
+export const SITE_NAME = 'Lorenzo Loconsole';
 const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
 const SENT_KEY = 'state/broadcasts';
 

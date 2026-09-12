@@ -16,7 +16,8 @@ before(async () => {
 			// Never ping the real Scaleway functions from a test: one stand-in
 			// that answers correctly, one address nothing listens on.
 			CONTACT_FN_URL: deepl.url,
-			NEWSLETTER_FN_URL: 'http://127.0.0.1:1'
+			NEWSLETTER_FN_URL: 'http://127.0.0.1:1',
+			CRON_TOKEN: 'integration-cron-token'
 		}
 	});
 	cookie = await portal.signIn();
@@ -429,6 +430,115 @@ describe('machine translation, against a stand-in DeepL', () => {
 		assert.match(editor, /Draft Français from English/);
 		const settings = await (await portal.get('/settings', { cookie })).text();
 		assert.match(settings, /1,234 of 500,000 characters/);
+	});
+});
+
+describe('publishing later', () => {
+	const SLUG = 'schedule-subject';
+	const soon = () => new Date(Date.now() + 60 * 60_000).toISOString().slice(0, 16);
+	const past = () => new Date(Date.now() - 5 * 60_000).toISOString().slice(0, 16);
+
+	before(async () => {
+		await portal.action(
+			'/posts/new?/create',
+			{ title: 'Schedule Subject', category: 'Personal', date: '2026-06-06', description: 'd'.repeat(130) },
+			{ cookie }
+		);
+		// Enough of an article that the publish checks pass.
+		await portal.action(
+			`/posts/${SLUG}?/save`,
+			editorForm(SLUG, {
+				body_en: '\nA body long enough to be a real article.\n',
+				featured_image: '',
+				draft: 'on'
+			}),
+			{ cookie }
+		);
+	});
+
+	test('signed out, nothing can be scheduled', async () => {
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0' });
+		assert.equal(r.status, 401);
+	});
+
+	test('a moment in the past is refused', async () => {
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: past(), offset: '0' }, { cookie });
+		assert.equal(r.type, 'failure');
+		assert.match(String(r.data?.message), /in the past/);
+	});
+
+	test('scheduling shows on the article and in the list, and publishes nothing yet', async () => {
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0', newsletter: 'on' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.match(portal.read(`content/blog/${SLUG}/index.md`)!, /\ndraft: true\n/, 'published early');
+
+		const editor = await (await portal.get(`/posts/${SLUG}`, { cookie })).text();
+		assert.match(editor, /Publishing/);
+		const list = await (await portal.get('/posts', { cookie })).text();
+		assert.match(list, /publishing/i);
+	});
+
+	test('the runner leaves it alone until its time comes', async () => {
+		const r = await portal.send('POST', '/api/cron', { json: undefined });
+		assert.equal(r.status, 404, 'no token should look like no route');
+
+		const ok = await fetch(`${portal.url}/api/cron`, {
+			method: 'POST',
+			headers: { Authorization: 'Bearer integration-cron-token' }
+		});
+		assert.equal(ok.status, 200);
+		const report = (await ok.json()) as { published: string[]; waiting: number };
+		assert.deepEqual(report.published, []);
+		assert.equal(report.waiting, 1);
+		assert.match(portal.read(`content/blog/${SLUG}/index.md`)!, /\ndraft: true\n/);
+	});
+
+	test('a wrong token is refused, and cannot be told from a missing one', async () => {
+		const r = await fetch(`${portal.url}/api/cron`, {
+			method: 'POST',
+			headers: { Authorization: 'Bearer not-the-token' }
+		});
+		assert.equal(r.status, 404);
+	});
+
+	test('when its time comes, the runner publishes it', async () => {
+		// The minute we are in: due immediately, and inside the slack the picker
+		// needs anyway (its value is the start of the chosen minute).
+		const r = await portal.action(
+			`/posts/${SLUG}?/schedule`,
+			{ at: new Date().toISOString().slice(0, 16), offset: '0' },
+			{ cookie }
+		);
+		assert.equal(r.type, 'success', r.raw);
+
+		const run = await fetch(`${portal.url}/api/cron`, {
+			method: 'POST',
+			headers: { Authorization: 'Bearer integration-cron-token' }
+		});
+		const report = (await run.json()) as { published: string[]; failed: unknown[] };
+		assert.deepEqual(report.published, [SLUG], JSON.stringify(report));
+		assert.match(portal.read(`content/blog/${SLUG}/index.md`)!, /\ndraft: false\n/, 'not published');
+	});
+
+	test('running again does not publish it twice', async () => {
+		const run = await fetch(`${portal.url}/api/cron`, {
+			method: 'POST',
+			headers: { Authorization: 'Bearer integration-cron-token' }
+		});
+		assert.deepEqual(((await run.json()) as { published: string[] }).published, []);
+	});
+
+	test('cancelling removes it', async () => {
+		await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0' }, { cookie });
+		const r = await portal.action(`/posts/${SLUG}?/unschedule`, {}, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const list = await (await portal.get('/posts', { cookie })).text();
+		assert.doesNotMatch(list, /publishing \d/);
+	});
+
+	test('the newsletter page opens on the article it was asked about', async () => {
+		const html = await (await portal.get(`/newsletter?slug=${SLUG}`, { cookie })).text();
+		assert.match(html, /Preview/);
 	});
 });
 

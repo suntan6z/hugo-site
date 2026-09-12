@@ -29,6 +29,10 @@ const PUBLIC: RegExp[] = [
 	// options/verify need a valid passkey, enroll-* re-check assertMayEnroll,
 	// and dev-login is gated on local mode plus an explicit flag.
 	/^\/api\/auth\/(options|verify|enroll-options|enroll-verify|logout|dev-login)\/?$/,
+	// The scheduled-publish runner, which a scheduler calls with a bearer token
+	// because it cannot hold a passkey. It takes no parameters and only carries
+	// out work already scheduled from inside the portal; a wrong token gets 404.
+	/^\/api\/cron\/?$/,
 	// Static assets: SvelteKit's client bundle and the brand files.
 	/^\/_app\//,
 	/^\/brand\//,

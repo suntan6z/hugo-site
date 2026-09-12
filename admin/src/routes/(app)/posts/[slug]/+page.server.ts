@@ -13,6 +13,9 @@ import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/index
 import { clearDraft } from '$lib/server/content/drafts.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 import { fundingTextFor } from '$lib/server/content/erasmus.ts';
+import { readScheduled, schedule as addSchedule, cancel as cancelSchedule } from '$lib/server/schedule/runner.ts';
+import { whyNot, forSlug } from '$lib/server/schedule/plan.ts';
+import { isConfigured as canSendNewsletter } from '$lib/server/integrations/resend.ts';
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const post = await loadPost(params.slug);
@@ -22,6 +25,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		categories: CATEGORIES,
 		findings: await preflight(post),
 		canTranslate: canTranslate(),
+		scheduled: forSlug(await readScheduled(), params.slug),
+		canSendNewsletter: canSendNewsletter(),
 		// Set by the rename action's redirect, so the new page says what happened.
 		renamedFrom: url.searchParams.get('renamed'),
 		renamedRedirect: url.searchParams.get('kept') !== '0'
@@ -217,6 +222,58 @@ export const actions: Actions = {
 				draft: parsed.willBeDraft
 			}
 		};
+	},
+
+	/** Publishes later, optionally announcing it once the site has rebuilt. */
+	schedule: async ({ request, params }) => {
+		const f = await request.formData();
+		const local = fromForm(f.get('at')).trim();
+		if (!local) return fail(400, { message: 'Pick a date and time.' });
+		// <input type="datetime-local"> carries no timezone: it means the clock on
+		// the machine it was typed on, so the browser sends that clock's offset
+		// with it. Parsing it here without that would silently use the server's
+		// timezone — UTC in the container, not UTC wherever you are.
+		const offset = Number(f.get('offset') ?? 0);
+		if (!Number.isFinite(offset) || Math.abs(offset) > 14 * 60) {
+			return fail(400, { message: 'That time zone makes no sense.' });
+		}
+		const picked = Date.parse(`${local}:00Z`);
+		if (Number.isNaN(picked)) return fail(400, { message: 'That is not a date and time.' });
+		const at = new Date(picked - offset * 60_000).toISOString();
+
+		const bad = whyNot(at);
+		if (bad) return fail(400, { message: bad });
+
+		const post = await loadPost(params.slug);
+		if (!post) return fail(404, { message: 'Article not found.' });
+
+		// Scheduling something that would be refused at publish time is a trap:
+		// it fails silently later, at the worst moment.
+		const findings = await preflight({ ...post, draft: false });
+		const errs = errorsIn(findings);
+		if (errs.length > 0) {
+			return fail(422, {
+				message: `Not scheduled — ${errs.length} problem${errs.length === 1 ? '' : 's'} would block publishing.`,
+				findings
+			});
+		}
+
+		const newsletter = f.get('newsletter') === 'on';
+		await addSchedule({
+			slug: params.slug,
+			at,
+			newsletter,
+			state: 'pending',
+			createdAt: new Date().toISOString()
+		});
+		await audit('schedule', { slug: params.slug, at, newsletter });
+		return { scheduled: true, at, newsletter };
+	},
+
+	unschedule: async ({ params }) => {
+		const removed = await cancelSchedule(params.slug);
+		if (removed) await audit('unschedule', { slug: params.slug });
+		return { unscheduled: removed };
 	},
 
 	rename: async ({ request, params }) => {
