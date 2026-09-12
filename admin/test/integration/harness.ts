@@ -101,6 +101,13 @@ export async function startFakeDeepL(): Promise<FakeDeepL> {
 		for await (const chunk of req) raw += chunk;
 		const body = raw ? JSON.parse(raw) : null;
 		requests.push({ path: req.url ?? '', auth: req.headers.authorization ?? null, body });
+		// Doubles as a stand-in for the site's form functions: a correct CORS
+		// preflight, so the health check has something healthy to find.
+		if (req.method === 'OPTIONS') {
+			res.statusCode = 204;
+			res.setHeader('Access-Control-Allow-Origin', 'https://lorenzo.loconsole.eu');
+			return res.end();
+		}
 		res.setHeader('Content-Type', 'application/json');
 		if (req.url === '/v2/usage') return res.end(JSON.stringify({ character_count: 1234, character_limit: 500000 }));
 		const texts: string[] = body?.text ?? [];

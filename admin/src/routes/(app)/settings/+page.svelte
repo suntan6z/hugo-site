@@ -85,7 +85,7 @@
 </section>
 
 <section>
-	<h2>Recent activity</h2>
+	<h2>Recent activity <a class="all" href="/audit">see all →</a></h2>
 	{#if data.audit.length === 0}
 		<p class="note">Nothing recorded yet.</p>
 	{:else}
@@ -102,6 +102,7 @@
 </section>
 
 <style>
+	h2 .all { font-size: 0.78rem; font-weight: 400; text-decoration: none; color: var(--primary); margin-left: 0.5rem; }
 	h1 { font-size: 1.5rem; margin: 0 0 1.5rem; letter-spacing: -0.015em; }
 	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
 	section { margin-bottom: 2.25rem; }
