@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { diffLines, hunksOf, fileChange } from '../src/lib/server/content/diff.ts';
+import { diffLines, hunksOf, fileChange } from '../src/lib/server/diff.ts';
 
 const render = (before: string, after: string) =>
 	diffLines(before, after)
