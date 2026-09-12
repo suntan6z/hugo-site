@@ -417,6 +417,13 @@ describe('machine translation, against a stand-in DeepL', () => {
 		assert.match((await r.json()).message, /allowance is used up/);
 	});
 
+	test('the editor ships the visual writing surface, not a Markdown box', async () => {
+		const html = await (await portal.get('/posts/first-home-nas', { cookie })).text();
+		assert.match(html, /aria-label="Formatting"/, 'no formatting toolbar');
+		assert.match(html, /name="body_en"[^>]*type="hidden"|type="hidden"[^>]*name="body_en"/, 'the body must still submit');
+		assert.doesNotMatch(html, /<textarea[^>]*name="body_en"/, 'the raw Markdown textarea is still there');
+	});
+
 	test('the editor offers it, and settings shows the month’s usage', async () => {
 		const editor = await (await portal.get('/posts/out-the-shadow', { cookie })).text();
 		assert.match(editor, /Draft Français from English/);

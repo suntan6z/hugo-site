@@ -4,6 +4,7 @@
 	import { prepareImage, formatBytes, ImageError, type PreparedImage } from '$lib/client/image';
 	import { onMount } from 'svelte';
 	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
+	import RichEditor from '$lib/components/RichEditor.svelte';
 	let { data, form } = $props();
 
 	const LANGS = ['en', 'fr', 'it'] as const;
@@ -37,6 +38,8 @@
 	let tab = $state<'en' | 'fr' | 'it'>('en');
 	let saving = $state(false);
 	let reviewing = $state(false);
+	// One editor per language pane, so switching tabs keeps each one's state.
+	let editors = $state<Record<string, RichEditor | undefined>>({});
 
 	// After a blocked publish the server returns the findings it rejected on;
 	// otherwise show the checks computed when the page loaded.
@@ -80,18 +83,14 @@
 		input.value = '';
 	}
 
-	/** Inserts a Markdown image at the cursor in the language pane being edited. */
+	/** Drops an image into the article at the cursor, in the language on screen. */
 	function insert(name: string) {
-		const ta = document.querySelector<HTMLTextAreaElement>(`textarea[name="body_${tab}"]`);
-		if (!ta) return;
-		const snippet = `![${altText[name] ?? ''}](${name})`;
-		const at = ta.selectionStart ?? ta.value.length;
-		post.translations[tab].body = ta.value.slice(0, at) + snippet + ta.value.slice(ta.selectionEnd ?? at);
-		queueMicrotask(() => {
-			ta.focus();
-			ta.selectionStart = ta.selectionEnd = at + snippet.length;
-		});
+		editors[tab]?.insert(name, altText[name] ?? '');
 	}
+
+	/** What the editor should display for a bundle image: staged blob, or committed file. */
+	const imageSrc = (src: string) =>
+		pendingUrls[src] ?? (/^(https?:)?\/\//.test(src) || src.startsWith('/') ? src : `/api/image/${post.slug}/${src}`);
 
 	function toggleRemove(name: string) {
 		removed = removed.includes(name) ? removed.filter((n) => n !== name) : [...removed, name];
@@ -153,9 +152,10 @@
 	let syncRatio = $state<number | null>(null);
 	function onBodyScroll(e: Event) {
 		if (shown !== 'split') return;
-		const ta = e.currentTarget as HTMLTextAreaElement;
-		const max = ta.scrollHeight - ta.clientHeight;
-		syncRatio = max > 0 ? ta.scrollTop / max : 0;
+		const el = e.target as HTMLElement;
+		if (!el?.classList?.contains('surface')) return;
+		const max = el.scrollHeight - el.clientHeight;
+		syncRatio = max > 0 ? el.scrollTop / max : 0;
 	}
 
 	const pendingUrls = $derived(Object.fromEntries(pending.map((p) => [p.name, p.previewUrl])));
@@ -646,10 +646,18 @@
 					Mark as not yet translated (shows the “read it in another language” notice)
 				</label>
 			{/if}
-			<div class="writing" data-view={shown}>
-				<label class="body-field">Body
-					<textarea class="body" name="body_{l}" rows="24" bind:value={post.translations[l].body} onscroll={onBodyScroll}></textarea>
-				</label>
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="writing" data-view={shown} onscrollcapture={onBodyScroll}>
+				<div class="body-field">
+					<!-- The form still submits Markdown; the editor is how it gets written. -->
+					<input type="hidden" name="body_{l}" value={post.translations[l].body} />
+					<RichEditor
+						bind:this={editors[l]}
+						bind:value={post.translations[l].body}
+						imageUrl={(src) => imageSrc(src)}
+						placeholder="Write the article. ⌘B bold, ⌘I italic, ⌘K link, ## for a heading."
+					/>
+				</div>
 				{#if l === tab && shown !== 'write'}
 					<div class="preview">
 						<span class="preview-label">Preview · approximate — the live site is the reference</span>
@@ -805,7 +813,6 @@
 	.rename label { width: 100%; }
 	label.check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--foreground); }
 	label.check input { width: auto; margin: 0; }
-	textarea.body { font-family: ui-monospace, "SF Mono", monospace; font-size: 0.84rem; line-height: 1.6; }
 	.count { font-size: 0.72rem; color: var(--muted-foreground); }
 	.count.warn { color: var(--warn); }
 	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.5rem 0 0; }
@@ -835,7 +842,7 @@
 	.preview { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
 	.preview-label { font-size: 0.72rem; color: var(--muted-foreground); }
 	.preview { height: 75vh; }
-	.writing[data-view='split'] textarea.body { height: calc(75vh + 1.6rem); }
+	.writing[data-view='split'] :global(.editor .surface) { max-height: calc(75vh - 2.5rem); }
 	@media (max-width: 1100px) {
 		.split-only { display: none; }
 	}
