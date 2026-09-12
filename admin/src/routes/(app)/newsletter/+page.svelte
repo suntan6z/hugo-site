@@ -34,6 +34,7 @@
 </script>
 
 <div class="head">
+	<a class="back" href="/posts">← Articles</a>
 	<h1>Newsletter</h1>
 	{#if data.audience}
 		<span class="count">
@@ -152,6 +153,7 @@
 {/if}
 
 <style>
+	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); display: block; margin-bottom: 0.35rem; }
 	.head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
 	.count { font-size: 0.88rem; color: var(--muted-foreground); }

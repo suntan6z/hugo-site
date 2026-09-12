@@ -46,7 +46,7 @@
 </script>
 
 <div class="head">
-	<h1>Dashboard</h1>
+	<h1>Home</h1>
 	<a class="refresh" href="/?refresh" title="Bypass the 30s cache on build-info.json">Refresh</a>
 </div>
 

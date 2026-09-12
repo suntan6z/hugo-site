@@ -181,6 +181,18 @@ class GitHubRepo implements Repo {
 	}
 
 	async readBinary(p: string) {
+		// Via the blob SHA, not the Contents API: that one refuses anything over
+		// 1 MB, which is most photographs — the editor showed a broken thumbnail
+		// for every image bigger than a logo. Blobs go up to 100 MB.
+		const sha = (await this.tree()).get(p);
+		if (sha) {
+			const blob = await memo(`gh:blob:${sha}`, DEFAULT_TTL_MS, () =>
+				gh<{ content: string; encoding: string }>('GET', `/git/blobs/${sha}`)
+			);
+			return new Uint8Array(Buffer.from(blob.content, blob.encoding as BufferEncoding));
+		}
+		// Not in the cached tree: either genuinely absent, or written since the
+		// tree was cached. The Contents API answers for anything small enough.
 		try {
 			const r = await gh<{ content: string; encoding: string }>(
 				'GET',
