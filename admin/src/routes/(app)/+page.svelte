@@ -1,6 +1,22 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	let { data, form } = $props();
+
+	// The site's form handlers live on someone else's servers, so they are
+	// checked after this page renders rather than in its load.
+	type Health = { name: string; url: string; ok: boolean; status: number | null; ms: number; cold?: boolean; error?: string };
+	let fns = $state<Health[] | null>(null);
+	let fnsFailed = $state(false);
+	onMount(async () => {
+		try {
+			const r = await fetch('/api/health/functions');
+			if (!r.ok) throw new Error(String(r.status));
+			fns = (await r.json()).functions;
+		} catch {
+			fnsFailed = true;
+		}
+	});
 	const stats = $derived(data.stats);
 	const posts = $derived(data.posts);
 	const status = $derived(data.status);
@@ -89,6 +105,30 @@
 {/if}
 
 {#if stats.missingFeatured.length > 0}
+	<section class="forms">
+		<h2>Site forms</h2>
+		{#if fnsFailed}
+			<p class="note">Could not run the check.</p>
+		{:else if !fns}
+			<p class="note">Checking…</p>
+		{:else}
+			<ul class="status">
+				{#each fns as f}
+					<li>
+						<i class:on={f.ok}></i>
+						{f.name}
+						{#if f.ok}
+							<span>— answering in {f.ms < 1000 ? `${f.ms} ms` : `${(f.ms / 1000).toFixed(1)} s`}{f.cold ? ' (was asleep)' : ''}</span>
+						{:else}
+							<span class="bad">— {f.error ?? `HTTP ${f.status}`}</span>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+			<p class="note">A browser asks these the same question before submitting the form.</p>
+		{/if}
+	</section>
+
 	<section class="gap">
 		<h2>No featured image</h2>
 		<p>
@@ -136,6 +176,14 @@
 </ul>
 
 <style>
+	.forms { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
+	.forms h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin: 0 0 0.6rem; font-family: 'DM Sans', system-ui, sans-serif; }
+	.forms .status { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.88rem; }
+	.forms .status li { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+	.forms i { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); display: inline-block; flex: none; }
+	.forms i.on { background: var(--ok); }
+	.forms span { color: var(--muted-foreground); font-size: 0.82rem; }
+	.forms span.bad { color: var(--danger); }
 	.head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 2rem; margin: 0; }
 	.refresh { font-size: 0.82rem; text-decoration: none; color: var(--muted-foreground); }

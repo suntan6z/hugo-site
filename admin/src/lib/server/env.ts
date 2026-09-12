@@ -94,5 +94,9 @@ export const integrations = {
 	deeplApiKey: optional('DEEPL_API_KEY'),
 	// Tests only: points the client at a stand-in server. Unset in production.
 	deeplApiUrl: optional('DEEPL_API_URL'),
-	siteUrl: optional('SITE_URL', 'https://lorenzo.loconsole.eu')
+	siteUrl: optional('SITE_URL', 'https://lorenzo.loconsole.eu'),
+	// The site's own form handlers (functions/), pinged for health only. The
+	// same URLs static/js/main.js and layouts/blog/single.html post to.
+	contactFnUrl: optional('CONTACT_FN_URL', 'https://loconsoleapik19unsn0-contact.functions.fnc.fr-par.scw.cloud'),
+	newsletterFnUrl: optional('NEWSLETTER_FN_URL', 'https://loconsoleapik19unsn0-newsletter.functions.fnc.fr-par.scw.cloud')
 };
