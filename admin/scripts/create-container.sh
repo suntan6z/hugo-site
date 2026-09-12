@@ -84,11 +84,12 @@ SECRETS=(
   "secret-environment-variables.BING_API_KEY=${BING_API_KEY:-}"
   "secret-environment-variables.RESEND_API_KEY=${RESEND_API_KEY:-}"
   "secret-environment-variables.DEEPL_API_KEY=${DEEPL_API_KEY:-}"
+  "secret-environment-variables.CRON_TOKEN=${CRON_TOKEN:-}"
 )
 
 # Report what will and will not be configured, so a silently missing key is
 # visible at the point of deploying rather than as an empty panel later.
-for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY; do
+for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY CRON_TOKEN; do
   [ -n "${!v:-}" ] && echo "  $v: set" || echo "  $v: not set (feature stays disabled)"
 done
 

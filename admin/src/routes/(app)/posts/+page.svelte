@@ -40,7 +40,11 @@
 			<div class="meta">
 				<span class="badge">{p.category}</span>
 				<span>{p.date}</span>
-				{#if p.draft}<span class="draft">draft</span>{/if}
+				{#if data.scheduled[p.slug]}
+					<span class="scheduled" title={new Date(data.scheduled[p.slug]).toLocaleString('en-GB')}>
+						publishing {new Date(data.scheduled[p.slug]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+					</span>
+				{:else if p.draft}<span class="draft">draft</span>{/if}
 				{#if !p.featured_image}<span class="gap" title="No featured_image: no thumbnail on the homepage grid">no thumb</span>{/if}
 				<span class="langs">
 					{#each ['en', 'fr', 'it'] as const as l}
@@ -69,6 +73,7 @@
 	.slug { font-size: 0.75rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
 	.meta { display: flex; align-items: center; gap: 0.55rem; font-size: 0.78rem; color: var(--muted-foreground); white-space: nowrap; }
 	.draft { color: var(--warn); font-weight: 600; }
+	.scheduled { color: var(--primary); font-weight: 600; }
 	.gap { color: var(--warn); }
 	.langs i { font-style: normal; opacity: 0.28; font-variant: small-caps; letter-spacing: 0.04em; }
 	.langs i.on { opacity: 1; font-weight: 700; }
