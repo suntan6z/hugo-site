@@ -2,13 +2,16 @@
 # the dashboard's Hugo/Version/Build-flags/Public-directory fields entirely.
 #
 # Pinned to the extended edition (no "std"/"reg" prefix = extended per
-# hugomods' own docs: docker.hugomods.com/docs/tags/) to match the local dev
-# Hugo binary (`hugo v0.163.3+extended`). Required for image processing
-# (.Resize to webp on the hero image) to behave the same in prod as locally.
+# hugomods' own docs: docker.hugomods.com/docs/tags/), required for image
+# processing (.Resize to webp on the hero image) to behave in prod as locally.
+#
+# 0.165.0 is the newest release hugomods has published an image for; local dev
+# (Homebrew) runs ahead of it, so .github/workflows/hugo-build.yml builds the
+# site with this exact image on every push rather than trusting local success.
 #
 # To bump the Hugo version: find the matching tag at
 # https://hub.docker.com/r/hugomods/hugo/tags (search "git-<version>",
 # no reg/std prefix) — don't assume a tag exists for every version.
-image: "hugomods/hugo:debian-git-0.163.3"
+image: "hugomods/hugo:debian-git-0.165.0"
 command: "hugo --minify"
 public: "public"
