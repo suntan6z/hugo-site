@@ -6,15 +6,19 @@ import { readQueue, submitQueued } from '$lib/server/integrations/indexnow.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
+import { openTasks } from '$lib/server/tasks/corpus.ts';
+import { readSession } from '$lib/server/tasks/session.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 
 export const load: PageServerLoad = async ({ url }) => {
-	const [info, last, posts, indexNowQueue] = await Promise.all([
+	const [info, last, posts, indexNowQueue, tasks, session] = await Promise.all([
 		fetchBuildInfo(url.searchParams.has('refresh')),
 		readLastPublish(),
 		listPosts(),
-		readQueue()
+		readQueue(),
+		openTasks(),
+		readSession()
 	]);
 
 	const status = deployStatus(info, last);
@@ -39,6 +43,16 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		posts: posts.slice(0, 8),
+		// The home screen shows the shape of the queue; focus mode works it.
+		tasks: {
+			total: tasks.length,
+			pending: session.edits.length,
+			byKind: Object.entries(
+				tasks.reduce<Record<string, number>>((acc, t) => ({ ...acc, [t.kind]: (acc[t.kind] ?? 0) + 1 }), {})
+			).sort((a, b) => b[1] - a[1]),
+			next: tasks.slice(0, 3).map((t) => ({ title: t.title, where: t.where }))
+		},
+		tidied: Number(url.searchParams.get('tidied') ?? 0) || 0,
 		status,
 		siteUrl: integrations.siteUrl,
 		indexNow: {

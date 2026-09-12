@@ -163,7 +163,7 @@ export async function loadPost(slug: string): Promise<Post | null> {
  * edited in place, so comments (chat-control-eu has them) and any unknown keys
  * survive untouched.
  */
-async function renderFile(slug: string, shared: PostShared, t: PostTranslation): Promise<string> {
+export async function renderFile(slug: string, shared: PostShared, t: PostTranslation): Promise<string> {
 	const existing = await repo.readText(`${bundleDir(slug)}/${fileFor(t.lang)}`);
 	const fm = existing ? FrontMatter.parse(existing) : FrontMatter.empty();
 

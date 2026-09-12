@@ -22,6 +22,8 @@ export interface Repo {
 	readBinary(p: string): Promise<Uint8Array | null>;
 	/** Every file path under a prefix, repo-relative, sorted. */
 	listTree(prefix: string): Promise<string[]>;
+	/** When the file last changed, ISO, or null if that cannot be told. */
+	lastModified(p: string): Promise<string | null>;
 	/** Applies all ops as ONE commit. Returns the new head sha. */
 	commit(message: string, ops: FileOp[]): Promise<{ sha: string }>;
 }
@@ -59,6 +61,14 @@ class LocalRepo implements Repo {
 		} catch (e) {
 			if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
 			throw e;
+		}
+	}
+
+	async lastModified(p: string) {
+		try {
+			return (await fs.stat(this.abs(p))).mtime.toISOString();
+		} catch {
+			return null;
 		}
 	}
 
@@ -202,6 +212,20 @@ class GitHubRepo implements Repo {
 		} catch (e) {
 			if (e instanceof GitHubError && e.status === 404) return null;
 			throw e;
+		}
+	}
+
+	async lastModified(p: string) {
+		try {
+			const commits = await memo(`gh:lastmod:${p}`, DEFAULT_TTL_MS, () =>
+				gh<{ commit: { committer: { date: string } } }[]>(
+					'GET',
+					`/commits?path=${encodeURIComponent(p)}&sha=${github.branch}&per_page=1`
+				)
+			);
+			return commits[0]?.commit.committer.date ?? null;
+		} catch {
+			return null;
 		}
 	}
 
