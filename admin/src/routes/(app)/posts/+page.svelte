@@ -15,7 +15,10 @@
 
 <div class="head">
 	<h1>Articles</h1>
-	<a class="btn-primary" href="/posts/new">New article</a>
+	<div class="head-actions">
+		<a class="btn-outline" href="/newsletter">Newsletter</a>
+		<a class="btn-primary" href="/posts/new">New article</a>
+	</div>
 </div>
 
 <div class="filters">
@@ -51,6 +54,8 @@
 </ul>
 
 <style>
+	.head-actions { display: flex; gap: 0.5rem; align-items: center; }
+	.head-actions a { text-decoration: none; }
 	.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 2rem; margin: 0; }
 	.filters { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }

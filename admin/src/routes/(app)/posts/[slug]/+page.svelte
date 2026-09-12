@@ -367,8 +367,7 @@
 					fields: {
 						title: en.title,
 						description: en.description,
-						body: en.body,
-						eu_funding_text: isErasmus ? en.eu_funding_text : undefined
+						body: en.body
 					}
 				})
 			});
@@ -380,7 +379,7 @@
 			target.title = fields.title;
 			target.description = fields.description;
 			target.body = fields.body;
-			if (typeof fields.eu_funding_text === 'string') target.eu_funding_text = fields.eu_funding_text;
+			// eu_funding_text is not translated: it is fixed wording the server sets.
 			// It is a real translation now, not a placeholder, and not to be deleted.
 			target.untranslated = false;
 			removeTranslation[l] = false;
@@ -636,7 +635,10 @@
 				</span>
 			</label>
 			{#if isErasmus}
-				<label>EU funding text<input name="eu_funding_text_{l}" bind:value={post.translations[l].eu_funding_text} /></label>
+				<p class="fixed-note">
+					<span>EU funding line</span>
+					{post.translations[l].eu_funding_text || 'Added automatically when you save.'}
+				</p>
 			{/if}
 			{#if l !== 'en'}
 				<label class="check">
@@ -848,6 +850,8 @@
 	.mt .btn-outline { font-size: 0.85rem; padding: 0.35rem 0.85rem; }
 	.mt-note { margin: 0; font-size: 0.84rem; color: var(--ok); }
 	.mt-note.err { color: var(--danger); }
+	.fixed-note { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
+	.fixed-note span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.15rem; font-family: 'DM Sans', system-ui, sans-serif; }
 
 	.review { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0 0 1.25rem; }
 	.review h2 { font-size: 0.95rem; margin: 0 0 0.75rem; display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }

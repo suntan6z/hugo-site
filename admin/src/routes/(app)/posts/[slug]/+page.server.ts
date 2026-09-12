@@ -12,6 +12,7 @@ import { preflight, errorsIn, warningsIn } from '$lib/server/seo/preflight.ts';
 import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
 import { clearDraft } from '$lib/server/content/drafts.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
+import { fundingTextFor } from '$lib/server/content/erasmus.ts';
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const post = await loadPost(params.slug);
@@ -66,7 +67,8 @@ async function parseEditorForm(f: FormData, slug: string): Promise<Parsed> {
 			description: str(`description_${lang}`),
 			body: fromForm(f.get(`body_${lang}`)),
 			untranslated: f.get(`untranslated_${lang}`) === 'on',
-			eu_funding_text: str(`eu_funding_text_${lang}`) || undefined
+			// Fixed wording, not something to type: see content/erasmus.ts.
+			eu_funding_text: fundingTextFor(lang, category)
 		};
 	}
 
