@@ -2,12 +2,12 @@ import { repo, type FileOp } from './repo.ts';
 import { memo, mapLimit, DEFAULT_TTL_MS } from '../cache.ts';
 import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
 import { SLUG_RE, redirectStubs, rewriteLinks, repointStub } from './rename.ts';
-import { fileChange, type FileChange } from './diff.ts';
-import { LANGS, type Lang } from './langs.ts';
+import { fileChange, type FileChange } from '../diff.ts';
+import { LANGS, type Lang } from '../langs.ts';
 
 export { fromForm };
 
-export { LANGS, type Lang } from './langs.ts';
+export { LANGS, type Lang } from '../langs.ts';
 
 /** English keeps the plain name; other languages get a locale-suffixed sibling. */
 export const fileFor = (lang: Lang) => (lang === 'en' ? 'index.md' : `index.${lang}.md`);
