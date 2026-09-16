@@ -110,6 +110,43 @@ else
     "${ENVS[@]}" "${SECRETS[@]}"
 fi
 
+# Scheduled publishing: a Scaleway cron trigger asks the portal on the hour to
+# publish whatever is due, and ten minutes later to send newsletters for what
+# the rebuilt site now serves. Twice an hour rather than every quarter: the
+# container scales to zero after 15 idle minutes, so a quarter-hourly call would
+# keep it awake around the clock. The editor's picker offers whole hours to
+# match. The token is set here for both the container and the trigger, so there
+# is no second copy anywhere to drift out of step.
+C_ID=$(scw container container list namespace-id="$NS_ID" region=$REGION -o json \
+  | jq -r --arg n "$NAME" '.[] | select(.name==$n) | .id')
+TRIGGER=scheduled-publish
+TRIGGER_ID=$(scw container trigger list container-id="$C_ID" region=$REGION -o json \
+  | jq -r --arg n "$TRIGGER" '.[] | select(.name==$n) | .id')
+if [ -n "${CRON_TOKEN:-}" ]; then
+  CRON=(
+    "destination-config.http-path=/api/cron"
+    "destination-config.http-method=post"
+    "cron-config.schedule=0,10 * * * *"
+    "cron-config.timezone=Etc/UTC"
+    "cron-config.headers.Authorization=Bearer $CRON_TOKEN"
+    # SvelteKit's CSRF check refuses a POST with no Origin whose content type a
+    # form could send, so say JSON explicitly rather than trust the default.
+    "cron-config.headers.Content-Type=application/json"
+    "cron-config.body={}"
+  )
+  # Output discarded: the CLI echoes the trigger back, Authorization included.
+  if [ -n "$TRIGGER_ID" ]; then
+    echo "updating trigger $TRIGGER"
+    scw container trigger update "$TRIGGER_ID" region=$REGION "${CRON[@]}" > /dev/null
+  else
+    echo "creating trigger $TRIGGER"
+    scw container trigger create container-id="$C_ID" name=$TRIGGER region=$REGION "${CRON[@]}" > /dev/null
+  fi
+elif [ -n "$TRIGGER_ID" ]; then
+  echo "removing trigger $TRIGGER (CRON_TOKEN not set: scheduled work waits for the portal to be opened)"
+  scw container trigger delete "$TRIGGER_ID" region=$REGION > /dev/null
+fi
+
 echo
 echo "endpoint:"
 scw container container list namespace-id="$NS_ID" region=$REGION -o json \

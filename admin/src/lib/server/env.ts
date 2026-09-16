@@ -83,8 +83,9 @@ export const auth = {
 	/** Gates first-run passkey enrolment. Absent in local mode = enrolment open. */
 	bootstrapToken: optional('BOOTSTRAP_TOKEN'),
 	/**
-	 * Lets the scheduled workflow ask the portal to carry out scheduled
-	 * publishing. Unset means the endpoint does not answer at all.
+	 * Lets the Scaleway cron trigger ask the portal to carry out scheduled
+	 * publishing; create-container.sh sets both from the same admin/.env value.
+	 * Unset means the endpoint does not answer at all.
 	 */
 	cronToken: optional('CRON_TOKEN'),
 };
