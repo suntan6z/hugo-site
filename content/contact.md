@@ -31,6 +31,10 @@ description: "Get in touch with Lorenzo Loconsole — questions, collaborations,
             <p style="font-size:0.875rem;color:var(--muted-foreground)">A confirmation has been sent to your email.</p>
           </div>
           <form id="contact-form" novalidate>
+            <!-- honeypot -->
+            <div style="position:absolute;left:-9999px" aria-hidden="true">
+              <input type="text" id="contact-website" name="website" tabindex="-1" autocomplete="off" />
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="firstName">First name <span class="req">*</span></label>

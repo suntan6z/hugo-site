@@ -23,20 +23,7 @@
   {{- $ogWidth := 1200 -}}
   {{- $ogHeight := 630 -}}
   {{- if and .IsPage (eq .Section "blog") -}}
-    {{- $thumb := .Params.featured_image -}}
-    {{- if and $thumb (not (or (hasPrefix $thumb "http") (hasPrefix $thumb "//") (hasPrefix $thumb "/"))) -}}
-      {{- with .Page.Resources.GetMatch $thumb -}}{{- $thumb = .RelPermalink -}}{{- end -}}
-    {{- end -}}
-    {{- if not $thumb -}}
-      {{- with findRE `src="[^"]+"` .Content 1 -}}
-        {{- $src := index . 0 | replaceRE `src="([^"]+)"` "$1" -}}
-        {{- if or (hasPrefix $src "http") (hasPrefix $src "/") -}}
-          {{- $thumb = $src -}}
-        {{- else -}}
-          {{- $thumb = printf "%s%s" $.RelPermalink $src -}}
-        {{- end -}}
-      {{- end -}}
-    {{- end -}}
+    {{- $thumb := partial "resolve-thumb.html" (dict "page" .) -}}
     {{- if $thumb -}}
       {{- $ogImage = absURL $thumb -}}
       {{- $ogWidth = "" -}}

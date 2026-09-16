@@ -1,0 +1,13 @@
+{{- /*
+  Shared thumbnail/social-card rule: use .Params.featured_image if set, else
+  fall back to the first image in the rendered body. Returns "" if neither
+  exists. Input: dict "page" PAGE
+  Used by layouts/blog/list.html and layouts/_default/baseof.html — keep both
+  call sites on this partial rather than re-deriving the rule locally.
+*/ -}}
+{{- $page := .page -}}
+{{- $thumb := partial "resolve-image-src.html" (dict "page" $page "src" $page.Params.featured_image) -}}
+{{- if not $thumb -}}
+  {{- $thumb = partial "first-content-image.html" (dict "page" $page) -}}
+{{- end -}}
+{{- return $thumb -}}

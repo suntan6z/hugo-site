@@ -1,0 +1,16 @@
+{{- /*
+  Finds the first <img src="..."> in a page's rendered .Content and resolves
+  it against the page's permalink if it's a relative path. Returns "" if the
+  body has no image. Input: dict "page" PAGE
+*/ -}}
+{{- $page := .page -}}
+{{- $result := "" -}}
+{{- with findRE `src="[^"]+"` $page.Content 1 -}}
+  {{- $src := index . 0 | replaceRE `src="([^"]+)"` "$1" -}}
+  {{- if or (hasPrefix $src "http") (hasPrefix $src "/") -}}
+    {{- $result = $src -}}
+  {{- else -}}
+    {{- $result = printf "%s%s" $page.RelPermalink $src -}}
+  {{- end -}}
+{{- end -}}
+{{- return $result -}}
