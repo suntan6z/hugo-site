@@ -16,6 +16,7 @@ import { fundingTextFor } from '$lib/server/content/erasmus.ts';
 import { readScheduled, schedule as addSchedule, cancel as cancelSchedule } from '$lib/server/schedule/runner.ts';
 import { whyNot, forSlug } from '$lib/server/schedule/plan.ts';
 import { isConfigured as canSendNewsletter } from '$lib/server/integrations/resend.ts';
+import { auth } from '$lib/server/env.ts';
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const post = await loadPost(params.slug);
@@ -27,6 +28,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		canTranslate: canTranslate(),
 		scheduled: forSlug(await readScheduled(), params.slug),
 		canSendNewsletter: canSendNewsletter(),
+		// Without a token there is no trigger, so scheduled work waits for you to open the portal.
+		canRunOnSchedule: !!auth.cronToken,
 		// Set by the rename action's redirect, so the new page says what happened.
 		renamedFrom: url.searchParams.get('renamed'),
 		renamedRedirect: url.searchParams.get('kept') !== '0'

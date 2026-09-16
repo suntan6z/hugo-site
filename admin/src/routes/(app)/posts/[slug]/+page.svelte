@@ -772,22 +772,26 @@
 			<form method="POST" action="?/schedule" use:enhance>
 				<input type="hidden" name="offset" value={offset} />
 				<label>When
-					<input type="datetime-local" name="at" bind:value={scheduleAt} />
+					<input type="datetime-local" name="at" step="3600" bind:value={scheduleAt} />
 				</label>
 				<label class="check">
 					<input type="checkbox" name="newsletter" bind:checked={alsoNewsletter} disabled={!data.canSendNewsletter} />
 					Send the newsletter too
 				</label>
 				<p class="hint">
+					Goes live at the start of the hour you pick.
 					{#if !data.canSendNewsletter}
 						Sending needs RESEND_API_KEY.
 					{:else if alsoNewsletter}
-						It goes out after the site has actually rebuilt, so the link in it works.
+						The newsletter follows about ten minutes later, once the site has rebuilt, so the link in it works.
 						<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
 					{:else}
-						The article goes live on its own; nothing is emailed.
+						Nothing is emailed.
 					{/if}
 				</p>
+				{#if !data.canRunOnSchedule}
+					<p class="hint">Automatic publishing needs CRON_TOKEN; until then it happens the next time you open the portal.</p>
+				{/if}
 				<button type="submit" class="btn-primary">Schedule it</button>
 			</form>
 		{/if}

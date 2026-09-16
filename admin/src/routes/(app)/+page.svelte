@@ -44,7 +44,7 @@
 	onMount(() => {
 		fetch('/api/insights').then((r) => r.json()).then((d) => (insights = d)).catch(() => {});
 		fetch('/api/health/functions').then((r) => r.json()).then((d) => (fns = d.functions)).catch(() => {});
-		// Catches up anything the scheduled workflow missed while you were away.
+		// Catches up anything the scheduled trigger missed while you were away.
 		fetch('/api/schedule/run', { method: 'POST' })
 			.then((r) => r.json())
 			.then((d) => {

@@ -8,7 +8,7 @@ import { invalidate } from '../cache.ts';
 import { dueToPublish, dueToAnnounce, prune, type Scheduled } from './plan.ts';
 
 /**
- * Carries out scheduled publishing. Called by the scheduled workflow, and by
+ * Carries out scheduled publishing. Called by the scheduled trigger, and by
  * the portal whenever it happens to be open, so a missed cron only delays
  * things rather than losing them.
  *

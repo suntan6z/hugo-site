@@ -85,25 +85,38 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 | `BING_API_KEY` | Search stats on the dashboard | Bing Webmaster Tools → Settings → API access |
 | `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
 | `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`. Settings shows the month's allowance and what is left of it |
-| `CRON_TOKEN` | Scheduled publishing, and sending its newsletter once the site is live | `openssl rand -hex 32`. **The same value must also be a GitHub repository secret named `CRON_TOKEN`** (Settings → Secrets and variables → Actions), because `.github/workflows/scheduled-publish.yml` presents it. Without it the endpoint answers 404 to everyone |
+| `CRON_TOKEN` | Scheduled publishing, and sending its newsletter once the site is live | `openssl rand -hex 32`. `create-container.sh` gives it to the container and to the Scaleway cron trigger that presents it, so it lives nowhere else. Without it there is no trigger and the endpoint answers 404 to everyone; scheduled articles then wait until you open the portal |
 
 ## Scheduled publishing
 
-`scheduled-publish.yml` runs every 15 minutes and asks `POST /api/cron` to
-carry out anything due. That endpoint is the one route that answers without a
-session — it is gated on `CRON_TOKEN`, takes no parameters, and only performs
-work scheduled from inside the portal; a wrong or missing token gets a 404 so
+A Scaleway cron trigger on the container, `scheduled-publish`, calls
+`POST /api/cron` at `:00` and `:10` past every hour (UTC).
+`create-container.sh` creates, updates or removes it, depending on whether
+`CRON_TOKEN` is set. That endpoint is the one route that answers without a
+session. It is gated on `CRON_TOKEN`, takes no parameters, and only performs
+work scheduled from inside the portal. A wrong or missing token gets a 404, so
 it does not even admit to existing.
 
-Two things worth knowing:
+```bash
+scw container trigger list container-id=<id> region=fr-par
+```
 
-- **GitHub disables scheduled workflows after 60 days without repository
-  activity.** The portal also runs anything due whenever you open it, so a
-  stopped schedule delays publishing rather than losing it. Re-enable it from
-  the Actions tab.
-- **The newsletter is sent on a later pass than the publish**, once
+Things worth knowing:
+
+- **Articles go live on the hour.** The editor's picker offers whole hours,
+  so the time you pick is the time the article is published. (A time between
+  hours still works: the next pass, `:00` or `:10`, picks it up.) The container
+  scales to zero after 15 idle minutes, and checking every quarter hour would
+  keep it awake (and billed) around the clock.
+- **The newsletter is sent on the `:10` pass, not with the publish**, once
   `/en/build-info.json` shows the article is actually live. Otherwise the link
-  in the email 404s for every subscriber until StaticHost finishes.
+  in the email 404s for every subscriber until StaticHost finishes. A build
+  slower than ten minutes pushes the email to the next hour.
+- **Opening the portal also runs anything due**, so a missed trigger delays
+  publishing rather than losing it.
+- Scheduling used to run from a GitHub Actions workflow. It was dropped
+  because GitHub ran its 15-minute schedule only every few hours, and it needed
+  a second copy of the token.
 
 ## Recovering from a lockout
 
