@@ -1,0 +1,19 @@
+{{- /*
+  Resolves a featured_image/logo-style front-matter value to a usable src:
+  absolute/root-relative/protocol-relative URLs pass through unchanged,
+  anything else is looked up as a page resource. Returns "" if nothing resolves.
+  Input: dict "page" PAGE "src" STRING
+*/ -}}
+{{- $page := .page -}}
+{{- $src := .src -}}
+{{- $result := "" -}}
+{{- if $src -}}
+  {{- if or (hasPrefix $src "http") (hasPrefix $src "//") (hasPrefix $src "/") -}}
+    {{- $result = $src -}}
+  {{- else -}}
+    {{- with $page.Resources.GetMatch $src -}}
+      {{- $result = .RelPermalink -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $result -}}

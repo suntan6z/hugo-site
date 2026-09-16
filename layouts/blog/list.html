@@ -110,21 +110,7 @@
             <h2>{{ $page.Title }}</h2>
             <p class="article-excerpt">{{ with $page.Description }}{{ . | truncate 160 }}{{ else }}{{ $page.Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
-          {{ $thumb := $page.Params.featured_image }}
-          {{ if and $thumb (not (or (hasPrefix $thumb "http") (hasPrefix $thumb "//") (hasPrefix $thumb "/"))) }}
-            {{ with $page.Resources.GetMatch $thumb }}{{ $thumb = .RelPermalink }}{{ end }}
-          {{ end }}
-          {{ if not $thumb }}
-            {{ $permalink := $page.RelPermalink }}
-            {{ with findRE `src="[^"]+"` $page.Content 1 }}
-              {{ $src := index . 0 | replaceRE `src="([^"]+)"` "$1" }}
-              {{ if or (hasPrefix $src "http") (hasPrefix $src "/") }}
-                {{ $thumb = $src }}
-              {{ else }}
-                {{ $thumb = printf "%s%s" $permalink $src }}
-              {{ end }}
-            {{ end }}
-          {{ end }}
+          {{ $thumb := partial "resolve-thumb.html" (dict "page" $page) }}
           {{ if $thumb }}
           <div class="article-thumb">
             <img src="{{ $thumb }}" alt="{{ $page.Title }}" loading="lazy" />
