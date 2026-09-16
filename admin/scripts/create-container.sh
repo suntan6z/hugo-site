@@ -119,6 +119,17 @@ fi
 # is no second copy anywhere to drift out of step.
 C_ID=$(scw container container list namespace-id="$NS_ID" region=$REGION -o json \
   | jq -r --arg n "$NAME" '.[] | select(.name==$n) | .id')
+# Scaleway refuses trigger changes while the container is still rolling out the
+# update above ("transient state 'updating'").
+for i in $(seq 1 60); do
+  STATUS=$(scw container container get "$C_ID" region=$REGION -o json | jq -r '.status')
+  case "$STATUS" in
+    ready) break ;;
+    error) echo "container is in error: $(scw container container get "$C_ID" region=$REGION -o json | jq -r '.error_message')"; exit 1 ;;
+  esac
+  [ "$i" = 60 ] && { echo "container still $STATUS after 5 minutes"; exit 1; }
+  sleep 5
+done
 TRIGGER=scheduled-publish
 TRIGGER_ID=$(scw container trigger list container-id="$C_ID" region=$REGION -o json \
   | jq -r --arg n "$TRIGGER" '.[] | select(.name==$n) | .id')
@@ -150,4 +161,4 @@ fi
 echo
 echo "endpoint:"
 scw container container list namespace-id="$NS_ID" region=$REGION -o json \
-  | jq -r --arg n "$NAME" '.[] | select(.name==$n) | "\(.status)  \(.domain_name)"'
+  | jq -r --arg n "$NAME" '.[] | select(.name==$n) | "\(.status)  \(.public_endpoint)"'
