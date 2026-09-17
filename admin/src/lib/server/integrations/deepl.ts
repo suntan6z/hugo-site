@@ -136,6 +136,35 @@ export async function translateFields(
 	return { fields: result, characters: all.reduce((n, t) => n + t.length, 0), warnings };
 }
 
+/**
+ * A standalone page: hand-written HTML rather than Markdown, so its body goes
+ * through DeepL's own HTML handling, which translates text and leaves markup,
+ * attributes and ids alone. Title and description are plain text.
+ */
+export async function translatePage(
+	fields: { title: string; description: string; body: string },
+	target: Target
+): Promise<{ fields: { title: string; description: string; body: string }; characters: number }> {
+	type Answer = { translations: { text: string }[] };
+	const common = { source_lang: 'EN', target_lang: target.toUpperCase(), formality: FORMALITY[target] };
+	// Empty fields are not sent: there is nothing to translate, and they stay empty.
+	const one = async (text: string, extra: Record<string, unknown> = {}) => {
+		if (!text.trim()) return text;
+		const r = await call<Answer>('/v2/translate', { ...common, ...extra, text: [text] });
+		if (r.translations?.length !== 1) throw new DeepLError('DeepL returned a different number of texts than it was sent.', 502);
+		return r.translations[0].text;
+	};
+	const [title, description, body] = await Promise.all([
+		one(fields.title),
+		one(fields.description),
+		one(fields.body, { tag_handling: 'html' })
+	]);
+	return {
+		fields: { title, description, body },
+		characters: fields.title.length + fields.description.length + fields.body.length
+	};
+}
+
 export async function usage(): Promise<{ used: number; limit: number } | null> {
 	if (!isConfigured()) return null;
 	const r = await call<{ character_count: number; character_limit: number }>('/v2/usage');

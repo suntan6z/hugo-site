@@ -3,7 +3,10 @@ import { repo } from '../content/repo.ts';
 import { parseCities, parsePhotos, photoKey } from '../content/gallery-data.ts';
 import { mapLimit, memo } from '../cache.ts';
 import { LANGS } from '../langs.ts';
-import { findTasks, type Corpus, type Task } from './find.ts';
+import { findTasks, type Corpus, type CorpusPage, type Task } from './find.ts';
+import { loadPage } from '../content/page.ts';
+import { PAGES } from '../../pages.ts';
+import { deadLinks } from '../integrations/linkcheck.ts';
 import { readSnoozed, readSession } from './session.ts';
 
 /**
@@ -25,9 +28,7 @@ async function gather(): Promise<Corpus> {
 			title: p.translations.en.title || p.slug,
 			draft: p.draft,
 			date: p.date,
-			featured_image: p.featured_image,
-			images: p.images,
-			partner_logo_url: p.partner_logo_url,
+			links: { partner_url: p.partner_url, project_url: p.project_url },
 			translations: Object.fromEntries(
 				LANGS.map((l) => [
 					l,
@@ -59,7 +60,18 @@ async function gather(): Promise<Corpus> {
 		})
 	).flat();
 
-	return { posts, photos, nowUpdated: await repo.lastModified(NOW_PAGE) };
+	const pages = await Promise.all(
+		PAGES.map(async (p) => {
+			const page = await loadPage(p.name);
+			return {
+				name: p.name,
+				label: p.label,
+				translations: Object.fromEntries(LANGS.map((l) => [l, { exists: page[l].exists, body: page[l].body }])) as CorpusPage['translations']
+			};
+		})
+	);
+
+	return { posts, photos, pages, deadLinks: await deadLinks(), nowUpdated: await repo.lastModified(NOW_PAGE) };
 }
 
 export const readCorpus = () => memo('tasks:corpus', TTL_MS, gather);

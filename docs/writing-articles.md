@@ -48,7 +48,7 @@ Keep that key order: the whole corpus, the archetype and the portal's serializer
 
 ### The lead / thumbnail image
 
-Put the main image as the **first Markdown image in the body**; the blog listing and the social-share preview fall back to it:
+Put the main image as the **first Markdown image in the body**; it becomes the thumbnail on the homepage and the blog listing, the social-share preview and the newsletter picture:
 
 ```markdown
 ![Descriptive alt text](my-image.jpg)
@@ -56,13 +56,13 @@ Put the main image as the **first Markdown image in the body**; the blog listing
 
 The article is a page bundle, so drop `my-image.jpg` next to `index.md` and reference it by filename — no leading slash.
 
-To set the thumbnail explicitly:
+To use a different image than the first one, click **Use as thumbnail** under it in the editor's Images panel, or set it by hand:
 
 ```yaml
 featured_image: "my-image.jpg"
 ```
 
-That is **required** for the article to show a thumbnail in the homepage "Latest Articles" grid — that grid only honours `featured_image` and does not fall back to the first body image.
+Only needed when the first image is not the one you want. An article with no image at all simply has no thumbnail.
 
 ### Translations
 

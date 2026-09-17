@@ -4,7 +4,7 @@
  * Same philosophy as the front-matter editor: the files are hand-maintained
  * and carry section comments worth keeping, so editing rewrites only the lines
  * that change. A full re-serialise would discard the comments and reshuffle
- * 96 keys into one enormous diff.
+ * every key into one enormous diff.
  *
  * The shape is narrow by design — every entry is `[key]` followed by
  * `other = "…"` — because that is exactly what the corpus contains and what

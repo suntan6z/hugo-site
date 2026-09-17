@@ -2,7 +2,8 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import crypto from 'node:crypto';
 import { runDue } from '$lib/server/schedule/runner.ts';
-import { auth } from '$lib/server/env.ts';
+import { runLinkCheck } from '$lib/server/integrations/linkcheck.ts';
+import { auth, IS_LOCAL } from '$lib/server/env.ts';
 
 /**
  * The one route that answers without a session, because a scheduler cannot
@@ -26,5 +27,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!token || !given || !constantTimeEqual(given, token)) error(404, 'Not found');
 
 	const report = await runDue();
-	return json(report, { headers: { 'Cache-Control': 'no-store' } });
+	// The same trigger also checks outside links, once a week. Not in local mode:
+	// there is no trigger there, and a test run must never knock on real websites.
+	const links = IS_LOCAL ? null : await runLinkCheck().catch(() => null);
+	return json({ ...report, links }, { headers: { 'Cache-Control': 'no-store' } });
 };

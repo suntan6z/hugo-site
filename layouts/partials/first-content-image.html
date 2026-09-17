@@ -5,8 +5,9 @@
 */ -}}
 {{- $page := .page -}}
 {{- $result := "" -}}
-{{- with findRE `src="[^"]+"` $page.Content 1 -}}
-  {{- $src := index . 0 | replaceRE `src="([^"]+)"` "$1" -}}
+{{- /* <img only: an embedded video or iframe above the first photo is not it. */ -}}
+{{- with findRE `<img[^>]*\ssrc="[^"]+"` $page.Content 1 -}}
+  {{- $src := index . 0 | replaceRE `^.*\ssrc="([^"]+)"$` "$1" -}}
   {{- if or (hasPrefix $src "http") (hasPrefix $src "/") -}}
     {{- $result = $src -}}
   {{- else -}}

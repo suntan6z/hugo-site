@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { translateFields, isConfigured, DeepLError, type Fields, type Target } from '$lib/server/integrations/deepl.ts';
+import { translateFields, translatePage, isConfigured, DeepLError, type Fields, type Target } from '$lib/server/integrations/deepl.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { validSlug } from '$lib/server/content/drafts.ts';
 
@@ -14,7 +14,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!isConfigured()) error(503, 'Machine translation is not set up: add DEEPL_API_KEY.');
 	if (!request.headers.get('content-type')?.startsWith('application/json')) error(415, 'Send JSON.');
 
-	let body: { slug?: unknown; to?: unknown; fields?: Record<string, unknown> };
+	let body: { slug?: unknown; to?: unknown; format?: unknown; fields?: Record<string, unknown> };
 	try {
 		body = await request.json();
 	} catch {
@@ -34,6 +34,12 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (total > MAX_CHARS) error(413, `That is ${total} characters; the limit is ${MAX_CHARS}.`);
 
 	try {
+		// A page (About, Now…) is HTML, not Markdown: DeepL handles its markup itself.
+		if (body.format === 'html') {
+			const r = await translatePage({ title: fields.title, description: fields.description, body: fields.body }, to as Target);
+			await audit('translate', { slug, to, characters: r.characters, format: 'html' });
+			return json({ ...r, warnings: [] }, { headers: { 'Cache-Control': 'no-store' } });
+		}
 		const r = await translateFields(fields, to as Target);
 		await audit('translate', { slug, to, characters: r.characters });
 		return json(r, { headers: { 'Cache-Control': 'no-store' } });

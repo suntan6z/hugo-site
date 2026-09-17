@@ -31,6 +31,13 @@ function seedSite(root: string) {
 	};
 	copy('data');
 	copy('i18n');
+	copy('hugo.toml');
+	// The standalone pages (About, Now, Contact, Privacy) in every language, and
+	// the redirects section.
+	for (const f of fs.readdirSync(path.join(REPO, 'content'))) {
+		if (f.endsWith('.md')) copy(path.join('content', f));
+	}
+	copy('content/redirects');
 	copy('content/gallery/bari');
 	copy('content/gallery/paris/index.md');
 	// Every blog bundle's Markdown (needed for slug and link checks), but only
@@ -68,6 +75,8 @@ export interface ActionResult {
 export interface Portal {
 	url: string;
 	root: string;
+	/** The portal's own state directory (drafts, sessions, the link checker's memory). */
+	state: string;
 	stop(): Promise<void>;
 	signIn(): Promise<string>;
 	get(path: string, opts?: { cookie?: string }): Promise<Response>;
@@ -184,6 +193,7 @@ export async function startPortal(opts: { env?: Record<string, string> } = {}): 
 	const portal: Portal = {
 		url,
 		root,
+		state,
 		async stop() {
 			child.kill();
 			fs.rmSync(root, { recursive: true, force: true });

@@ -4,6 +4,7 @@ import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.
 import { SLUG_RE, redirectStubs, rewriteLinks, repointStub } from './rename.ts';
 import { fileChange, type FileChange } from '../diff.ts';
 import { LANGS, type Lang } from '../langs.ts';
+import { thumbnailOf } from '../../thumbnail.ts';
 
 export { fromForm };
 
@@ -49,9 +50,11 @@ export interface PostSummary extends PostShared {
 	/** Languages with a real file of their own (excluding untranslated stubs). */
 	langs: Lang[];
 	imageCount: number;
+	/** What the site shows it with: featured_image, else the first body image. */
+	thumbnail: string | undefined;
 }
 
-const empty = (lang: Lang): PostTranslation => ({
+export const emptyTranslation = (lang: Lang): PostTranslation => ({
 	lang,
 	exists: false,
 	title: '',
@@ -60,7 +63,7 @@ const empty = (lang: Lang): PostTranslation => ({
 	untranslated: false
 });
 
-function readTranslation(lang: Lang, raw: string): PostTranslation {
+export function readTranslation(lang: Lang, raw: string): PostTranslation {
 	const fm = FrontMatter.parse(raw);
 	return {
 		lang,
@@ -73,7 +76,7 @@ function readTranslation(lang: Lang, raw: string): PostTranslation {
 	};
 }
 
-function readShared(slug: string, fm: FrontMatter): PostShared {
+export function readShared(slug: string, fm: FrontMatter): PostShared {
 	const cat = String(fm.get('category') ?? 'Technology');
 	return {
 		slug: String(fm.get('slug') ?? slug),
@@ -113,13 +116,15 @@ export async function listPosts(): Promise<PostSummary[]> {
 			const raw = await repo.readText(`${bundleDir(slug)}/${primary}`);
 			if (raw === null) return null;
 			const fm = FrontMatter.parse(raw);
+			const shared = readShared(slug, fm);
 
 			return {
-				...readShared(slug, fm),
+				...shared,
 				title: String(fm.get('title') ?? slug),
 				description: String(fm.get('description') ?? ''),
 				langs: LANGS.filter((l) => files.includes(fileFor(l))),
-				imageCount: files.filter((f) => !f.endsWith('.md')).length
+				imageCount: files.filter((f) => !f.endsWith('.md')).length,
+				thumbnail: thumbnailOf(shared.featured_image, fm.body)
 			} satisfies PostSummary;
 		});
 
@@ -146,7 +151,7 @@ export async function loadPost(slug: string): Promise<Post | null> {
 		const lang = LANGS[i];
 		const raw = raws[i];
 		if (raw === null) {
-			translations[lang] = empty(lang);
+			translations[lang] = emptyTranslation(lang);
 			continue;
 		}
 		translations[lang] = readTranslation(lang, raw);

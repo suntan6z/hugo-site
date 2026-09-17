@@ -103,9 +103,15 @@ disableKinds = ["taxonomy", "term"]
   resumeUrl = "/cv-fr.pdf"
   email = "lorenzo@loconsole.eu"
   location = "France, Europe 🇪🇺"
+  telegram = "https://t.me/loconsole_bot"
+  # Footer profile icons, in the order shown. Edited from the admin portal's
+  # Settings; an empty value hides that icon. The keys are also listed in
+  # layouts/partials/footer.html and SOCIALS in
+  # admin/src/lib/server/content/site-params.ts.
   linkedin = "https://www.linkedin.com/in/lloconsole/"
   mastodon = "https://c.im/@lv"
-  telegram = "https://t.me/loconsole_bot"
+  thunderbolt = "https://www.thunderbolt.com/"
+  trakt = "https://trakt.tv/users/izipizy"
   appleMusic = "https://music.apple.com/profile/thends"
   # Kept in English on every language version — it's Snowden's exact quote,
   # not Lorenzo's own writing, so it isn't translated.

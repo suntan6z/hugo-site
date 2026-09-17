@@ -106,12 +106,6 @@ export function checkPost(post: CheckablePost, today = new Date()): Finding[] {
 
 	if (post.featuredImage && !post.bundleFiles.includes(post.featuredImage)) {
 		add('featured-missing', 'error', `featured_image "${post.featuredImage}" is not in the bundle.`);
-	} else if (!post.featuredImage) {
-		add(
-			'no-featured',
-			'warning',
-			'No featured_image, so this article shows no thumbnail in the homepage grid — that grid has no fallback to the first body image.'
-		);
 	}
 
 	/* ---- per language ---- */

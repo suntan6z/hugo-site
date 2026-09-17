@@ -85,11 +85,15 @@ SECRETS=(
   "secret-environment-variables.RESEND_API_KEY=${RESEND_API_KEY:-}"
   "secret-environment-variables.DEEPL_API_KEY=${DEEPL_API_KEY:-}"
   "secret-environment-variables.CRON_TOKEN=${CRON_TOKEN:-}"
+  # Litlyx: the id of a shareable link made in the dashboard, not an API key.
+  "secret-environment-variables.LITLYX_TOKEN=${LITLYX_TOKEN:-}"
+  "secret-environment-variables.LITLYX_SHARE_PASSWORD=${LITLYX_SHARE_PASSWORD:-}"
+  "environment-variables.LITLYX_HOST=${LITLYX_HOST:-https://litlyx.loconsole.eu}"
 )
 
 # Report what will and will not be configured, so a silently missing key is
 # visible at the point of deploying rather than as an empty panel later.
-for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY CRON_TOKEN; do
+for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY CRON_TOKEN LITLYX_TOKEN; do
   [ -n "${!v:-}" ] && echo "  $v: set" || echo "  $v: not set (feature stays disabled)"
 done
 

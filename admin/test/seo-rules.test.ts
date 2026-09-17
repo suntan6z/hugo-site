@@ -59,11 +59,10 @@ describe('structural errors', () => {
 		assert.ok(ids(base({ category: 'Travel' })).includes('bad-category'));
 	});
 
-	test('featured_image pointing outside the bundle is an error, absent is a warning', () => {
+	test('featured_image pointing outside the bundle is an error; absent is fine, the first image stands in', () => {
 		const missing = checkPost(base({ featuredImage: 'nope.webp' }), TODAY);
 		assert.equal(missing.find((x) => x.id === 'featured-missing')?.severity, 'error');
-		const absent = checkPost(base({ featuredImage: undefined }), TODAY);
-		assert.equal(absent.find((x) => x.id === 'no-featured')?.severity, 'warning');
+		assert.deepEqual(ids(base({ featuredImage: undefined })), ids(base()));
 	});
 });
 
@@ -183,9 +182,7 @@ describe('against the real corpus', () => {
 	});
 
 	test('warnings are selective, not universal', () => {
-		const flagged = slugs.filter((s) => warningsIn(checkPost(realPost(s), NOW)).some(
-			(w) => w.id !== 'no-featured'
-		));
+		const flagged = slugs.filter((s) => warningsIn(checkPost(realPost(s), NOW)).length > 0);
 		// Two short descriptions and one long title today. A rule firing on every
 		// post would be noise, so guard against that regressing.
 		assert.ok(flagged.length <= 4, `too many posts flagged: ${flagged.join(', ')}`);

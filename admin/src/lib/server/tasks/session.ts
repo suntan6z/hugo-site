@@ -4,7 +4,8 @@ import { FrontMatter } from '../content/frontmatter.ts';
 import { bundleDir, fileFor, loadPost, renderFile } from '../content/post.ts';
 import { LANGS, type Lang } from '../langs.ts';
 import { parsePhotos, writePhotos, photoKey, type GalleryPhoto } from '../content/gallery-data.ts';
-import { setAltText, type Edit } from './edits.ts';
+import { setAltText, replaceLink, type Edit } from './edits.ts';
+import { pageFile, isPageName } from '../../pages.ts';
 
 export type { Edit };
 
@@ -98,16 +99,31 @@ export async function planSession(edits: Edit[]): Promise<FileOp[]> {
 			continue;
 		}
 
-		if (e.kind === 'featured-image') {
-			// A shared field: it belongs in every language's file.
-			for (const lang of LANGS) {
-				const path = `${bundleDir(e.slug)}/${fileFor(lang)}`;
-				const raw = await read(path);
-				if (raw === null) continue;
-				const fm = FrontMatter.parse(raw);
-				fm.set('featured_image', e.image);
-				files.set(path, fm.serialize());
+		if (e.kind === 'dead-link') {
+			if (e.target.type === 'post' && e.field) {
+				// A shared field: it lives in every language's file.
+				if (e.next === null) continue;
+				for (const lang of LANGS) {
+					const path = `${bundleDir(e.target.slug)}/${fileFor(lang)}`;
+					const raw = await read(path);
+					if (raw === null) continue;
+					const fm = FrontMatter.parse(raw);
+					if (fm.get(e.field) !== e.url) continue;
+					files.set(path, fm.set(e.field, e.next).serialize());
+				}
+				continue;
 			}
+			if (!e.lang) continue;
+			const path =
+				e.target.type === 'post'
+					? `${bundleDir(e.target.slug)}/${fileFor(e.lang)}`
+					: isPageName(e.target.name)
+						? pageFile(e.target.name, e.lang)
+						: null;
+			const raw = path ? await read(path) : null;
+			if (!path || raw === null) continue;
+			const fm = FrontMatter.parse(raw);
+			files.set(path, fm.setBody(replaceLink(fm.body, e.url, e.next)).serialize());
 			continue;
 		}
 

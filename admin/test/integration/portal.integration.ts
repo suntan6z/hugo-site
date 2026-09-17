@@ -69,6 +69,7 @@ describe('access control on the running app', () => {
 		['/newsletter?/send', { slug: 'first-home-nas' }],
 		['/i18n?/save', {}],
 		['/settings?/signOutEverywhere', {}],
+		['/settings?/saveSocials', { mastodon: 'https://evil.example/@x' }],
 		['/?/indexnow', {}]
 	];
 	for (const [path, fields] of writes) {
@@ -908,5 +909,26 @@ describe('gallery and strings', () => {
 		for (const [l, v] of [['en', 'Hello'], ['fr', 'Bonjour'], ['it', 'Ciao']]) {
 			assert.match(portal.read(`i18n/${l}.toml`)!, new RegExp(`\\[integration_key\\]\\nother = "${v}"`));
 		}
+	});
+
+	test('changing a social link touches one line of hugo.toml, and nothing else', async () => {
+		const before = portal.read('hugo.toml')!;
+		const r = await portal.action('/settings?/saveSocials', { mastodon: 'https://mastodon.social/@integration' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const a = before.split('\n');
+		const b = portal.read('hugo.toml')!.split('\n');
+		assert.equal(b.length, a.length);
+		assert.deepEqual(b.filter((l, i) => l !== a[i]), ['  mastodon = "https://mastodon.social/@integration"']);
+
+		const page = await (await portal.get('/settings', { cookie })).text();
+		assert.match(page, /value="https:\/\/mastodon\.social\/@integration"/);
+	});
+
+	test('a social link that is not a web address is refused, and nothing is written', async () => {
+		const before = portal.read('hugo.toml');
+		const r = await portal.action('/settings?/saveSocials', { linkedin: 'linkedin.com/in/x' }, { cookie });
+		assert.equal(r.type, 'failure');
+		assert.match(String(r.data?.socialsError), /LinkedIn/);
+		assert.equal(portal.read('hugo.toml'), before);
 	});
 });

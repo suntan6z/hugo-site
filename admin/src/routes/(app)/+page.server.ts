@@ -8,17 +8,19 @@ import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { openTasks } from '$lib/server/tasks/corpus.ts';
 import { readSession } from '$lib/server/tasks/session.ts';
+import { readLinkState, runLinkCheck } from '$lib/server/integrations/linkcheck.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 
 export const load: PageServerLoad = async ({ url }) => {
-	const [info, last, posts, indexNowQueue, tasks, session] = await Promise.all([
+	const [info, last, posts, indexNowQueue, tasks, session, links] = await Promise.all([
 		fetchBuildInfo(url.searchParams.has('refresh')),
 		readLastPublish(),
 		listPosts(),
 		readQueue(),
 		openTasks(),
-		readSession()
+		readSession(),
+		readLinkState()
 	]);
 
 	const status = deployStatus(info, last);
@@ -36,10 +38,6 @@ export const load: PageServerLoad = async ({ url }) => {
 		: posts.flatMap((p) =>
 				LANGS.filter((l) => !p.langs.includes(l)).map((l) => ({ slug: p.slug, lang: l }))
 			);
-
-	const missingFeatured = info
-		? info.posts.filter((p) => !p.featured).map((p) => p.slug)
-		: posts.filter((p) => !p.featured_image).map((p) => p.slug);
 
 	return {
 		posts: posts.slice(0, 8),
@@ -60,16 +58,27 @@ export const load: PageServerLoad = async ({ url }) => {
 			queued: indexNowQueue.map((q) => q.url)
 		},
 		fromManifest: !!info,
+		links: { lastRun: links.lastRun, count: Object.keys(links.links).length },
 		stats: {
 			total: posts.length,
 			drafts: posts.filter((p) => p.draft).length,
-			missingFeatured,
 			translationDebt
 		}
 	};
 };
 
 export const actions: Actions = {
+	/** Checks every outside link now rather than waiting for the weekly run. */
+	checklinks: async () => {
+		const r = await runLinkCheck({ force: true });
+		await audit('link-check', { checked: r.checked, dead: r.dead });
+		return {
+			linksChecked: r.dead === 0
+				? `Checked ${r.checked} links. None is confirmed dead.`
+				: `Checked ${r.checked} links. ${r.dead} no longer work — they are in Worth doing.`
+		};
+	},
+
 	indexnow: async () => {
 		const r = await submitQueued();
 		await audit('indexnow-submit', { ok: r.ok, status: r.status, submitted: r.submitted });

@@ -16,7 +16,6 @@
 <div class="head">
 	<h1>Articles</h1>
 	<div class="head-actions">
-		<a class="btn-outline" href="/newsletter">Newsletter</a>
 		<a class="btn-primary" href="/posts/new">New article</a>
 	</div>
 </div>
@@ -45,7 +44,11 @@
 						publishing {new Date(data.scheduled[p.slug]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
 					</span>
 				{:else if p.draft}<span class="draft">draft</span>{/if}
-				{#if !p.featured_image}<span class="gap" title="No featured_image: no thumbnail on the homepage grid">no thumb</span>{/if}
+				{#await data.views then views}
+					{#if views && !p.draft}
+						<span class="views" title="Times read in the last {views.days} days, all languages">{views.bySlug[p.slug] ?? 0} read</span>
+					{/if}
+				{/await}
 				<span class="langs">
 					{#each ['en', 'fr', 'it'] as const as l}
 						<i class:on={p.langs.includes(l)}>{l}</i>
@@ -72,9 +75,9 @@
 	.main a:hover { color: var(--primary); }
 	.slug { font-size: 0.75rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
 	.meta { display: flex; align-items: center; gap: 0.55rem; font-size: 0.78rem; color: var(--muted-foreground); white-space: nowrap; }
+	.views { font-variant-numeric: tabular-nums; }
 	.draft { color: var(--warn); font-weight: 600; }
 	.scheduled { color: var(--primary); font-weight: 600; }
-	.gap { color: var(--warn); }
 	.langs i { font-style: normal; opacity: 0.28; font-variant: small-caps; letter-spacing: 0.04em; }
 	.langs i.on { opacity: 1; font-weight: 700; }
 	.empty { color: var(--muted-foreground); }

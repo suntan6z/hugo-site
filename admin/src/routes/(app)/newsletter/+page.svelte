@@ -28,6 +28,15 @@
 		});
 	});
 
+	// Subscribers: filtered as you type, and removed only after a second click.
+	let who = $state('');
+	let confirmRemove = $state<string | null>(null);
+	const shownSubscribers = $derived(
+		(data.subscribers ?? []).filter((s) => who === '' || s.email.toLowerCase().includes(who.trim().toLowerCase()))
+	);
+	const joined = (iso: string) =>
+		iso ? new Date(iso.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
 	const canSend = $derived(
 		!!post && subject.trim() !== '' && title.trim() !== '' && intro.trim() !== '' &&
 		confirm.trim() === subject.trim()
@@ -35,7 +44,6 @@
 </script>
 
 <div class="head">
-	<a class="back" href="/posts">← Articles</a>
 	<h1>Newsletter</h1>
 	{#if data.audience}
 		<span class="count">
@@ -115,11 +123,8 @@
 			<textarea name="intro" rows="4" bind:value={intro} oninput={() => (touched = true)}></textarea>
 		</label>
 
-		{#if post && !post.featured}
-			<p class="note">
-				This article has no <code>featured_image</code>, so the email has no picture. Setting one
-				in the editor improves both the email and the homepage grid.
-			</p>
+		{#if post && !post.image}
+			<p class="note">This article has no images, so the email has no picture.</p>
 		{/if}
 
 		<div class="actions">
@@ -146,6 +151,47 @@
 		</section>
 	{/if}
 
+	<section class="subscribers">
+		<h2>Subscribers</h2>
+		{#if form?.removed}<p class="msg ok">{form.removed} has been removed from the list.</p>{/if}
+		{#if form?.removeError}<p class="msg err">{form.removeError}</p>{/if}
+		{#if data.subscribers === null}
+			<p class="note">Resend did not answer, so the list cannot be shown right now.</p>
+		{:else if data.subscribers.length === 0}
+			<p class="note">Nobody has subscribed yet.</p>
+		{:else}
+			{#if data.subscribers.length > 8}
+				<input class="who" type="search" bind:value={who} placeholder="Find an address…" autocomplete="off" />
+			{/if}
+			<ul class="people">
+				{#each shownSubscribers as s (s.id)}
+					<li class:gone={s.unsubscribed}>
+						<span class="email">{s.email}</span>
+						<span class="meta">
+							{#if s.unsubscribed}unsubscribed · {/if}joined {joined(s.createdAt)}
+						</span>
+						{#if confirmRemove === s.id}
+							<form method="POST" action="?/removeSubscriber" use:enhance={() => async ({ update }) => { confirmRemove = null; await update(); }}>
+								<input type="hidden" name="id" value={s.id} />
+								<input type="hidden" name="email" value={s.email} />
+								<button type="submit" class="remove sure">Remove for good</button>
+								<button type="button" class="remove" onclick={() => (confirmRemove = null)}>Keep</button>
+							</form>
+						{:else}
+							<button type="button" class="remove" onclick={() => (confirmRemove = s.id)}>Remove</button>
+						{/if}
+					</li>
+				{:else}
+					<li class="none">No address matches.</li>
+				{/each}
+			</ul>
+			<p class="note">
+				Removing deletes the address from Resend, for someone who asks to be forgotten. People who only
+				want to stop receiving it can use the unsubscribe link in any email.
+			</p>
+		{/if}
+	</section>
+
 	{#if data.sent.length > 0}
 		<section>
 			<h2>Previously sent</h2>
@@ -163,7 +209,17 @@
 
 <style>
 	.as-is { font-weight: 400; color: var(--muted-foreground); font-size: 0.8rem; }
-	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); display: block; margin-bottom: 0.35rem; }
+	.subscribers { margin-top: 2rem; max-width: 44rem; }
+	.who { width: 100%; margin-bottom: 0.6rem; }
+	.people { list-style: none; padding: 0; margin: 0 0 0.6rem; font-size: 0.86rem; }
+	.people li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.8rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+	.people .email { flex: 1; min-width: 12rem; overflow-wrap: anywhere; }
+	.people .meta { color: var(--muted-foreground); font-size: 0.78rem; white-space: nowrap; }
+	.people li.gone .email { color: var(--muted-foreground); text-decoration: line-through; }
+	.people li.none { color: var(--muted-foreground); }
+	.people form { display: flex; gap: 0.4rem; }
+	.remove { background: none; border: 0; padding: 0; font-size: 0.78rem; color: var(--muted-foreground); text-decoration: underline; cursor: pointer; }
+	.remove:hover, .remove.sure { color: var(--danger); }
 	.head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
 	.count { font-size: 0.88rem; color: var(--muted-foreground); }

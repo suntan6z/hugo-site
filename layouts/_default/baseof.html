@@ -125,10 +125,7 @@
         "name": "Lorenzo Loconsole",
         "url": "{{ .Site.Home.Permalink }}",
         "image": "{{ $heroOg.Permalink }}",
-        "sameAs": [
-          {{ .Site.Params.linkedin | jsonify | safeJS }},
-          {{ .Site.Params.mastodon | jsonify | safeJS }}
-        ],
+        "sameAs": {{ slice .Site.Params.linkedin .Site.Params.mastodon | complement (slice "") | jsonify | safeJS }},
         "jobTitle": {{ i18n "job_title" | jsonify | safeJS }}
       }
     ]
