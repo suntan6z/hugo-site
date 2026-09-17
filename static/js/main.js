@@ -128,7 +128,8 @@ if (document.getElementById('contact-form')) {
           phone: phone,
           subject: document.getElementById('subject').value,
           message: document.getElementById('message').value,
-          website: document.getElementById('contact-website').value,
+          // The honeypot. Optional here, so a translated page that lacks it still sends.
+          website: document.getElementById('contact-website')?.value || '',
         })
       });
 
