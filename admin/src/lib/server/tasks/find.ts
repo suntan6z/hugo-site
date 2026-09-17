@@ -1,5 +1,6 @@
 import { DESCRIPTION_MIN, DESCRIPTION_MAX } from '../seo/rules.ts';
 import { LANGS, type Lang } from '../langs.ts';
+import { externalLinks } from '../seo/links.ts';
 
 /**
  * The "things worth doing" list behind the home screen and focus mode.
@@ -16,7 +17,7 @@ import { LANGS, type Lang } from '../langs.ts';
  * Pure: the caller supplies the corpus, the snooze list and the clock.
  */
 
-export type TaskKind = 'alt-text' | 'gallery-alt' | 'translation' | 'featured-image' | 'description' | 'now-check';
+export type TaskKind = 'alt-text' | 'gallery-alt' | 'translation' | 'description' | 'now-check' | 'dead-link';
 
 export interface Task {
 	id: string;
@@ -31,6 +32,12 @@ export interface Task {
 	city?: string;
 	file?: string;
 	current?: string;
+	/** A standalone page, by name, for a task that is not about an article. */
+	page?: string;
+	/** A dead link: the address, why it is judged dead, and the front-matter field if it lives in one. */
+	url?: string;
+	reason?: string;
+	field?: 'partner_url' | 'project_url';
 	/** Ordering hint: lower is more worth doing. */
 	weight: number;
 }
@@ -40,12 +47,15 @@ export interface CorpusPost {
 	title: string;
 	draft: boolean;
 	date: string;
-	featured_image?: string;
-	/** Bundle images that could reasonably be the article's face. */
-	images: string[];
-	/** The Erasmus+ partner's logo, which never can be. */
-	partner_logo_url?: string;
 	translations: Record<Lang, { exists: boolean; title: string; description: string; body: string; untranslated: boolean }>;
+	/** Outside links kept in front matter rather than in the text. */
+	links?: { partner_url?: string; project_url?: string };
+}
+
+export interface CorpusPage {
+	name: string;
+	label: string;
+	translations: Record<Lang, { exists: boolean; body: string }>;
 }
 
 export interface CorpusPhoto {
@@ -60,6 +70,10 @@ export interface Corpus {
 	photos: CorpusPhoto[];
 	/** When content/now.md was last changed, ISO date, or null if unknown. */
 	nowUpdated: string | null;
+	/** The standalone pages, for the links in them. */
+	pages?: CorpusPage[];
+	/** Outside links the link checker has judged dead. */
+	deadLinks?: { url: string; reason: string }[];
 }
 
 /** Images in a body that carry no alt text at all. */
@@ -105,20 +119,6 @@ export function findTasks(corpus: Corpus, snoozed: Record<string, string> = {}, 
 			}
 		}
 
-		// A partner logo is not a thumbnail, and an article whose only image is
-		// one has nothing to choose: asking would be a question with no right answer.
-		const candidates = post.images.filter((i) => i !== post.partner_logo_url);
-		if (!post.featured_image && candidates.length > 0) {
-			out.push({
-				id: `featured-image:${post.slug}`,
-				kind: 'featured-image',
-				title: 'Choose the thumbnail',
-				where: post.title,
-				slug: post.slug,
-				weight: 30
-			});
-		}
-
 		// A draft has not been promised to anyone yet; leave its translations alone.
 		if (!post.draft) {
 			for (const lang of LANGS) {
@@ -134,6 +134,47 @@ export function findTasks(corpus: Corpus, snoozed: Record<string, string> = {}, 
 					lang,
 					weight: 50
 				});
+			}
+		}
+	}
+
+	// A dead link is one task per place it appears, so fixing one article does not hide another.
+	const dead = new Map((corpus.deadLinks ?? []).map((d) => [d.url, d.reason]));
+	if (dead.size > 0) {
+		const deadIn = (text: string) => externalLinks(text).filter((u) => dead.has(u));
+		const task = (id: string, where: string, url: string, extra: Partial<Task>): Task => ({
+			id: `dead-link:${id}:${url}`,
+			kind: 'dead-link',
+			title: 'Fix a link that no longer works',
+			where,
+			url,
+			reason: dead.get(url),
+			weight: 25,
+			...extra
+		});
+		for (const post of corpus.posts) {
+			for (const lang of LANGS) {
+				const t = post.translations[lang];
+				if (!t.exists || t.untranslated) continue;
+				for (const url of deadIn(t.body)) {
+					out.push(task(`post:${post.slug}:${lang}`, `${post.title} · ${LANG_NAME[lang]}`, url, { slug: post.slug, lang }));
+				}
+			}
+			for (const field of ['partner_url', 'project_url'] as const) {
+				const url = post.links?.[field];
+				if (url && dead.has(url)) {
+					const label = field === 'partner_url' ? 'partner’s website' : 'project page';
+					out.push(task(`post:${post.slug}:${field}`, `${post.title} · ${label}`, url, { slug: post.slug, field }));
+				}
+			}
+		}
+		for (const page of corpus.pages ?? []) {
+			for (const lang of LANGS) {
+				const t = page.translations[lang];
+				if (!t.exists) continue;
+				for (const url of deadIn(t.body)) {
+					out.push(task(`page:${page.name}:${lang}`, `${page.label} page · ${LANG_NAME[lang]}`, url, { page: page.name, lang }));
+				}
 			}
 		}
 	}
@@ -179,9 +220,9 @@ export const SNOOZE_DAYS: Record<TaskKind, number> = {
 	'alt-text': 30,
 	'gallery-alt': 30,
 	translation: 30,
-	'featured-image': 30,
 	description: 60,
-	'now-check': 90
+	'now-check': 90,
+	'dead-link': 30
 };
 
 export const snoozeUntil = (kind: TaskKind, now = new Date()) =>

@@ -121,6 +121,22 @@
       {{ end }}
       {{ end }}
     </div>
+
+    {{- /* Shown by the filter when a category has no cards, and from the start
+           if the section has none at all. Not .fade-up: the observer only sees
+           elements present at load, so a revealed one would stay invisible. */}}
+    <div class="articles-empty" id="articles-empty"{{ if $cards }} hidden{{ end }}>
+      <svg class="articles-empty-art" width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden="true">
+        <circle cx="44" cy="44" r="40" fill="var(--accent)"/>
+        <rect x="24" y="30" width="34" height="42" rx="4" fill="var(--card)" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 4"/>
+        <circle cx="54" cy="38" r="11" fill="var(--card)" stroke="currentColor" stroke-width="3"/>
+        <path d="M62 46l9 9" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        <path d="M50.5 35.5l7 5m0-5l-7 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <h2>{{ i18n "blog_empty_title" }}</h2>
+      <p>{{ i18n "blog_empty_text" }}</p>
+      {{ if $cards }}<button type="button" class="btn-outline" onclick="filterArticles('All', document.querySelector('.filter-btn[data-category=All]'))">{{ i18n "blog_empty_show_all" }}</button>{{ end }}
+    </div>
   </div>
 </div>
 
@@ -131,13 +147,16 @@ function filterArticles(category, btn) {
   btn.classList.add('active');
 
   // Show/hide cards
+  let shown = 0;
   document.querySelectorAll('#articles-grid .article-card').forEach(card => {
     if (category === 'All' || card.dataset.category === category) {
       card.style.display = 'block';
+      shown++;
     } else {
       card.style.display = 'none';
     }
   });
+  document.getElementById('articles-empty').hidden = shown > 0;
 }
 </script>
 {{ end }}

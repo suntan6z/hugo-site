@@ -85,6 +85,7 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 | `BING_API_KEY` | Search stats on the dashboard | Bing Webmaster Tools → Settings → API access |
 | `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
 | `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`. Settings shows the month's allowance and what is left of it |
+| `LITLYX_TOKEN` | The Visitors page, view counts in the article list, and the home screen's visitor line | The self-hosted dashboard has no API keys; it reads data for a **shareable link**. In Litlyx → Shareable links, create one for all domains and copy its id (after `/shared/`). If you give the link a password, also set `LITLYX_SHARE_PASSWORD`. `LITLYX_HOST` defaults to `https://litlyx.loconsole.eu` — the dashboard, not the `analytics.` collector the site reports to |
 | `CRON_TOKEN` | Scheduled publishing, and sending its newsletter once the site is live | `openssl rand -hex 32`. `create-container.sh` gives it to the container and to the Scaleway cron trigger that presents it, so it lives nowhere else. Without it there is no trigger and the endpoint answers 404 to everyone; scheduled articles then wait until you open the portal |
 
 ## Scheduled publishing
@@ -102,6 +103,13 @@ scw container trigger list container-id=<id> region=fr-par
 ```
 
 Things worth knowing:
+
+- **The same trigger checks outside links, once a week.** Every `http(s)` link
+  in the articles and pages gets a HEAD request (GET if HEAD is refused). A link
+  counts as dead only after two checks at least a day apart both found it gone
+  (404, 410, or a domain that no longer exists); 403s, rate limits and timeouts
+  never count. Dead links appear in *Worth doing*. The home screen can also run
+  the check on demand.
 
 - **Articles go live on the hour.** The editor's picker offers whole hours,
   so the time you pick is the time the article is published. (A time between

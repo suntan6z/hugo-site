@@ -17,7 +17,7 @@ export * from './newsletter-email.ts';
  * already uses for its welcome email.
  */
 
-const API = 'https://api.resend.com';
+const API = integrations.resendApiUrl || 'https://api.resend.com';
 /** The name a broadcast comes from, shared by the newsletter page and the scheduler. */
 export const SITE_NAME = 'Lorenzo Loconsole';
 const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
@@ -49,17 +49,44 @@ export interface AudienceSummary {
 	unsubscribed: number;
 }
 
-/** Cached: the count is shown on a page load, not acted on in real time. */
-export async function audienceSummary(): Promise<AudienceSummary> {
-	return memo('resend:audience', 5 * 60_000, async () => {
-		const r = await call<{ data: { unsubscribed?: boolean }[] }>(
+export interface Subscriber {
+	id: string;
+	email: string;
+	createdAt: string;
+	unsubscribed: boolean;
+}
+
+/** Everyone the signup form has enrolled, newest first. Cached like the count it feeds. */
+export async function listSubscribers(): Promise<Subscriber[]> {
+	return memo('resend:contacts', 5 * 60_000, async () => {
+		const r = await call<{ data?: { id?: string; email?: string; created_at?: string; unsubscribed?: boolean }[] }>(
 			'GET',
 			`/audiences/${integrations.resendAudienceId}/contacts`
 		);
-		const contacts = r.data ?? [];
-		const unsubscribed = contacts.filter((c) => c.unsubscribed).length;
-		return { total: contacts.length, subscribed: contacts.length - unsubscribed, unsubscribed };
+		return (r.data ?? [])
+			.filter((c): c is { id: string; email: string; created_at?: string; unsubscribed?: boolean } =>
+				typeof c.id === 'string' && typeof c.email === 'string'
+			)
+			.map((c) => ({ id: c.id, email: c.email, createdAt: c.created_at ?? '', unsubscribed: !!c.unsubscribed }))
+			.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 	});
+}
+
+/** Cached: the count is shown on a page load, not acted on in real time. */
+export async function audienceSummary(): Promise<AudienceSummary> {
+	const contacts = await listSubscribers();
+	const unsubscribed = contacts.filter((c) => c.unsubscribed).length;
+	return { total: contacts.length, subscribed: contacts.length - unsubscribed, unsubscribed };
+}
+
+/**
+ * Deletes one contact outright — for a request to be forgotten, which an
+ * unsubscribe link does not do (Resend keeps the address, marked unsubscribed).
+ */
+export async function removeSubscriber(id: string): Promise<void> {
+	if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) throw new Error('That is not a subscriber id.');
+	await call('DELETE', `/audiences/${integrations.resendAudienceId}/contacts/${id}`);
+	invalidate('resend:');
 }
 
 /** Broadcasts the portal has sent. Kept locally: it is our audit trail, not Resend's. */

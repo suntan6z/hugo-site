@@ -6,7 +6,10 @@
 	// No entry for "/": the logo is the way home, the way it is everywhere else.
 	const nav = [
 		{ href: '/posts', label: 'Articles' },
+		{ href: '/pages', label: 'Pages' },
 		{ href: '/gallery', label: 'Gallery' },
+		{ href: '/newsletter', label: 'Newsletter' },
+		{ href: '/visitors', label: 'Visitors' },
 		{ href: '/analytics', label: 'Search' },
 		{ href: '/i18n', label: 'Strings' }
 	];
@@ -134,8 +137,9 @@
 
 	main { max-width: 76rem; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
 
-	/* Nav folds into a menu on narrow screens rather than wrapping into rows. */
-	@media (max-width: 900px) {
+	/* Nav folds into a menu on narrow screens rather than wrapping into rows.
+	   Seven sections need about 1180px on one line. */
+	@media (max-width: 1180px) {
 		.hamburger { display: inline-flex; }
 		nav {
 			display: none; position: absolute; left: 0; right: 0; top: 100%;

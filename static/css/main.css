@@ -448,6 +448,9 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
   transition: all 0.2s;
 }
 .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+/* The light border is dark ink at 20%; on the dark theme that vanishes, so use light ink. */
+[data-theme="dark"] .btn-outline { border-color: hsl(30 18% 91% / 0.2); }
+[data-theme="dark"] .btn-outline:hover { border-color: var(--primary); }
 .btn-group { display: flex; flex-wrap: wrap; gap: 1rem; }
 
 /* Quote section */
@@ -633,6 +636,15 @@ nav { display: flex; align-items: center; gap: 0.5rem; }
 .filter-btn.active { background: var(--primary); color: var(--primary-foreground); }
 .filter-btn:hover:not(.active) { background: var(--accent); color: var(--accent-foreground); }
 .articles-grid { display: grid; gap: 1rem; padding: 2rem 0; }
+.articles-empty {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  max-width: 28rem; margin: 0 auto; padding: 2.5rem 0 4rem;
+}
+.articles-empty[hidden] { display: none; }
+.articles-empty-art { color: var(--primary); margin-bottom: 1.25rem; }
+.articles-empty h2 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+.articles-empty p { color: var(--muted-foreground); margin: 0 0 1.5rem; }
+.articles-empty .btn-outline { background: none; cursor: pointer; font: inherit; font-weight: 500; }
 .hidden-card { display: none; }
 
 /* Blog post */
@@ -710,7 +722,7 @@ footer {
   background: var(--muted); color: var(--muted-foreground);
   transition: all 0.3s;
 }
-.connect-btn:hover { transform: translateY(-2px); }
+.connect-btn:hover { transform: translateY(-2px); background-color: var(--brand, var(--primary)); color: white; }
 .footer-bottom { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; }
 .footer-bottom p { font-size: 0.875rem; color: var(--muted-foreground); }
 .hugo-credit { color: inherit; font-weight: 500; text-decoration: none; transition: color 0.2s; }

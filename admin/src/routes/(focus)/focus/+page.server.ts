@@ -11,6 +11,7 @@ import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import { fromForm } from '$lib/server/content/frontmatter.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 import type { Lang } from '$lib/server/langs.ts';
+import { whyNotUrl } from '$lib/server/content/site-params.ts';
 
 /**
  * One task at a time, answered or skipped, with everything held back until you
@@ -26,8 +27,6 @@ export const load: PageServerLoad = async () => {
 		const post = await loadPost(task.slug);
 		if (post) {
 			context = {
-				// Same exclusion the task list makes: a partner logo is not a thumbnail.
-				images: post.images.filter((i) => i !== post.partner_logo_url),
 				english: {
 					title: post.translations.en.title,
 					description: post.translations.en.description,
@@ -64,8 +63,24 @@ export const actions: Actions = {
 			session.edits.push({ kind, city: String(f.get('city') ?? ''), file: String(f.get('file') ?? ''), alt: value });
 		} else if (kind === 'description' && value) {
 			session.edits.push({ kind, slug, lang, description: value });
-		} else if (kind === 'featured-image' && value) {
-			session.edits.push({ kind, slug, image: value });
+		} else if (kind === 'dead-link') {
+			const url = fromForm(f.get('url')).trim();
+			const page = fromForm(f.get('page')).trim();
+			const field = fromForm(f.get('field')).trim();
+			const unlink = f.get('unlink') === 'on' && !field;
+			if (!unlink) {
+				const bad = whyNotUrl(value) ?? (value === '' ? 'Give the new address, or choose to remove the link.' : null);
+				if (bad) return fail(400, { message: bad });
+				if (value === url) return fail(400, { message: 'That is the same address that no longer works.' });
+			}
+			session.edits.push({
+				kind,
+				target: page ? { type: 'page', name: page } : { type: 'post', slug },
+				lang: field ? undefined : lang,
+				field: field === 'partner_url' || field === 'project_url' ? field : undefined,
+				url,
+				next: unlink ? null : value
+			});
 		} else if (kind === 'translation') {
 			const title = fromForm(f.get('title')).trim();
 			const body = fromForm(f.get('body'));

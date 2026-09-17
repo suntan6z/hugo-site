@@ -9,7 +9,6 @@ const post = (over: Partial<CorpusPost> = {}): CorpusPost => ({
 	title: 'A Post',
 	draft: false,
 	date: '2026-01-01',
-	images: [],
 	translations: {
 		en: { exists: true, title: 'A Post', description: 'x'.repeat(140), body: 'Body.', untranslated: false },
 		fr: { exists: true, title: 'Un article', description: 'y'.repeat(140), body: 'Corps.', untranslated: false },
@@ -55,18 +54,9 @@ describe('what the list asks you to do', () => {
 		assert.equal(kinds.filter((k) => k === 'description').length, 0);
 	});
 
-	test('a thumbnail is only asked for when there is an image to choose', () => {
-		assert.equal(findTasks(corpus({ posts: [post({ images: [] })] }), {}, NOW).length, 0);
-		const withImages = findTasks(corpus({ posts: [post({ images: ['a.webp'] })] }), {}, NOW);
-		assert.deepEqual(withImages.map((t) => t.kind), ['featured-image']);
-	});
-
-	test('an article whose only image is the partner logo is not asked about', () => {
-		const onlyLogo = post({ images: ['partnerlogo.png'], partner_logo_url: 'partnerlogo.png' });
-		assert.deepEqual(findTasks(corpus({ posts: [onlyLogo] }), {}, NOW), []);
-
-		const alsoAPhoto = post({ images: ['partnerlogo.png', 'photo.jpg'], partner_logo_url: 'partnerlogo.png' });
-		assert.deepEqual(findTasks(corpus({ posts: [alsoAPhoto] }), {}, NOW).map((t) => t.kind), ['featured-image']);
+	test('an article with images but no featured_image asks for nothing: the first image is its thumbnail', () => {
+		const p = post({ translations: { ...post().translations, en: { exists: true, title: 'A Post', description: 'x'.repeat(140), body: '![a view](one.jpg)', untranslated: false } } });
+		assert.deepEqual(findTasks(corpus({ posts: [p] }), {}, NOW), []);
 	});
 
 	test('descriptions are judged by the same thresholds as the publish checks', () => {
@@ -94,30 +84,30 @@ describe('what the list asks you to do', () => {
 });
 
 describe('skipping', () => {
-	const p = post({ images: ['a.webp'] });
+	const noItalian = { ...post().translations, it: { exists: false, title: '', description: '', body: '', untranslated: false } };
+	const p = post({ translations: noItalian });
 
 	test('a skipped task stays away until its snooze expires', () => {
 		const all = findTasks(corpus({ posts: [p] }), {}, NOW);
 		assert.equal(all.length, 1);
 		const id = all[0].id;
 
-		const hidden = findTasks(corpus({ posts: [p] }), { [id]: snoozeUntil('featured-image', NOW) }, NOW);
+		const hidden = findTasks(corpus({ posts: [p] }), { [id]: snoozeUntil('translation', NOW) }, NOW);
 		assert.equal(hidden.length, 0);
 
 		const later = new Date(NOW.getTime() + 31 * 86_400_000);
-		assert.equal(findTasks(corpus({ posts: [p] }), { [id]: snoozeUntil('featured-image', NOW) }, later).length, 1);
+		assert.equal(findTasks(corpus({ posts: [p] }), { [id]: snoozeUntil('translation', NOW) }, later).length, 1);
 	});
 
 	test('ids are stable across scans, so a skip sticks to the right thing', () => {
 		const a = findTasks(corpus({ posts: [p] }), {}, NOW);
-		const b = findTasks(corpus({ posts: [post({ images: ['a.webp'], title: 'A Post' })] }), {}, NOW);
+		const b = findTasks(corpus({ posts: [post({ translations: noItalian, title: 'A Post' })] }), {}, NOW);
 		assert.deepEqual(a.map((t) => t.id), b.map((t) => t.id));
 	});
 });
 
 test('the cheapest work is offered first', () => {
 	const messy = post({
-		images: ['a.webp'],
 		translations: {
 			en: { exists: true, title: 'A Post', description: '', body: '![](one.jpg)', untranslated: false },
 			fr: { exists: false, title: '', description: '', body: '', untranslated: false },
@@ -125,5 +115,33 @@ test('the cheapest work is offered first', () => {
 		}
 	});
 	const kinds = findTasks(corpus({ posts: [messy] }), {}, NOW).map((t) => t.kind);
-	assert.deepEqual(kinds, ['alt-text', 'description', 'featured-image', 'translation', 'translation']);
+	assert.deepEqual(kinds, ['alt-text', 'description', 'translation', 'translation']);
+});
+
+describe('dead links', () => {
+	const dead = [{ url: 'https://gone.example/', reason: 'the page is not there any more (404)' }];
+
+	test('a dead link becomes one task per place it appears, in articles and pages', () => {
+		const p = post({
+			translations: {
+				...post().translations,
+				en: { exists: true, title: 'A Post', description: 'x'.repeat(140), body: 'See [this](https://gone.example/) and [that](https://fine.example/).', untranslated: false },
+				fr: { exists: true, title: 'Un article', description: 'y'.repeat(140), body: 'Voir <a href="https://gone.example/">ceci</a>.', untranslated: false }
+			},
+			links: { partner_url: 'https://gone.example/' }
+		});
+		const pages = [{ name: 'now', label: 'Now', translations: { en: { exists: true, body: '<a href="https://gone.example/">x</a>' }, fr: { exists: false, body: '' }, it: { exists: true, body: '' } } }];
+		const tasks = findTasks(corpus({ posts: [p], pages, deadLinks: dead }), {}, NOW).filter((t) => t.kind === 'dead-link');
+		assert.deepEqual(tasks.map((t) => t.where).sort(), ['A Post · English', 'A Post · French', 'A Post · partner’s website', 'Now page · English']);
+		assert.ok(tasks.every((t) => t.url === 'https://gone.example/' && t.reason?.includes('404')));
+		assert.equal(tasks.find((t) => t.field)?.field, 'partner_url');
+		assert.equal(tasks.find((t) => t.page)?.page, 'now');
+	});
+
+	test('a link that merely starts like the dead one is not flagged', () => {
+		const p = post({
+			translations: { ...post().translations, en: { exists: true, title: 'A Post', description: 'x'.repeat(140), body: '[a](https://gone.example/still-here)', untranslated: false } }
+		});
+		assert.deepEqual(findTasks(corpus({ posts: [p], deadLinks: dead }), {}, NOW), []);
+	});
 });

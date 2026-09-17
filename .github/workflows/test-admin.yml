@@ -2,7 +2,9 @@ name: Test Admin Portal
 
 # Scoped to admin/** plus the content it validates: the front-matter round-trip
 # suite reads content/blog and content/gallery directly (rather than vendored
-# fixtures, which would drift), so a content change can break it too.
+# fixtures, which would drift), so a content change can break it too. Likewise
+# the settings suites read hugo.toml, the hero photo and the CV, and the pages
+# suite reads the standalone pages and the contact form's ids in main.js.
 on:
   push:
     branches: [main]
@@ -10,11 +12,23 @@ on:
       - "admin/**"
       - "content/blog/**"
       - "content/gallery/**"
+      - "content/*.md"
+      - "content/redirects/**"
+      - "hugo.toml"
+      - "static/js/main.js"
+      - "static/cv-fr.pdf"
+      - "assets/img/**"
   pull_request:
     paths:
       - "admin/**"
       - "content/blog/**"
       - "content/gallery/**"
+      - "content/*.md"
+      - "content/redirects/**"
+      - "hugo.toml"
+      - "static/js/main.js"
+      - "static/cv-fr.pdf"
+      - "assets/img/**"
 
 jobs:
   test:

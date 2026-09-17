@@ -12,8 +12,8 @@
 		'alt-text': 'images to describe',
 		'gallery-alt': 'photos to describe',
 		translation: 'translations to write',
-		'featured-image': 'thumbnails to choose',
 		description: 'descriptions to tighten',
+		'dead-link': 'links to fix',
 		'now-check': 'page to check'
 	};
 
@@ -36,6 +36,11 @@
 			queries: { query: string; clicks: number; impressions: number }[];
 			pages: { url: string; clicks: number; impressions: number }[];
 		};
+		visitors?: {
+			configured: boolean;
+			error: string | null;
+			summary: null | { days: number; visits: number; views: number; trend: number | null; pages: { key: string; count: number }[] };
+		};
 	};
 	let insights = $state<Insights | null>(null);
 	type Health = { name: string; ok: boolean; ms: number; cold?: boolean; error?: string };
@@ -52,6 +57,12 @@
 			})
 			.catch(() => {});
 	});
+
+	let checkingLinks = $state(false);
+	const daysAgo = (iso: string) => {
+		const d = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
+		return d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
+	};
 
 	const shortPath = (u: string) => u.replace(/^https?:\/\/[^/]+/, '') || '/';
 </script>
@@ -78,6 +89,7 @@
 {/if}
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
 {#if form?.indexNow}<p class="msg ok">{form.indexNow}</p>{/if}
+{#if form?.linksChecked}<p class="msg ok">{form.linksChecked} A link has to fail twice, a day apart, before it is called dead.</p>{/if}
 
 <div class="actions">
 	<a class="do primary" href="/posts/new">
@@ -117,6 +129,35 @@
 			{#if tasks.pending > 0}<span class="note">{tasks.pending} answered, waiting to publish</span>{/if}
 		</div>
 		<p class="note small">Answers are collected and published together, so the site rebuilds once.</p>
+	{/if}
+</section>
+
+<section class="insights">
+	<h2>Visitors</h2>
+	{#if !insights}
+		<p class="note">Checking…</p>
+	{:else if !insights.visitors?.configured}
+		<p class="note">Not connected — set LITLYX_TOKEN to see visitor numbers. <a href="/visitors">How →</a></p>
+	{:else if insights.visitors.error}
+		<p class="note">{insights.visitors.error}</p>
+	{:else if insights.visitors.summary}
+		{@const s = insights.visitors.summary}
+		<p class="figures">
+			<b>{s.visits}</b> visit{s.visits === 1 ? '' : 's'} and <b>{s.views}</b> page{s.views === 1 ? '' : 's'} read over {s.days} days
+			{#if s.trend !== null}
+				<span class="trend" class:up={s.trend > 0} class:down={s.trend < 0}>
+					{s.trend > 0 ? '↑' : s.trend < 0 ? '↓' : '→'} {Math.abs(s.trend)}%
+				</span>
+			{/if}
+		</p>
+		{#if s.pages.length}
+			<ul class="rows pages">
+				{#each s.pages as p}
+					<li><span class="q">{p.key}</span><span class="n">{p.count} read</span></li>
+				{/each}
+			</ul>
+		{/if}
+		<a class="more" href="/visitors">All visitor numbers →</a>
 	{/if}
 </section>
 
@@ -166,6 +207,10 @@
 			<span class="fn" class:bad={!f.ok}>{f.name}: {f.ok ? 'ok' : (f.error ?? 'down')}</span>
 		{/each}
 	{/if}
+	<form method="POST" action="?/checklinks" use:enhance={() => { checkingLinks = true; return async ({ update }) => { await update(); checkingLinks = false; }; }}>
+		<span>{data.links.lastRun ? `${data.links.count} outside links checked ${daysAgo(data.links.lastRun)}` : 'Outside links not checked yet'}</span>
+		<button class="linkish" type="submit" disabled={checkingLinks}>{checkingLinks ? 'checking…' : 'check now'}</button>
+	</form>
 	{#if data.indexNow.configured && data.indexNow.queued.length > 0}
 		<form method="POST" action="?/indexnow" use:enhance>
 			<button class="linkish" type="submit" disabled={status.state !== 'live'}>
@@ -219,6 +264,7 @@
 
 	.strip { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; align-items: center; font-size: 0.8rem; color: var(--muted-foreground); padding-top: 0.5rem; border-top: 1px solid var(--border); }
 	.strip .fn.bad { color: var(--danger); }
+	.strip form { display: inline-flex; gap: 0.4rem; align-items: baseline; }
 	.linkish { background: none; border: 0; padding: 0; color: var(--primary); cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }

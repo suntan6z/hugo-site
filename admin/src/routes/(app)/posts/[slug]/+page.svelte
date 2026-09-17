@@ -5,6 +5,9 @@
 	import { onMount } from 'svelte';
 	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
 	import RichEditor from '$lib/components/RichEditor.svelte';
+	import FileChanges from '$lib/components/FileChanges.svelte';
+	import HistoryPanel from '$lib/components/HistoryPanel.svelte';
+	import { thumbnailOf } from '$lib/thumbnail';
 	let { data, form } = $props();
 
 	const LANGS = ['en', 'fr', 'it'] as const;
@@ -74,6 +77,9 @@
 	let altText = $state<Record<string, string>>({});
 
 	const allImages = $derived([...post.images.filter((i) => !removed.includes(i)), ...pending.map((p) => p.name)]);
+
+	// What the site will show: the chosen image, else the first one in the English text.
+	const thumbnail = $derived(thumbnailOf(post.featured_image, post.translations.en.body));
 
 	/**
 	 * Options for the image pickers. A value that no longer resolves to a file in
@@ -262,6 +268,27 @@
 		ready = true;
 	}
 
+	/**
+	 * Fills the editor from an earlier committed version. Whether it is a draft
+	 * stays as it is now: going back to old wording should not also unpublish
+	 * or publish the article.
+	 */
+	type Version = {
+		shared: { date: string; category: string; featured_image?: string; partner_name?: string; partner_url?: string; partner_logo_url?: string; project_url?: string };
+		translations: Record<'en' | 'fr' | 'it', { title: string; description: string; body: string; untranslated: boolean }>;
+	};
+	function restoreVersion(v: Version) {
+		Object.assign(post, {
+			date: v.shared.date, category: v.shared.category,
+			featured_image: v.shared.featured_image, partner_name: v.shared.partner_name, partner_url: v.shared.partner_url,
+			partner_logo_url: v.shared.partner_logo_url, project_url: v.shared.project_url
+		});
+		for (const l of LANGS) {
+			const t = v.translations[l];
+			Object.assign(post.translations[l], { title: t.title, description: t.description, body: t.body, untranslated: t.untranslated });
+		}
+	}
+
 	function restoreDraft() {
 		if (!offer) return;
 		const d = offer.post;
@@ -438,22 +465,7 @@
 		{#if r.changes.length === 0}
 			<p class="hint">This article is already exactly as written here.</p>
 		{/if}
-		{#each r.changes as c}
-			<article class="file">
-				<header>
-					<code>{c.path}</code>
-					<span class="status {c.status}">{c.status}</span>
-					{#if c.bytes}<span class="hint">{formatBytes(c.bytes)}</span>
-					{:else if !c.tooBig}<span class="counts"><span class="plus">+{c.added}</span> <span class="minus">−{c.removed}</span></span>{/if}
-				</header>
-				{#if c.tooBig}
-					<p class="hint">Too large to show line by line.</p>
-				{:else if c.hunks.length}
-					<!-- Each line is its own block element, so no newlines belong between them. -->
-					<pre>{#each c.hunks as h, i}{#if i > 0}<span class="gap">⋯</span>{/if}{#each h.changes as ch}<span class={ch.kind}>{ch.kind === 'add' ? '+' : ch.kind === 'remove' ? '−' : ' '} {ch.line}</span>{/each}{/each}</pre>
-				{/if}
-			</article>
-		{/each}
+		<FileChanges changes={r.changes} />
 		<p class="hint">Nothing has been written yet — this is what Save or Publish would commit.</p>
 	</section>
 {/if}
@@ -537,16 +549,12 @@
 		</label>
 		<label>Featured image
 			<select name="featured_image" bind:value={post.featured_image}>
-				<option value="">— none —</option>
+				<option value="">— first image in the article —</option>
 				{#each optionsFor(post.featured_image) as o}<option value={o.value}>{o.label}</option>{/each}
 			</select>
 		</label>
 		<label class="check"><input type="checkbox" name="draft" bind:checked={post.draft} /> Draft</label>
 	</section>
-
-	{#if !post.featured_image}
-		<p class="hint">No featured image: this article shows no thumbnail on the homepage grid.</p>
-	{/if}
 
 	{#if isErasmus}
 		<fieldset>
@@ -563,6 +571,19 @@
 			{#if missingPartner}<p class="hint">Partner name and URL are required for the strip to render.</p>{/if}
 		</fieldset>
 	{/if}
+
+	{#snippet thumbChoice(name: string)}
+		{#if thumbnail === name}
+			<span class="thumb-badge">
+				Thumbnail{post.featured_image ? '' : ' · first image'}
+				{#if post.featured_image}
+					<button type="button" onclick={() => (post.featured_image = '')}>use first image</button>
+				{/if}
+			</span>
+		{:else if name !== post.partner_logo_url}
+			<button type="button" class="thumb-pick" onclick={() => (post.featured_image = name)}>Use as thumbnail</button>
+		{/if}
+	{/snippet}
 
 	<fieldset class="images">
 		<legend>Images</legend>
@@ -582,8 +603,9 @@
 		{:else}
 			<ul class="grid">
 				{#each post.images as name}
-					<li class:removing={removed.includes(name)}>
+					<li class:removing={removed.includes(name)} class:thumb={thumbnail === name}>
 						<img src="/api/image/{post.slug}/{name}" alt="" loading="lazy" />
+						{@render thumbChoice(name)}
 						<code>{name}</code>
 						<input class="alt" placeholder="alt text" bind:value={altText[name]} />
 						<div class="row">
@@ -598,8 +620,9 @@
 					</li>
 				{/each}
 				{#each pending as p}
-					<li class="new">
+					<li class="new" class:thumb={thumbnail === p.name}>
 						<img src={p.previewUrl} alt="" />
+						{@render thumbChoice(p.name)}
 						<code>{p.name}</code>
 						<span class="meta">{p.width}×{p.height} · {formatBytes(p.originalBytes)} → {formatBytes(p.blob.size)}</span>
 						<input class="alt" placeholder="alt text" bind:value={altText[p.name]} />
@@ -840,6 +863,12 @@
 	{/if}
 </section>
 
+<HistoryPanel
+	endpoint="/api/history/posts/{post.slug}"
+	onRestore={(v: Version) => restoreVersion(v)}
+	note="Every save is kept. Loading an older version fills the editor with its text; images stay as they are now."
+/>
+
 <section class="danger-zone">
 	<button type="button" class="linkish" onclick={() => (showDanger = !showDanger)}>
 		{showDanger ? 'Cancel' : 'Delete this article'}
@@ -934,19 +963,6 @@
 	.review { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0 0 1.25rem; }
 	.review h2 { font-size: 0.95rem; margin: 0 0 0.75rem; display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
 	.review .msgline { font-weight: 400; font-size: 0.8rem; color: var(--muted-foreground); }
-	.file { border-top: 1px solid var(--border); padding: 0.7rem 0 0.2rem; }
-	.file header { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.4rem; }
-	.status { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px; background: var(--muted); color: var(--muted-foreground); }
-	.status.added { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
-	.status.deleted { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
-	.counts { font-size: 0.75rem; font-family: ui-monospace, monospace; }
-	.plus { color: var(--ok); }
-	.minus { color: var(--danger); }
-	.review pre { margin: 0; padding: 0.5rem 0.6rem; background: var(--muted); border-radius: 6px; font-size: 0.76rem; line-height: 1.5; overflow-x: auto; font-family: ui-monospace, monospace; }
-	.review pre span { display: block; white-space: pre; }
-	.review pre .add { color: var(--ok); }
-	.review pre .remove { color: var(--danger); }
-	.review pre .gap { color: var(--muted-foreground); }
 
 	.autosave { margin-left: auto; font-size: 0.8rem; color: var(--muted-foreground); align-self: center; }
 	.autosave.dirty { color: var(--warn); }
@@ -991,6 +1007,10 @@
 	.grid li { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; display: grid; gap: 0.35rem; }
 	.grid li.new { border-color: var(--brand-yellow-deep); background: var(--brand-yellow-soft); }
 	.grid li.removing { opacity: 0.45; border-color: var(--danger); }
+	.grid li.thumb { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+	.thumb-badge { font-size: 0.72rem; font-weight: 600; color: var(--primary); display: flex; flex-wrap: wrap; gap: 0 0.4rem; align-items: baseline; }
+	.thumb-badge button, .thumb-pick { background: none; border: 0; padding: 0; font: inherit; font-size: 0.72rem; font-weight: 400; color: var(--muted-foreground); text-decoration: underline; cursor: pointer; justify-self: start; }
+	.thumb-pick:hover, .thumb-badge button:hover { color: var(--primary); }
 	.grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 5px; background: var(--background); }
 	.grid code { font-size: 0.7rem; word-break: break-all; color: var(--muted-foreground); }
 	.grid .meta { font-size: 0.68rem; color: var(--muted-foreground); }

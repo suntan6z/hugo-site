@@ -4,7 +4,6 @@
 
 	const task = $derived(data.task);
 	const ctx = $derived(data.context as {
-		images?: string[];
 		english?: { title: string; description: string; body: string };
 		current?: { title: string; description: string; body: string };
 	});
@@ -16,6 +15,7 @@
 	let busy = $state(false);
 	let translating = $state(false);
 	let mtError = $state('');
+	let unlink = $state(false);
 
 	// A new card: empty the fields, or seed them with what is already there.
 	let loadedId = $state('');
@@ -23,6 +23,7 @@
 		if (!task || task.id === loadedId) return;
 		loadedId = task.id;
 		value = task.kind === 'description' ? (task.current ?? '') : '';
+		unlink = false;
 		title = '';
 		description = '';
 		body = '';
@@ -75,7 +76,9 @@
 			? title.trim() !== '' && body.trim() !== ''
 			: task?.kind === 'now-check'
 				? true
-				: value.trim() !== ''
+				: task?.kind === 'dead-link'
+					? unlink || /^https?:\/\/\S+$/.test(value.trim())
+					: value.trim() !== ''
 	);
 
 	const submit = () => {
@@ -171,18 +174,6 @@
 					</span>
 				</label>
 
-			{:else if task.kind === 'featured-image'}
-				<p class="hint">Without one, this article shows no thumbnail on the homepage.</p>
-				<div class="pick">
-					{#each ctx.images ?? [] as img}
-						<label class="thumb" class:picked={value === img}>
-							<input type="radio" name="value" value={img} bind:group={value} />
-							<img src="/api/image/{task.slug}/{img}" alt="" />
-							<span>{img}</span>
-						</label>
-					{/each}
-				</div>
-
 			{:else if task.kind === 'translation'}
 				<div class="mt">
 					{#if data.canTranslate}
@@ -203,10 +194,29 @@
 					<pre>{ctx.english?.body ?? ''}</pre>
 				</details>
 
+			{:else if task.kind === 'dead-link'}
+				<input type="hidden" name="url" value={task.url} />
+				{#if task.page}<input type="hidden" name="page" value={task.page} />{/if}
+				{#if task.field}<input type="hidden" name="field" value={task.field} />{/if}
+				<p class="hint">
+					<a href={task.url} target="_blank" rel="noopener noreferrer">{task.url}</a> — {task.reason}. It said so on two
+					checks at least a day apart. Open it to see for yourself.
+				</p>
+				<label>
+					Where it should point now
+					<input name="value" type="url" bind:value placeholder="https://…" autocomplete="off" disabled={unlink} />
+				</label>
+				{#if !task.field}
+					<label class="check-row">
+						<input type="checkbox" name="unlink" bind:checked={unlink} />
+						Remove the link and keep its words
+					</label>
+				{/if}
+
 			{:else if task.kind === 'now-check'}
 				<p class="hint">
 					Your Now page has not changed in a while. If it is still accurate, say so and it will stop asking for three
-					months.
+					months. If not, update it — saving it clears this too.
 				</p>
 			{/if}
 
@@ -214,6 +224,7 @@
 				<button class="btn-primary" type="submit" data-act="answer" disabled={busy || !canAnswer}>
 					{task.kind === 'now-check' ? 'Still true' : 'Done'}
 				</button>
+				{#if task.kind === 'now-check'}<a class="btn-outline" href="/pages/now">Update it</a>{/if}
 			</div>
 		</form>
 
@@ -236,16 +247,11 @@
 	h1 { font-size: 1.35rem; margin: 0.3rem 0 1.1rem; letter-spacing: -0.015em; }
 	.shot { display: block; width: 100%; max-height: 46vh; object-fit: contain; border-radius: 10px; background: var(--muted); margin-bottom: 1rem; }
 	label { display: block; margin-bottom: 0.9rem; }
-	.hint { font-size: 0.84rem; color: var(--muted-foreground); margin: 0 0 0.9rem; }
+	.hint { font-size: 0.84rem; color: var(--muted-foreground); margin: 0 0 0.9rem; overflow-wrap: anywhere; }
+	.check-row { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; }
 	.count-hint { font-size: 0.78rem; color: var(--muted-foreground); }
 	.count-hint.warn { color: var(--warn); }
 	.row { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.4rem; }
-	.pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
-	.thumb { margin: 0; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; display: block; }
-	.thumb.picked { border-color: var(--primary); }
-	.thumb input { position: absolute; opacity: 0; pointer-events: none; }
-	.thumb img { display: block; width: 100%; height: 6.5rem; object-fit: cover; }
-	.thumb span { display: block; font-size: 0.7rem; padding: 0.3rem 0.4rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
 	.mt { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; padding: 0.55rem 0.75rem; border: 1px dashed var(--border); border-radius: var(--radius); margin-bottom: 0.9rem; }
 	.mt span { font-size: 0.8rem; color: var(--muted-foreground); }
 	details { margin: 0 0 0.9rem; font-size: 0.85rem; color: var(--muted-foreground); }

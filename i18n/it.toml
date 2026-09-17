@@ -96,6 +96,12 @@ other = "Blog"
 other = "Riflessioni su tecnologia, politica europea, cybersicurezza e temi più personali."
 [filter_all]
 other = "Tutti"
+[blog_empty_title]
+other = "Oh oh, niente da vedere qui!"
+[blog_empty_text]
+other = "Ancora nessun articolo in questa categoria. Torna presto, oppure dai un'occhiata a tutto il resto che ho scritto."
+[blog_empty_show_all]
+other = "Mostra tutti gli articoli"
 [cat_Technology]
 other = "Tecnologia"
 [cat_Cybersecurity]

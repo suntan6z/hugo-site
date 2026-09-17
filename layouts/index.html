@@ -151,7 +151,7 @@
             <h3>{{ .Title }}</h3>
             <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
-          {{ with partial "resolve-image-src.html" (dict "page" . "src" .Params.featured_image) }}
+          {{ with partial "resolve-thumb.html" (dict "page" .) }}
           <div class="article-thumb"><img src="{{ . }}" alt="{{ $.Title }}" loading="lazy" /></div>
           {{ end }}
         </div>

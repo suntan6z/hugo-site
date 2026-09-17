@@ -93,8 +93,23 @@ export const auth = {
 export const integrations = {
 	resendApiKey: optional('RESEND_API_KEY'),
 	resendAudienceId: optional('RESEND_AUDIENCE_ID', '276f21cc-de35-468d-8b30-06fc08ad1016'),
+	// Tests only: points the client at a stand-in server. Unset in production.
+	resendApiUrl: optional('RESEND_API_URL'),
+	/**
+	 * Litlyx has no API keys for a self-hosted dashboard; what it does accept is
+	 * a shareable link, so that is what the "token" is: the link's id, from the
+	 * dashboard's Shareable links page. The host is the DASHBOARD
+	 * (litlyx.loconsole.eu), not the collector the site reports visits to
+	 * (analytics.loconsole.eu), which answers nothing but ingestion.
+	 */
 	litlyxToken: optional('LITLYX_TOKEN'),
-	litlyxHost: optional('LITLYX_HOST', 'https://analytics.loconsole.eu'),
+	litlyxSharePassword: optional('LITLYX_SHARE_PASSWORD'),
+	litlyxHost: optional('LITLYX_HOST', 'https://litlyx.loconsole.eu'),
+	/**
+	 * Tests only: when set, the link checker contacts nothing but these hosts
+	 * (comma-separated), so a test run never knocks on real websites.
+	 */
+	linkCheckHosts: optional('LINKCHECK_HOSTS'),
 	bingApiKey: optional('BING_API_KEY'),
 	indexNowKey: optional('INDEXNOW_KEY'),
 	deeplApiKey: optional('DEEPL_API_KEY'),

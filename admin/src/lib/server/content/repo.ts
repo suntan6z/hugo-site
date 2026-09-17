@@ -1,9 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { IS_LOCAL, SITE_ROOT, github } from '../env.ts';
 import { gh, GitHubError } from '../github/api.ts';
 import { memo, invalidateAll, DEFAULT_TTL_MS } from '../cache.ts';
+import { LOG_FORMAT, SHA_RE, parseGitLog, mergeRevisions, type Revision } from './revisions.ts';
+
+export type { Revision };
+
+const run = promisify(execFile);
 
 /** One file change inside a single atomic commit. */
 export type FileOp =
@@ -24,6 +31,10 @@ export interface Repo {
 	listTree(prefix: string): Promise<string[]>;
 	/** When the file last changed, ISO, or null if that cannot be told. */
 	lastModified(p: string): Promise<string | null>;
+	/** Commits that touched any of these paths (files or folders), newest first. Empty if there is no history. */
+	history(paths: string[], limit?: number): Promise<Revision[]>;
+	/** A file as it was at a commit, or null if it did not exist then. */
+	readTextAt(p: string, sha: string): Promise<string | null>;
 	/** Applies all ops as ONE commit. Returns the new head sha. */
 	commit(message: string, ops: FileOp[]): Promise<{ sha: string }>;
 }
@@ -67,6 +78,37 @@ class LocalRepo implements Repo {
 	async lastModified(p: string) {
 		try {
 			return (await fs.stat(this.abs(p))).mtime.toISOString();
+		} catch {
+			return null;
+		}
+	}
+
+	/**
+	 * The working copy's own git history. Local saves write files without
+	 * committing, so this lists what has been committed by hand. A copy that is
+	 * not a git repository at all simply has no history.
+	 */
+	async history(paths: string[], limit = 30) {
+		paths.forEach((p) => this.abs(p));
+		try {
+			const { stdout } = await run(
+				'git',
+				['-C', SITE_ROOT, 'log', '-n', String(limit), `--format=${LOG_FORMAT}`, '--', ...paths],
+				{ maxBuffer: 5 * 1024 * 1024 }
+			);
+			return parseGitLog(stdout);
+		} catch {
+			return [];
+		}
+	}
+
+	async readTextAt(p: string, sha: string) {
+		if (!SHA_RE.test(sha)) return null;
+		this.abs(p);
+		try {
+			// ./ makes the path relative to SITE_ROOT even when the repository root is above it.
+			const { stdout } = await run('git', ['-C', SITE_ROOT, 'show', `${sha}:./${p}`], { maxBuffer: 20 * 1024 * 1024 });
+			return stdout;
 		} catch {
 			return null;
 		}
@@ -226,6 +268,43 @@ class GitHubRepo implements Repo {
 			return commits[0]?.commit.committer.date ?? null;
 		} catch {
 			return null;
+		}
+	}
+
+	async history(paths: string[], limit = 30) {
+		type GhCommit = { sha: string; commit: { message: string; author?: { name?: string; date?: string }; committer?: { date?: string } } };
+		// One call per path: the commits API filters by a single path (a folder counts).
+		const lists = await Promise.all(
+			paths.map((p) =>
+				memo(`gh:history:${p}:${limit}`, DEFAULT_TTL_MS, () =>
+					gh<GhCommit[]>('GET', `/commits?path=${encodeURIComponent(p)}&sha=${github.branch}&per_page=${limit}`)
+				)
+			)
+		);
+		return mergeRevisions(
+			lists.map((l) =>
+				l.map((c) => ({
+					sha: c.sha,
+					date: c.commit.author?.date ?? c.commit.committer?.date ?? '',
+					author: c.commit.author?.name ?? '',
+					message: c.commit.message.split('\n')[0].trim()
+				}))
+			),
+			limit
+		);
+	}
+
+	async readTextAt(p: string, sha: string) {
+		if (!SHA_RE.test(sha)) return null;
+		try {
+			// A file at a commit never changes, so this can be cached for as long as the process lives.
+			const r = await memo(`gh:at:${sha}:${p}`, 24 * 3600_000, () =>
+				gh<{ content: string; encoding: string }>('GET', `/contents/${encodeURI(p)}?ref=${sha}`)
+			);
+			return Buffer.from(r.content, r.encoding as BufferEncoding).toString('utf8');
+		} catch (e) {
+			if (e instanceof GitHubError && e.status === 404) return null;
+			throw e;
 		}
 	}
 

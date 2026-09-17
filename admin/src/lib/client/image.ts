@@ -48,7 +48,8 @@ export function uniqueName(base: string, ext: string, taken: string[]): string {
 	return name;
 }
 
-export async function prepareImage(file: File, taken: string[] = []): Promise<PreparedImage> {
+/** Decodes, applies EXIF rotation and scales down to MAX_EDGE, onto a canvas. */
+async function decodeScaled(file: File): Promise<{ canvas: HTMLCanvasElement; width: number; height: number }> {
 	// HEIC decodes only in Safari; createImageBitmap throws elsewhere with a
 	// message that explains nothing. Catch it up front.
 	if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)) {
@@ -80,12 +81,18 @@ export async function prepareImage(file: File, taken: string[] = []): Promise<Pr
 	if (!ctx) throw new ImageError('Canvas is unavailable in this browser.');
 	ctx.drawImage(bitmap, 0, 0, width, height);
 	bitmap.close();
+	return { canvas, width, height };
+}
+
+const encode = (canvas: HTMLCanvasElement, type: 'image/webp' | 'image/jpeg') =>
+	new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, QUALITY));
+
+export async function prepareImage(file: File, taken: string[] = []): Promise<PreparedImage> {
+	const { canvas, width, height } = await decodeScaled(file);
 
 	// Re-encoding through canvas also strips all EXIF, including GPS
 	// coordinates — worth keeping in mind as a feature for travel photos.
-	const blob = await new Promise<Blob | null>((resolve) =>
-		canvas.toBlob(resolve, 'image/webp', QUALITY)
-	);
+	const blob = await encode(canvas, 'image/webp');
 	if (!blob) throw new ImageError(`Could not encode ${file.name} as WebP.`);
 
 	return {
@@ -96,6 +103,18 @@ export async function prepareImage(file: File, taken: string[] = []): Promise<Pr
 		previewUrl: URL.createObjectURL(blob),
 		originalBytes: file.size
 	};
+}
+
+/**
+ * The homepage photo, in both encodings layouts/index.html reads: WebP for
+ * the page, JPEG for link previews and browsers without WebP. Encoded here
+ * from one decode, so both are the same pixels.
+ */
+export async function prepareHero(file: File): Promise<{ webp: Blob; jpeg: Blob; previewUrl: string; width: number; height: number }> {
+	const { canvas, width, height } = await decodeScaled(file);
+	const [webp, jpeg] = await Promise.all([encode(canvas, 'image/webp'), encode(canvas, 'image/jpeg')]);
+	if (!webp || !jpeg) throw new ImageError(`Could not encode ${file.name}.`);
+	return { webp, jpeg, previewUrl: URL.createObjectURL(jpeg), width, height };
 }
 
 export const formatBytes = (n: number) =>

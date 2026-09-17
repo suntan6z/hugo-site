@@ -2,7 +2,7 @@
 
 ## Before publishing
 
-The portal checks every article before it can go public: description length, title length, alt text on every image, `featured_image`, the slug matching its folder, internal links pointing at articles that exist, and a date that is not in the future. Problems that would damage the published page **block publishing**; the rest are suggestions and never block. Ticking *Draft* skips the checks entirely — work in progress is meant to be incomplete.
+The portal checks every article before it can go public: description length, title length, alt text on every image, a `featured_image` that exists if one is set, the slug matching its folder, internal links pointing at articles that exist, and a date that is not in the future. Problems that would damage the published page **block publishing**; the rest are suggestions and never block. Ticking *Draft* skips the checks entirely — work in progress is meant to be incomplete.
 
 After a deploy goes live, the dashboard submits the changed URLs to **IndexNow** (Bing and friends). It waits for the rebuild deliberately: submitting at publish time would point crawlers at a URL that still 404s. **Search** in the portal shows what Bing reports for the site.
 

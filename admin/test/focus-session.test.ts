@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { setAltText } from '../src/lib/server/tasks/edits.ts';
+import { setAltText, replaceLink } from '../src/lib/server/tasks/edits.ts';
 
 describe('filling in alt text', () => {
 	const body = 'Intro.\n\n![](one.jpg)\n\nMiddle.\n\n![](two.jpg)\n\nEnd.\n';
@@ -30,5 +30,33 @@ describe('filling in alt text', () => {
 
 	test('an image name with regex characters is matched literally', () => {
 		assert.equal(setAltText('![](a+b(1).jpg)', 'a+b(1).jpg', 'X'), '![X](a+b(1).jpg)');
+	});
+});
+
+describe('fixing a dead link', () => {
+	const url = 'https://gone.example/page';
+
+	test('a Markdown link and an HTML anchor are both repointed, titles kept', () => {
+		const body = `See [the page](${url} "Title") and <a href="${url}" target="_blank">this</a>.`;
+		assert.equal(
+			replaceLink(body, url, 'https://new.example/'),
+			'See [the page](https://new.example/ "Title") and <a href="https://new.example/" target="_blank">this</a>.'
+		);
+	});
+
+	test('removing the link keeps its words', () => {
+		const body = `See [the page](${url}) and <a href="${url}" rel="noopener">this <em>one</em></a>.`;
+		assert.equal(replaceLink(body, url, null), 'See the page and this <em>one</em>.');
+	});
+
+	test('a longer URL that merely starts the same is left alone', () => {
+		const body = `[a](${url}) [b](${url}/deeper) <a href="${url}-2">c</a>`;
+		assert.equal(replaceLink(body, url, 'https://new.example/'), `[a](https://new.example/) [b](${url}/deeper) <a href="${url}-2">c</a>`);
+		assert.equal(replaceLink(body, url, null), `a [b](${url}/deeper) <a href="${url}-2">c</a>`);
+	});
+
+	test('a URL with regex characters is matched literally', () => {
+		const odd = 'https://www.youtube.com/watch?v=06qwUUAAmX8&t=2s';
+		assert.equal(replaceLink(`[v](${odd})`, odd, 'https://example.com/v'), '[v](https://example.com/v)');
 	});
 });

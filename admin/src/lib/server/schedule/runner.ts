@@ -4,6 +4,7 @@ import { fetchBuildInfo, recordPublish } from '../integrations/buildinfo.ts';
 import { queueUrls, postUrls } from '../integrations/indexnow.ts';
 import { sendBroadcast, isConfigured as canSend, SITE_NAME } from '../integrations/resend.ts';
 import { integrations } from '../env.ts';
+import { thumbnailOf, thumbnailUrl } from '../../thumbnail.ts';
 import { invalidate } from '../cache.ts';
 import { dueToPublish, dueToAnnounce, prune, type Scheduled } from './plan.ts';
 
@@ -95,15 +96,14 @@ export async function runDue(now = new Date()): Promise<RunReport> {
 				const post = await loadPost(item.slug);
 				if (!post) throw new Error('the article no longer exists');
 				const title = post.translations.en.title;
+				const image = thumbnailOf(post.featured_image, post.translations.en.body);
 				const r = await sendBroadcast({
 					slug: item.slug,
 					subject: title,
 					title,
 					intro: post.translations.en.description,
 					url: `${integrations.siteUrl}/en/blog/${item.slug}/`,
-					imageUrl: post.featured_image
-						? `${integrations.siteUrl}/en/blog/${item.slug}/${post.featured_image}`
-						: undefined,
+					imageUrl: image ? thumbnailUrl(integrations.siteUrl, item.slug, image) : undefined,
 					siteName: SITE_NAME,
 					siteUrl: integrations.siteUrl
 				});
