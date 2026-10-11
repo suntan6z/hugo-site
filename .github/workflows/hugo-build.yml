@@ -28,6 +28,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No photo may be published with its metadata (camera, date, GPS
+      # position). The Hugo build itself refuses bundle and assets/ images that
+      # carry any (layouts/partials/image-metadata-guard.html); this also
+      # covers static/, which Hugo copies without looking.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: No image metadata
+        run: node scripts/image-metadata.mjs
+
       - name: Build with StaticHost's image
         run: |
           image=$(sed -nE 's/^image:[[:space:]]*"?([^"]+)"?[[:space:]]*$/\1/p' statichost.yml)

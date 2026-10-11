@@ -1,10 +1,13 @@
 {{ define "main" }}
+{{- /* Once per build (the default language's homepage): stop the build if any
+       image would be published with its metadata. */}}
+{{- if eq site.Language.Lang (index hugo.Sites 0).Language.Lang }}{{ partial "image-metadata-guard.html" . }}{{ end }}
 
 <!-- Hero Section -->
 <section class="hero hero-bg">
   <div class="container">
     <div class="hero-grid">
-      <div class="fade-up" style="position:relative;z-index:1">
+      <div style="position:relative;z-index:1">
         <h1>{{ i18n "hero_heading" }}</h1>
         <div class="hero-intro-frame">
           <p class="hero-intro">{{ i18n "hero_intro" }}</p>
@@ -22,7 +25,7 @@
         </div>
       </div>
 
-      <div class="hero-photo-wrap fade-up">
+      <div class="hero-photo-wrap">
         {{ $heroWebp := (resources.Get "img/hero.webp").Resize "640x webp q82" }}
         {{ $heroJpg := (resources.Get "img/hero.jpeg").Resize "640x jpg q82" }}
         <picture>
@@ -36,39 +39,47 @@
 
 <!-- Quote Section -->
 <section class="quote-section" id="quote-section">
+  {{- /* The quote is in the HTML, whole: that is what screen readers, search
+         engines and reduced-motion visitors get. The typewriter below only
+         replays it visually, on a copy hidden from assistive technology. */}}
   <blockquote class="quote-text">
-    <span class="text-primary">&ldquo;</span><span id="quote-typed"></span><span id="quote-cursor" class="quote-cursor">|</span><span class="text-primary" id="quote-close" style="display:none">&rdquo;</span>
+    <span class="sr-only">{{ .Site.Params.quote }}</span>
+    <span aria-hidden="true"><span class="text-primary">&ldquo;</span><span id="quote-typed">{{ .Site.Params.quote }}</span><span id="quote-cursor" class="quote-cursor" hidden>|</span><span class="text-primary" id="quote-close">&rdquo;</span></span>
   </blockquote>
-  <div id="quote-meta" style="opacity:0;transform:translateY(10px);transition:opacity 0.5s,transform 0.5s">
+  <div id="quote-meta" class="quote-meta">
     <p class="quote-author">— {{ .Site.Params.quoteAuthor }} &nbsp;·&nbsp; <a href="{{ (printf "/blog/%s/" .Site.Params.quoteArticle) | relLangURL }}" style="color:var(--primary)">{{ i18n "read_article" }}</a></p>
   </div>
 </section>
 <script>
 (function() {
-  const text = {{ .Site.Params.quote | jsonify | safeJS }};
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const typed = document.getElementById('quote-typed');
+  const text = typed.textContent;
   const cursor = document.getElementById('quote-cursor');
   const closeQuote = document.getElementById('quote-close');
   const meta = document.getElementById('quote-meta');
-  let started = false;
+
+  // Blank it out only now that JS is known to run, so without JS the quote
+  // simply stays put.
+  typed.textContent = '';
+  closeQuote.hidden = true;
+  cursor.hidden = false;
+  meta.classList.add('pending');
 
   const observer = new IntersectionObserver(function(entries) {
-    if (entries[0].isIntersecting && !started) {
-      started = true;
-      observer.disconnect();
-      let i = 0;
-      const interval = setInterval(function() {
-        typed.textContent += text[i];
-        i++;
-        if (i >= text.length) {
-          clearInterval(interval);
-          cursor.style.display = 'none';
-          closeQuote.style.display = 'inline';
-          meta.style.opacity = '1';
-          meta.style.transform = 'translateY(0)';
-        }
-      }, 25);
-    }
+    if (!entries[0].isIntersecting) return;
+    observer.disconnect();
+    let i = 0;
+    const interval = setInterval(function() {
+      typed.textContent += text[i];
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+        cursor.hidden = true;
+        closeQuote.hidden = false;
+        meta.classList.remove('pending');
+      }
+    }, 18);
   }, { threshold: 0.3 });
 
   observer.observe(document.getElementById('quote-section'));
@@ -79,44 +90,40 @@
 <section class="gallery-section">
   <div class="container">
     <div class="fade-up">
-      <h2 class="gallery-title">{{ i18n "gallery_best_of" }} <span class="text-gradient" id="city-label">Paris</span></h2>
+      {{- /* The city shown first is picked at random client-side; the first city
+             in data/ is only the no-JS / pre-script label. */}}
+      <h2 class="gallery-title">{{ i18n "gallery_best_of" }} <span class="text-gradient" id="city-label">{{ with index hugo.Data.gallery_cities 0 }}{{ .name }}{{ end }}</span></h2>
       <p class="gallery-subtitle">{{ i18n "gallery_subtitle" }}</p>
     </div>
 
-    <!-- Scrolling city pills -->
-    <div class="city-pills-wrap" style="position:relative;margin:1.5rem 0 2rem">
-      <!-- fade edges (desktop only) -->
-      <div class="city-pills-fade-l" style="pointer-events:none;position:absolute;left:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to right,var(--background),transparent)"></div>
-      <div class="city-pills-fade-r" style="pointer-events:none;position:absolute;right:0;top:0;bottom:0;width:4rem;z-index:2;background:linear-gradient(to left,var(--background),transparent)"></div>
-      <div id="city-pills-track" style="display:flex;gap:0.75rem;width:max-content;cursor:pointer;will-change:transform;backface-visibility:hidden" onmouseenter="this.style.animationPlayState='paused'" onmouseleave="this.style.animationPlayState='running'">
-        <!-- pills injected twice for seamless loop -->
-      </div>
-    </div>
+    <!-- City pills: one static row that wraps (desktop) or swipes (phone) -->
+    <div class="city-pills" id="city-pills" role="group" aria-label="{{ i18n "gallery_best_of" }}"></div>
 
     <!-- Photo strip -->
-    <div style="position:relative">
-      <button id="gallery-prev" onclick="galleryScroll(-1)" style="display:none;position:absolute;left:-1rem;top:50%;transform:translateY(-50%);z-index:10;width:2.25rem;height:2.25rem;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px hsl(220 15% 15%/0.12);cursor:pointer;align-items:center;justify-content:center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    <div class="gallery-strip-wrap">
+      <button type="button" id="gallery-prev" class="gallery-arrow gallery-arrow-prev" onclick="galleryScroll(-1)" aria-label="{{ i18n "photo_previous" }}" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div id="gallery-strip" style="display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x proximity;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;padding:0.25rem 0;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y">
-      </div>
-      <button id="gallery-next" onclick="galleryScroll(1)" style="display:none;position:absolute;right:-1rem;top:50%;transform:translateY(-50%);z-index:10;width:2.25rem;height:2.25rem;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px hsl(220 15% 15%/0.12);cursor:pointer;align-items:center;justify-content:center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <div id="gallery-strip" class="gallery-strip"></div>
+      <button type="button" id="gallery-next" class="gallery-arrow gallery-arrow-next" onclick="galleryScroll(1)" aria-label="{{ i18n "photo_next" }}" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
 
     <!-- Lightbox -->
-    <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:300;background:hsl(220 15% 5%/0.92);align-items:center;justify-content:center;padding:1rem;overflow:hidden" onclick="closeLightbox(event)">
-      <button onclick="closeLightbox()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:white;cursor:pointer;opacity:0.8;z-index:1">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="{{ i18n "gallery_viewer" }}" hidden onclick="if (event.target === this) closeLightbox()">
+      <button type="button" class="lb-btn lb-close" onclick="closeLightbox()" aria-label="{{ i18n "close" }}">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <button onclick="lbNav(-1, event)" style="position:absolute;left:1rem;background:none;border:none;color:white;cursor:pointer;opacity:0.8;z-index:1">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <button type="button" class="lb-btn lb-prev" onclick="lbNav(-1, event)" aria-label="{{ i18n "photo_previous" }}">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <img id="lightbox-img" src="" alt="Gallery photo" draggable="false" style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:0.5rem;touch-action:none;user-select:none;will-change:transform;transition:transform 0.25s ease,opacity 0.2s ease" onclick="event.stopPropagation()" />
-      <button onclick="lbNav(1, event)" style="position:absolute;right:1rem;background:none;border:none;color:white;cursor:pointer;opacity:0.8;z-index:1">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      <img id="lightbox-img" class="lightbox-img" src="" alt="" draggable="false" onclick="event.stopPropagation()" />
+      <button type="button" class="lb-btn lb-next" onclick="lbNav(1, event)" aria-label="{{ i18n "photo_next" }}">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <p class="lb-counter" id="lb-counter" aria-live="polite"></p>
+      <p class="lb-hd" id="lb-hd" role="status" hidden><span class="lb-hd-spinner" aria-hidden="true"></span>{{ i18n "loading_original" }}</p>
     </div>
   </div>
 </section>
@@ -151,9 +158,7 @@
             <h3>{{ .Title }}</h3>
             <p class="article-excerpt">{{ with .Description }}{{ . | truncate 160 }}{{ else }}{{ .Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
-          {{ with partial "resolve-thumb.html" (dict "page" .) }}
-          <div class="article-thumb"><img src="{{ . }}" alt="{{ $.Title }}" loading="lazy" /></div>
-          {{ end }}
+          {{ partial "card-thumb.html" (dict "page" .) }}
         </div>
       </a>
       {{ end }}
@@ -201,18 +206,30 @@
         {{ with $override.caption }}{{ $caption = . }}{{ end }}
         {{ with $override.alt_text }}{{ $altText = . }}{{ end }}
       {{ end }}
-      {{ $photos = $photos | append (dict "city" $city "image_url" $imageURL "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
+      {{/* Three sizes, never the original (some are 8 MB):
+             full_url    — fits 1920px, what the lightbox settles on;
+             preview_url — the same picture at 480px, shown the instant a photo
+                           is opened while full_url loads (same shape, so the
+                           swap doesn't jump);
+             strip_url   — a 2x crop of the strip's 17rem×22rem frame.
+           The two small ones are made from the 1920px copy, not the original,
+           so each multi-MB original is decoded once per build, not three times.
+           image_url stays the original's path: it is the key
+           data/gallery_photos.json and the portal know the photo by. */}}
+      {{ $full := . }}
+      {{ if or (gt .Width 1920) (gt .Height 1920) }}{{ $full = .Fit "1920x1920 webp q82" }}{{ else }}{{ $full = .Process "webp q82" }}{{ end }}
+      {{ $preview := $full.Fit "480x480 webp q60" }}
+      {{ $strip := $full.Fill "544x704 webp q78 smart" }}
+      {{ $photos = $photos | append (dict "city" $city "image_url" $imageURL "strip_url" $strip.RelPermalink "full_url" $full.RelPermalink "preview_url" $preview.RelPermalink "w" $full.Width "h" $full.Height "ow" .Width "oh" .Height "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
     {{ end }}
   {{ end }}
 {{ end }}
 {{ $photos = sort $photos "sortkey" }}
-<style>
-@keyframes gallerySpin { to { transform: rotate(360deg); } }
-</style>
 <script>
 window.I18N = Object.assign(window.I18N || {}, {{ (dict
   "photosComingSoon" (i18n "photos_coming_soon")
   "galleryEmptyMsg"  (i18n "gallery_empty_msg")
+  "countOf"          (i18n "count_of")
 ) | jsonify | safeJS }});
 const galleryData = {{ $photos | jsonify | safeJS }};
 const citiesData = (function shuffle(a) {
@@ -228,43 +245,23 @@ let lbIndex = 0;
 let lbScale = 1, lbPanX = 0, lbPanY = 0;
 
 function buildPills() {
-  const track = document.getElementById('city-pills-track');
-  if (!track || !citiesData.length) return;
-  const makePill = (c) => {
+  const row = document.getElementById('city-pills');
+  if (!row || !citiesData.length) return;
+  citiesData.forEach(c => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'city-pill';
     btn.dataset.slug = c.slug;
-    btn.innerHTML = `<span style="font-size:1.1em">${c.flag}</span> ${c.name}`;
-    btn.style.cssText = 'display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 1.1rem;border-radius:2rem;border:1px solid var(--border);background:var(--card);color:var(--foreground);font-size:0.9rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:background 0.15s,color 0.15s,border-color 0.15s;flex-shrink:0';
-    btn.onmouseenter = () => { if (btn.dataset.slug !== currentCity) { btn.style.background='var(--accent)'; btn.style.color='var(--primary)'; btn.style.borderColor='var(--primary)'; }};
-    btn.onmouseleave = () => { if (btn.dataset.slug !== currentCity) { btn.style.background='var(--card)'; btn.style.color='var(--foreground)'; btn.style.borderColor='var(--border)'; }};
+    btn.setAttribute('aria-pressed', 'false');
+    btn.innerHTML = `<span class="city-pill-flag" aria-hidden="true">${c.flag}</span> ${c.name}`;
     btn.onclick = () => selectCity(c.slug);
-    return btn;
-  };
-  const isMobile = window.innerWidth <= 640;
-  if (isMobile) {
-    citiesData.forEach(c => track.appendChild(makePill(c)));
-    return;
-  }
-  // Desktop: inject first set, measure, inject second set, then animate
-  citiesData.forEach(c => track.appendChild(makePill(c)));
-  requestAnimationFrame(() => {
-    const halfW = track.scrollWidth; // width of one full set
-    citiesData.forEach(c => track.appendChild(makePill(c)));
-    // Inject keyframe with exact pixel distance to avoid sub-pixel stutter
-    const styleEl = document.createElement('style');
-    styleEl.textContent = `@keyframes pillsScrollExact { 0% { transform: translateX(0); } 100% { transform: translateX(-${halfW}px); } }`;
-    document.head.appendChild(styleEl);
-    track.style.animation = 'pillsScrollExact 18s linear infinite';
+    row.appendChild(btn);
   });
 }
 
 function setActivePill(slug) {
   document.querySelectorAll('.city-pill').forEach(btn => {
-    const active = btn.dataset.slug === slug;
-    btn.style.background = active ? 'var(--primary)' : 'var(--card)';
-    btn.style.color = active ? 'var(--primary-foreground)' : 'var(--foreground)';
-    btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+    btn.setAttribute('aria-pressed', btn.dataset.slug === slug ? 'true' : 'false');
   });
 }
 
@@ -283,34 +280,36 @@ function renderStrip(slug) {
   lbPhotos = (galleryData || []).filter(p => p.city === slug);
   if (!lbPhotos.length) {
     const city = citiesData.find(c => c.slug === slug);
-    strip.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:3rem 1.5rem;text-align:center;gap:0.75rem">
-      <span style="font-size:2.5rem">${city ? city.flag : '📷'}</span>
-      <p style="font-weight:600;color:var(--foreground);font-family:'Fraunces',serif;font-size:1.1rem">${I18N.photosComingSoon}</p>
-      <p style="font-size:0.875rem;color:var(--muted-foreground)">${I18N.galleryEmptyMsg.replace('%city%', city ? city.name : '')}</p>
+    strip.innerHTML = `<div class="gallery-empty">
+      <span class="gallery-empty-flag" aria-hidden="true">${city ? city.flag : '📷'}</span>
+      <p class="gallery-empty-title">${I18N.photosComingSoon}</p>
+      <p class="gallery-empty-text">${I18N.galleryEmptyMsg.replace('%city%', city ? city.name : '')}</p>
     </div>`;
-    prev.style.display = 'none';
-    next.style.display = 'none';
+    prev.hidden = true;
+    next.hidden = true;
     return;
   }
-  prev.style.display = 'flex';
-  next.style.display = 'flex';
+  prev.hidden = false;
+  next.hidden = false;
+  // Each photo is a real button, so the strip works from the keyboard and a
+  // screen reader announces the photo's alt text as the button's name.
   strip.innerHTML = lbPhotos.map((p, i) => `
-    <div onclick="openLightbox(${i})" style="flex-shrink:0;scroll-snap-align:start;cursor:pointer;width:min(17rem,72vw)">
-      <div style="position:relative;border-radius:0.75rem;overflow:hidden;height:min(22rem,60vw);background:var(--card)">
-        <div class="gallery-spinner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-          <span style="width:1.75rem;height:1.75rem;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:gallerySpin 0.8s linear infinite"></span>
-        </div>
-        <img src="${p.image_url}" alt="${p.alt_text||p.caption||''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s,opacity 0.3s;opacity:0" onload="this.style.opacity=1;this.previousElementSibling.remove()" onmouseenter="this.style.transform='scale(1.03)'" onmouseleave="this.style.transform=''" />
-      </div>
-      ${p.caption ? `<p style="font-size:0.75rem;color:var(--muted-foreground);text-align:center;margin-top:0.4rem;line-height:1.3">${p.caption}</p>` : ''}
-    </div>
+    <figure class="gallery-item">
+      <button type="button" class="gallery-frame" onclick="openLightbox(${i}, this)">
+        <span class="gallery-spinner" aria-hidden="true"></span>
+        <img src="${p.strip_url}" alt="${p.alt_text||p.caption||''}" width="544" height="704" loading="lazy" decoding="async" onload="this.classList.add('loaded');this.previousElementSibling.remove()" />
+      </button>
+      ${p.caption ? `<figcaption class="gallery-caption">${p.caption}</figcaption>` : ''}
+    </figure>
   `).join('');
   strip.scrollTo(0, 0);
 }
 
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function galleryScroll(dir) {
   const strip = document.getElementById('gallery-strip');
-  strip.scrollBy({ left: dir * 300, behavior: 'smooth' });
+  strip.scrollBy({ left: dir * 300, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 }
 
 function lbSetTransform(x, y, scale, withTransition) {
@@ -340,36 +339,129 @@ function lbToggleZoom() {
   } else {
     lbScale = 2.5; lbPanX = 0; lbPanY = 0;
     lbSetTransform(0, 0, lbScale, true);
+    lbZoomedIn();
   }
 }
 
-function openLightbox(i) {
+let lbReturnFocus = null;
+
+// Images already downloaded and decoded, so they can be shown at once.
+const lbReady = new Set();
+
+function lbFetch(url) {
+  const im = new Image();
+  im.src = url;
+  return im.decode().then(() => lbReady.add(url));
+}
+
+/*
+  Three levels of the same photo, each swapped in only once it is decoded so
+  the picture never blanks or jumps (they all share one box, see lbShow):
+    preview_url  480px  — instant, slightly blurred, while the next one loads;
+    full_url     1920px — what a laptop or phone screen can actually show;
+    image_url    the original — only when it would be visible: when the
+                 visitor zooms in, or on a screen that needs more than 1920px.
+*/
+const lbHasOriginal = p => p.ow > p.w;
+
+// Would this screen show more pixels than the 1920px copy has?
+function lbScreenWantsOriginal(p) {
+  const box = Math.min(innerWidth - 32, innerHeight * 0.85 * (p.w / p.h), p.w);
+  return lbHasOriginal(p) && box * (window.devicePixelRatio || 1) > p.w * 1.1;
+}
+
+// Swap the photo on screen for `url` once decoded — unless the visitor has
+// moved on to another photo in the meantime.
+function lbUpgrade(p, url, onDone) {
+  const img = document.getElementById('lightbox-img');
+  const swap = () => {
+    if (lbPhotos[lbIndex] !== p) return;
+    img.src = url;
+    img.classList.remove('lb-loading');
+    if (onDone) onDone();
+  };
+  if (lbReady.has(url)) swap();
+  else lbFetch(url).then(swap).catch(() => { if (onDone) onDone(); });
+}
+
+// Warm up the photos either side, so the arrows switch instantly.
+function lbPreloadAround(i) {
+  [i + 1, i - 1].forEach(j => {
+    const p = lbPhotos[(j + lbPhotos.length) % lbPhotos.length];
+    if (p && !lbReady.has(p.full_url)) lbFetch(p.full_url).catch(() => {});
+  });
+}
+
+function lbShow(i) {
+  const p = lbPhotos[i];
+  const img = document.getElementById('lightbox-img');
+  // Size the box from the photo's shape, so every level occupies exactly the
+  // same space and swapping one for another doesn't move anything.
+  img.style.setProperty('--ar', p.w / p.h);
+  img.style.setProperty('--w', p.w + 'px');
+  img.alt = p.alt_text || p.caption || '';
+  document.getElementById('lb-counter').textContent = `${i + 1} ${I18N.countOf} ${lbPhotos.length}`;
+  document.getElementById('lb-hd').hidden = true;
+
+  const target = lbScreenWantsOriginal(p) ? p.image_url : p.full_url;
+  if (lbReady.has(target)) {
+    img.src = target;
+    img.classList.remove('lb-loading');
+  } else {
+    img.src = lbReady.has(p.full_url) ? p.full_url : p.preview_url;
+    img.classList.toggle('lb-loading', !lbReady.has(p.full_url));
+    lbUpgrade(p, target);
+  }
+  lbPreloadAround(i);
+}
+
+// Called whenever the visitor zooms in: bring in the original's full detail.
+// A small spinner says it is coming; the picture stays where it is.
+function lbZoomedIn() {
+  const p = lbPhotos[lbIndex];
+  const img = document.getElementById('lightbox-img');
+  if (!p || !lbHasOriginal(p) || img.getAttribute('src') === p.image_url) return;
+  const hd = document.getElementById('lb-hd');
+  if (!lbReady.has(p.image_url)) hd.hidden = false;
+  lbUpgrade(p, p.image_url, () => { hd.hidden = true; });
+}
+
+function openLightbox(i, trigger) {
   lbIndex = i;
+  lbReturnFocus = trigger || document.activeElement;
   const img = document.getElementById('lightbox-img');
   img.style.transition = 'none';
   img.style.opacity = '1';
-  img.src = lbPhotos[i].image_url;
+  lbShow(i);
   lbResetZoom(false);
-  document.getElementById('lightbox').style.display = 'flex';
+  const lb = document.getElementById('lightbox');
+  lb.hidden = false;
   document.body.style.overflow = 'hidden';
+  lb.querySelector('.lb-close').focus();
 }
 
-function closeLightbox(e) {
-  if (e && e.target !== document.getElementById('lightbox')) return;
-  document.getElementById('lightbox').style.display = 'none';
+function closeLightbox() {
+  document.getElementById('lightbox').hidden = true;
   document.body.style.overflow = '';
+  if (lbReturnFocus) lbReturnFocus.focus();
 }
 
 function lbNav(dir, e) {
   if (e) e.stopPropagation();
   if (!lbPhotos.length) return;
   const img = document.getElementById('lightbox-img');
+  if (prefersReducedMotion()) {
+    lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
+    lbShow(lbIndex);
+    lbResetZoom(false);
+    return;
+  }
   img.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
   img.style.opacity = '0';
   img.style.transform = `translateX(${-dir * 24}px)`;
   setTimeout(() => {
     lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
-    img.src = lbPhotos[lbIndex].image_url;
+    lbShow(lbIndex);
     lbScale = 1; lbPanX = 0; lbPanY = 0;
     img.style.transition = 'none';
     img.style.transform = `translateX(${dir * 24}px)`;
@@ -381,10 +473,17 @@ function lbNav(dir, e) {
 }
 
 document.addEventListener('keydown', e => {
-  if (document.getElementById('lightbox').style.display === 'flex') {
-    if (e.key === 'ArrowLeft') lbNav(-1);
-    if (e.key === 'ArrowRight') lbNav(1);
-    if (e.key === 'Escape') { document.getElementById('lightbox').style.display='none'; document.body.style.overflow=''; }
+  const lb = document.getElementById('lightbox');
+  if (lb.hidden) return;
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'Escape') closeLightbox();
+  // Keep Tab inside the dialog: it is modal, so the page behind is inert.
+  if (e.key === 'Tab') {
+    const btns = [...lb.querySelectorAll('button')];
+    const at = btns.indexOf(document.activeElement);
+    e.preventDefault();
+    btns[(at + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
   }
 });
 
@@ -435,6 +534,7 @@ document.addEventListener('keydown', e => {
       const pts = [...activePointers.values()];
       const d = dist(pts[0], pts[1]);
       lbScale = Math.max(1, Math.min(4, pinchStartScale * (d / pinchStartDist)));
+      if (lbScale > 1.2) lbZoomedIn();
       const p = lbClampPan(lbPanX, lbPanY, lbScale);
       lbPanX = p.x; lbPanY = p.y;
       lbSetTransform(lbPanX, lbPanY, lbScale, false);
@@ -495,12 +595,13 @@ document.addEventListener('keydown', e => {
     const p = lbClampPan(lbPanX, lbPanY, lbScale);
     lbPanX = p.x; lbPanY = p.y;
     lbSetTransform(lbPanX, lbPanY, lbScale, false);
+    if (lbScale > 1.2) lbZoomedIn();
   }, { passive: false });
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  buildPills();
-  if (citiesData.length) selectCity(citiesData[0].slug);
-});
+// The gallery markup is above this script, so it can be filled in right away
+// rather than on DOMContentLoaded, before the placeholder city label shows.
+buildPills();
+if (citiesData.length) selectCity(citiesData[0].slug);
 </script>
 {{ end }}

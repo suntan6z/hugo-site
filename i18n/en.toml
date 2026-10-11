@@ -51,6 +51,14 @@ other = "Photos coming soon"
 other = "I haven't uploaded my %city% photos yet — check back later!"
 [photo_alt]
 other = "%city% photo"
+[gallery_viewer]
+other = "Photo viewer"
+[photo_previous]
+other = "Previous photo"
+[photo_next]
+other = "Next photo"
+[loading_original]
+other = "Loading full resolution…"
 
 # ── Blog post ────────────────────────────────────────────────────
 [back_to_blog]
@@ -65,6 +73,10 @@ other = "Share"
 other = "Share on"
 [copy_link]
 other = "Copy link"
+[link_copied]
+other = "Link copied"
+[share_more]
+other = "More…"
 [partner_organisation]
 other = "Partner organisation"
 [eu_funded_alt]
@@ -81,6 +93,10 @@ other = "You're subscribed!"
 other = "You're already subscribed!"
 [email_placeholder]
 other = "your@email.com"
+[newsletter_email_label]
+other = "Email address"
+[newsletter_error]
+other = "Something went wrong. Please try again in a moment."
 [subscribe]
 other = "Subscribe"
 [subscribing]
@@ -89,6 +105,10 @@ other = "Subscribing… "
 other = "Previous"
 [nav_next]
 other = "Next"
+[on_this_page]
+other = "On this page"
+[related_articles]
+other = "Keep reading"
 
 # ── Blog list / categories ───────────────────────────────────────
 [blog_heading]
@@ -209,6 +229,10 @@ other = "RSS Feed"
 other = "Toggle dark mode"
 [change_language]
 other = "Change language"
+[skip_to_content]
+other = "Skip to content"
+[close]
+other = "Close"
 [og_locale]
 other = "en_US"
 [job_title]

@@ -110,12 +110,7 @@
             <h2>{{ $page.Title }}</h2>
             <p class="article-excerpt">{{ with $page.Description }}{{ . | truncate 160 }}{{ else }}{{ $page.Summary | replaceRE "<h[1-6][^>]*>[^<]*</h[1-6]>" "" | plainify | truncate 160 }}{{ end }}</p>
           </div>
-          {{ $thumb := partial "resolve-thumb.html" (dict "page" $page) }}
-          {{ if $thumb }}
-          <div class="article-thumb">
-            <img src="{{ $thumb }}" alt="{{ $page.Title }}" loading="lazy" />
-          </div>
-          {{ end }}
+          {{ partial "card-thumb.html" (dict "page" $page) }}
         </div>
       </a>
       {{ end }}

@@ -50,6 +50,14 @@ other = "Photos bientôt disponibles"
 other = "Je n'ai pas encore mis en ligne mes photos de %city% — revenez plus tard !"
 [photo_alt]
 other = "Photo de %city%"
+[gallery_viewer]
+other = "Visionneuse de photos"
+[photo_previous]
+other = "Photo précédente"
+[photo_next]
+other = "Photo suivante"
+[loading_original]
+other = "Chargement en pleine résolution…"
 
 # ── Article de blog ──────────────────────────────────────────────
 [back_to_blog]
@@ -64,6 +72,10 @@ other = "Partager"
 other = "Partager sur"
 [copy_link]
 other = "Copier le lien"
+[link_copied]
+other = "Lien copié"
+[share_more]
+other = "Plus…"
 [partner_organisation]
 other = "Organisation partenaire"
 [eu_funded_alt]
@@ -80,6 +92,10 @@ other = "Vous êtes abonné·e !"
 other = "Vous êtes déjà abonné·e !"
 [email_placeholder]
 other = "votre@email.com"
+[newsletter_email_label]
+other = "Adresse e-mail"
+[newsletter_error]
+other = "Une erreur est survenue. Réessayez dans un instant."
 [subscribe]
 other = "S'abonner"
 [subscribing]
@@ -88,6 +104,10 @@ other = "Abonnement… "
 other = "Précédent"
 [nav_next]
 other = "Suivant"
+[on_this_page]
+other = "Sur cette page"
+[related_articles]
+other = "À lire aussi"
 
 # ── Liste du blog / catégories ───────────────────────────────────
 [blog_heading]
@@ -208,6 +228,10 @@ other = "Flux RSS"
 other = "Basculer le mode sombre"
 [change_language]
 other = "Changer de langue"
+[skip_to_content]
+other = "Aller au contenu"
+[close]
+other = "Fermer"
 [og_locale]
 other = "fr_FR"
 [job_title]

@@ -31,7 +31,7 @@ description: "Lorenzo Loconsole — Italian in France. Digital sovereignty, web 
         </div>
         <div class="fade-up">
           <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:var(--card-shadow)">
-            <h3 style="font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:1.5rem">The site Journey</h3>
+            <h3 style="font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:1.5rem">The Site Journey</h3>
             <div class="timeline">
               <div class="timeline-item">
                 <span class="timeline-year">2014</span>

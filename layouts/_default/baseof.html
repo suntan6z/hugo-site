@@ -25,9 +25,17 @@
   {{- if and .IsPage (eq .Section "blog") -}}
     {{- $thumb := partial "resolve-thumb.html" (dict "page" .) -}}
     {{- if $thumb -}}
-      {{- $ogImage = absURL $thumb -}}
-      {{- $ogWidth = "" -}}
-      {{- $ogHeight = "" -}}
+      {{- /* 1200px JPEG: what every link-preview scraper accepts, and well under
+             Facebook's 8 MB cap that some original photos exceed. */ -}}
+      {{- with partial "image-variant.html" (dict "page" . "src" $thumb "width" 1200 "format" "jpg") -}}
+        {{- $ogImage = .Permalink -}}
+        {{- $ogWidth = .Width -}}
+        {{- $ogHeight = .Height -}}
+      {{- else -}}
+        {{- $ogImage = absURL $thumb -}}
+        {{- $ogWidth = "" -}}
+        {{- $ogHeight = "" -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 
@@ -142,6 +150,7 @@
     "dateModified": "{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}",
     "url": "{{ .Permalink }}",
     "mainEntityOfPage": "{{ .Permalink }}",
+    "image": "{{ $ogImage }}",
     "articleSection": {{ .Params.category | jsonify | safeJS }},
     "inLanguage": {{ .Site.Language.Lang | jsonify | safeJS }},
     "author": {
@@ -179,8 +188,9 @@
   {{- end }}
 </head>
 <body>
+  <a href="#main" class="skip-link">{{ i18n "skip_to_content" }}</a>
   {{ partial "header.html" . }}
-  <main>{{ block "main" . }}{{ end }}</main>
+  <main id="main" tabindex="-1">{{ block "main" . }}{{ end }}</main>
   {{ partial "footer.html" . }}
   <script src="/js/main.js"></script>
 </body>

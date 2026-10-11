@@ -21,6 +21,20 @@ defaultContentLanguageInSubdir = true
 # phantom /categories/ pages (and the "no layout for kind taxonomy" build warning).
 disableKinds = ["taxonomy", "term"]
 
+# "Keep reading" under an article (layouts/blog/single.html): posts sharing
+# its category first, then the ones closest in date. Hugo's default indices
+# (keywords, tags, date) don't fit a site whose only grouping is `category`.
+[related]
+  includeNewer = true
+  threshold = 0
+  toLower = false
+  [[related.indices]]
+    name = "category"
+    weight = 100
+  [[related.indices]]
+    name = "date"
+    weight = 10
+
 # ── Languages ─────────────────────────────────────────────────────────────
 # Shared params live in the top-level [params] block below and are inherited by
 # every language. Only language-varying params (description) and the
@@ -128,6 +142,11 @@ disableKinds = ["taxonomy", "term"]
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
+  # The in-article table of contents lists sections (##) only; sub-sections
+  # would make it as long as some of the posts.
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 2
   [markup.highlight]
     style = "github"
 

@@ -38,19 +38,19 @@ description: "Contactez Lorenzo Loconsole — questions, collaborations, retours
             <div class="form-row">
               <div class="form-group">
                 <label for="firstName">Prénom <span class="req">*</span></label>
-                <input type="text" id="firstName" name="firstName" placeholder="Votre prénom" minlength="3" required />
+                <input type="text" id="firstName" name="firstName" placeholder="Votre prénom" autocomplete="given-name" required />
                 <p class="field-error" id="firstName-error" style="display:none;font-size:0.8rem;color:var(--primary);margin-top:0.3rem"></p>
               </div>
               <div class="form-group">
                 <label for="lastName">Nom <span class="req">*</span></label>
-                <input type="text" id="lastName" name="lastName" placeholder="Votre nom" minlength="3" required />
+                <input type="text" id="lastName" name="lastName" placeholder="Votre nom" autocomplete="family-name" required />
                 <p class="field-error" id="lastName-error" style="display:none;font-size:0.8rem;color:var(--primary);margin-top:0.3rem"></p>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="email">Adresse e-mail <span class="req">*</span></label>
-                <input type="email" id="email" name="email" placeholder="votre@email.com" required />
+                <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email" required />
                 <p class="field-error" id="email-error" style="display:none;font-size:0.8rem;color:var(--primary);margin-top:0.3rem"></p>
               </div>
               <div class="form-group">
@@ -112,7 +112,7 @@ description: "Contactez Lorenzo Loconsole — questions, collaborations, retours
                     <option value="+52">🇲🇽 +52</option>
                     <option value="+54">🇦🇷 +54</option>
                   </select>
-                  <input type="tel" id="phone" name="phone" placeholder="6 00 00 00 00" />
+                  <input type="tel" id="phone" name="phone" placeholder="6 00 00 00 00" autocomplete="tel-national" />
                 </div>
               </div>
             </div>

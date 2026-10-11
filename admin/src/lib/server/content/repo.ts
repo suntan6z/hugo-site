@@ -7,6 +7,7 @@ import { IS_LOCAL, SITE_ROOT, github } from '../env.ts';
 import { gh, GitHubError } from '../github/api.ts';
 import { memo, invalidateAll, DEFAULT_TTL_MS } from '../cache.ts';
 import { LOG_FORMAT, SHA_RE, parseGitLog, mergeRevisions, type Revision } from './revisions.ts';
+import { imageKind, stripMetadata } from './image-metadata.ts';
 
 export type { Revision };
 
@@ -40,6 +41,16 @@ export interface Repo {
 }
 
 export class ConcurrentWriteError extends Error {}
+
+/**
+ * Every image the portal commits leaves without metadata — camera, date, GPS
+ * position (see image-metadata.ts). The browser already re-encodes uploads
+ * through a canvas, which drops it; this is the server-side guarantee for
+ * anything that reaches a commit some other way. Both backends call it first.
+ */
+function withoutMetadata(ops: FileOp[]): FileOp[] {
+	return ops.map((op) => ('bytes' in op && imageKind(op.bytes) ? { ...op, bytes: stripMetadata(op.bytes) } : op));
+}
 
 /* ------------------------------------------------------------------ local */
 
@@ -153,6 +164,7 @@ class LocalRepo implements Repo {
 	}
 
 	async commit(_message: string, ops: FileOp[]) {
+		ops = withoutMetadata(ops);
 		// Moves are staged to temporary names first: renumbering a gallery swaps
 		// names that are still occupied (1->2 while 2->3), and a naive sequential
 		// rename would clobber a file that a later move still needs.
@@ -318,6 +330,7 @@ class GitHubRepo implements Repo {
 	 * its images land as ONE commit and StaticHost runs ONE build.
 	 */
 	async commit(message: string, ops: FileOp[], attempt = 1): Promise<{ sha: string }> {
+		ops = withoutMetadata(ops);
 		const ref = await gh<{ object: { sha: string } }>('GET', `/git/ref/heads/${github.branch}`);
 		const headSha = ref.object.sha;
 		const head = await gh<{ tree: { sha: string } }>('GET', `/git/commits/${headSha}`);

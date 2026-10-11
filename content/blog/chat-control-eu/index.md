@@ -1,5 +1,5 @@
 ---
-title: "It's not over. Chat control... Again !"
+title: "It's not over. Chat control... Again!"
 date: 2026-07-07
 slug: "chat-control-eu"
 category: "Cybersecurity"

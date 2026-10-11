@@ -1,10 +1,11 @@
 /**
  * Client-side image preparation.
  *
- * Resizing here is mandatory, not an optimisation: the site's image render hook
- * (layouts/_default/_markup/render-image.html) resolves bundle images as page
- * resources but never calls .Resize, so whatever pixels are committed are the
- * pixels served.
+ * The site makes its own smaller copies (srcset in
+ * layouts/_default/_markup/render-image.html, card thumbnails, the gallery
+ * strip), but it still links the committed file as the largest size, and every
+ * StaticHost build re-processes every image from scratch — so what is committed
+ * here sets both the heaviest download and the build time. Keep it small.
  *
  * (Bundle resources are published once, under /en/ — verified against a real
  * build: /en is 381 MB while /fr and /it are ~2.8 MB each. The other languages

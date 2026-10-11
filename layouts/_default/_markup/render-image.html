@@ -1,8 +1,14 @@
 {{- /*
   Image render hook: add intrinsic width/height (prevents layout shift / CLS),
   loading="lazy" and decoding="async" to content images. Page-bundle images are
-  resolved as page resources so real pixel dimensions are emitted; external or
-  root-relative images fall back to a plain lazy-loaded <img>.
+  resolved as page resources so real pixel dimensions are emitted, plus a
+  srcset of resized WebP copies so a phone never downloads the full original;
+  external or root-relative images fall back to a plain lazy-loaded <img>.
+
+  `src` deliberately stays the original file: layouts/partials/first-content-image.html
+  reads it back out of the rendered body as the default thumbnail, and the
+  portal mirrors that rule (admin/src/lib/thumbnail.ts) against file names.
+  Browsers that understand srcset never fetch it.
 */ -}}
 {{- $dest := .Destination -}}
 {{- $alt := .PlainText -}}
@@ -13,7 +19,21 @@
   {{- end -}}
 {{- end -}}
 {{- if and $img (gt $img.Width 0) (gt $img.Height 0) -}}
-<img src="{{ $img.RelPermalink }}" alt="{{ $alt }}" width="{{ $img.Width }}" height="{{ $img.Height }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }} />
+  {{- $srcset := slice -}}
+  {{- if not (in (slice "svg" "gif") $img.MediaType.SubType) -}}
+    {{- range $w := slice 480 960 1600 -}}
+      {{- if gt $img.Width $w -}}
+        {{- $v := $img.Resize (printf "%dx webp q80" $w) -}}
+        {{- $srcset = $srcset | append (printf "%s %dw" $v.RelPermalink $w) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- /* An original no wider than the largest step is already a sensible size
+           (the portal uploads 1600px WebP), so it is the top candidate itself. */ -}}
+    {{- if le $img.Width 1600 -}}
+      {{- $srcset = $srcset | append (printf "%s %dw" $img.RelPermalink $img.Width) -}}
+    {{- end -}}
+  {{- end -}}
+<img src="{{ $img.RelPermalink }}"{{ with $srcset }} srcset="{{ delimit . ", " }}" sizes="(min-width: 54rem) 48rem, calc(100vw - 4rem)"{{ end }} alt="{{ $alt }}" width="{{ $img.Width }}" height="{{ $img.Height }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }} />
 {{- else -}}
 <img src="{{ $dest | safeURL }}" alt="{{ $alt }}" loading="lazy" decoding="async"{{ with .Title }} title="{{ . }}"{{ end }} />
 {{- end -}}

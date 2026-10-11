@@ -1,0 +1,40 @@
+{{- /*
+  Turns an image URL that one of the resolve-* partials returned into a
+  resized copy, when that URL is one of the page's own bundle images. Returns
+  the processed resource, or "" when the URL is external, root-relative
+  (static/), an SVG/GIF, or otherwise not a processable page resource — the
+  caller then falls back to the plain URL.
+
+  Which image is the thumbnail stays decided by resolve-thumb.html; this only
+  decides how many pixels of it are sent.
+
+  Bundle resources are published once, under /en/, whatever the page's
+  language, so the URL's directory is matched on the bundle's slug rather than
+  on .RelPermalink.
+
+  Input: dict "page" PAGE "src" STRING "width" INT
+         "format" ("webp" default | "jpg") "fill" (optional "WxH", crops)
+*/ -}}
+{{- $page := .page -}}
+{{- $src := .src -}}
+{{- $width := .width | default 800 -}}
+{{- $format := .format | default "webp" -}}
+{{- $result := "" -}}
+{{- if and $src (not (or (hasPrefix $src "http") (hasPrefix $src "//") (hasPrefix $src "/img/"))) -}}
+  {{- $slug := path.Base (strings.TrimSuffix "/" $page.RelPermalink) -}}
+  {{- if eq (path.Base (path.Dir $src)) $slug -}}
+    {{- with $page.Resources.GetMatch (path.Base $src) -}}
+      {{- if and (eq .ResourceType "image") (not (in (slice "svg" "gif") .MediaType.SubType)) -}}
+        {{- $q := cond (eq $format "jpg") "q85" "q80" -}}
+        {{- if $.fill -}}
+          {{- $result = .Fill (printf "%s %s %s smart" $.fill $format $q) -}}
+        {{- else if gt .Width $width -}}
+          {{- $result = .Resize (printf "%dx %s %s" $width $format $q) -}}
+        {{- else -}}
+          {{- $result = .Process (printf "%s %s" $format $q) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $result -}}

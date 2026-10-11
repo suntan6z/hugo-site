@@ -43,19 +43,31 @@ mobileNav?.querySelectorAll('a').forEach(link => {
   });
 });
 
-// Fade-up on scroll (Intersection Observer)
-const fadeEls = document.querySelectorAll('.fade-up');
-if (fadeEls.length) {
+// Fade-up on scroll. Only elements that start below the first screen are
+// hidden and revealed: anything already in view at load is left alone, so the
+// top of a page never shows up washed out while it fades in. Skipped entirely
+// for visitors who ask for reduced motion.
+const fadeEls = [...document.querySelectorAll('.fade-up')]
+  .filter(el => el.getBoundingClientRect().top > window.innerHeight);
+if (fadeEls.length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      observer.unobserve(el);
+      el.classList.replace('fade-pending', 'fade-revealing');
+      // Drop the transition once done, so it doesn't override the element's
+      // own (e.g. an article card's hover lift).
+      const done = (e) => {
+        if (e.target !== el) return; // a child's transition bubbling up
+        el.classList.remove('fade-revealing');
+        el.removeEventListener('transitionend', done);
+      };
+      el.addEventListener('transitionend', done);
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-  fadeEls.forEach(el => observer.observe(el));
+  fadeEls.forEach(el => { el.classList.add('fade-pending'); observer.observe(el); });
 }
 
 /* ── Contact page (only runs when the contact form is present) ── */
@@ -85,8 +97,9 @@ if (document.getElementById('contact-form')) {
     let valid = true;
 
     const fields = [
-      { id: 'firstName', errorId: 'firstName-error', msg: 'First name must be at least 3 characters.', check: v => v.length >= 3 },
-      { id: 'lastName', errorId: 'lastName-error', msg: 'Last name must be at least 3 characters.', check: v => v.length >= 3 },
+      // Any non-empty name: two-letter names (Li, Wu, Ng, Al…) are real names.
+      { id: 'firstName', errorId: 'firstName-error', msg: 'Please enter your first name.', check: v => v.length >= 1 },
+      { id: 'lastName', errorId: 'lastName-error', msg: 'Please enter your last name.', check: v => v.length >= 1 },
       { id: 'email', errorId: 'email-error', msg: 'Please enter a valid email.', check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
       { id: 'subject', errorId: 'subject-error', msg: 'Please select a subject.', check: v => v !== '' },
       { id: 'message', errorId: 'message-error', msg: 'Message must be at least 50 characters (max 500).', check: v => v.length >= 50 && v.length <= 500 },

@@ -81,8 +81,9 @@ async function parseEditorForm(f: FormData, slug: string): Promise<Parsed> {
 	}
 
 	// Images arrive already resized and re-encoded to WebP by the browser
-	// (src/lib/client/image.ts), because the site's render hook serves bundle
-	// resources at their committed size.
+	// (src/lib/client/image.ts). The site's render hook adds smaller srcset
+	// copies, but keeping the committed file small keeps the repo and every
+	// StaticHost build (which re-processes all images from scratch) fast.
 	const newImages: { name: string; bytes: Uint8Array }[] = [];
 	for (const entry of f.getAll('newimage')) {
 		if (!(entry instanceof File) || entry.size === 0) continue;

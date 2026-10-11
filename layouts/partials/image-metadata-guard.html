@@ -1,0 +1,53 @@
+{{- /*
+  Refuses to build the site while any image it publishes still carries
+  metadata (EXIF camera data, GPS position, IPTC/XMP author fields…).
+
+  A failed build publishes nothing — StaticHost keeps serving the previous
+  version — so a photo committed straight from a phone, outside the admin
+  portal (which strips metadata itself), can never reach the web with its
+  location in it. The fix is one command, printed in the error.
+
+  Covers what Hugo can see: every image in a page bundle (articles, gallery
+  cities) and in assets/. static/ is copied verbatim and is covered by the CI
+  check (scripts/image-metadata.mjs in .github/workflows/hugo-build.yml).
+  Hugo hides GPS from .Meta by default, but a photo with a location always has
+  other EXIF fields too, so "any EXIF/IPTC/XMP at all" catches it.
+
+  Called once per build, from the default language's homepage.
+*/ -}}
+{{- /* Each entry: the resource, and where it lives for the error message
+       (not .RelPermalink, which would publish the file). */ -}}
+{{- $images := slice -}}
+{{- range hugo.Sites -}}
+  {{- range .Pages -}}
+    {{- $dir := "" -}}
+    {{- with .File -}}{{- $dir = .Dir -}}{{- end -}}
+    {{- range .Resources.ByType "image" -}}{{- $images = $images | append (dict "r" . "path" (printf "content/%s%s" $dir .Name)) -}}{{- end -}}
+  {{- end -}}
+  {{- /* Gallery bundles are headless (list: never), so .Pages skips them. */ -}}
+  {{- $site := . -}}
+  {{- range hugo.Data.gallery_cities -}}
+    {{- $slug := .slug -}}
+    {{- with $site.GetPage (printf "/gallery/%s" $slug) -}}
+      {{- range .Resources.ByType "image" -}}{{- $images = $images | append (dict "r" . "path" (printf "content/gallery/%s/%s" $slug .Name)) -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range resources.Match "**" -}}
+  {{- if eq .ResourceType "image" -}}{{- $images = $images | append (dict "r" . "path" (printf "assets/%s" .Name)) -}}{{- end -}}
+{{- end -}}
+
+{{- $bad := slice -}}
+{{- range $images -}}
+  {{- $path := .path -}}
+  {{- if in (slice "jpeg" "png" "webp") .r.MediaType.SubType -}}
+    {{- with .r.Meta -}}
+      {{- if or (gt (len .Exif) 0) (gt (len .IPTC) 0) (gt (len .XMP) 0) (ne .Lat 0.0) (ne .Long 0.0) -}}
+        {{- $bad = $bad | append $path -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- with uniq $bad -}}
+  {{- errorf "These images still carry metadata (camera, date, possibly GPS location) and would be published with it:\n  %s\nRemove it with: node scripts/image-metadata.mjs --fix" (delimit . "\n  ") -}}
+{{- end -}}

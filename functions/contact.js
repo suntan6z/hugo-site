@@ -5,8 +5,8 @@ import { isRateLimited, clientIp } from './lib/rateLimit.js';
 function validate(body) {
   const errors = [];
 
-  if (typeof body.firstName !== 'string' || body.firstName.trim().length < 3) errors.push('firstName');
-  if (typeof body.lastName !== 'string' || body.lastName.trim().length < 3) errors.push('lastName');
+  if (typeof body.firstName !== 'string' || body.firstName.trim().length < 1) errors.push('firstName');
+  if (typeof body.lastName !== 'string' || body.lastName.trim().length < 1) errors.push('lastName');
 
   if (!isValidEmail(body.email)) errors.push('email');
 

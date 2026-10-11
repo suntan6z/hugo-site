@@ -1,8 +1,10 @@
 {{- $excluded := slice "privacy-policy" "categories" -}}
+{{- /* `untranslated: true` placeholders are `noindex` (see baseof.html) — listing
+       them here would submit URLs we ask search engines not to index. */ -}}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   {{- range .Site.Pages }}
   {{- $path := strings.TrimPrefix "/" .Path }}
-  {{- if not (in $excluded $path) }}
+  {{- if and (not (in $excluded $path)) (not .Params.untranslated) }}
   <url>
     <loc>{{ .Permalink }}</loc>
     {{- if not .Lastmod.IsZero }}
