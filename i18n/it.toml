@@ -58,6 +58,8 @@ other = "Foto precedente"
 other = "Foto successiva"
 [loading_original]
 other = "Caricamento a piena risoluzione…"
+[download_original]
+other = "Scarica l'originale"
 
 # ── Articolo del blog ────────────────────────────────────────────
 [back_to_blog]

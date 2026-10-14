@@ -111,17 +111,25 @@
     </div>
 
     <!-- Lightbox -->
-    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="{{ i18n "gallery_viewer" }}" hidden onclick="if (event.target === this) closeLightbox()">
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="{{ i18n "gallery_viewer" }}" hidden>
       <button type="button" class="lb-btn lb-close" onclick="closeLightbox()" aria-label="{{ i18n "close" }}">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <button type="button" class="lb-btn lb-prev" onclick="lbNav(-1, event)" aria-label="{{ i18n "photo_previous" }}">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <img id="lightbox-img" class="lightbox-img" src="" alt="" draggable="false" onclick="event.stopPropagation()" />
+      <div class="lb-stage" onclick="if (event.target === this) closeLightbox()">
+        <img id="lb-ghost-prev" class="lb-ghost" src="" alt="" aria-hidden="true" draggable="false" hidden onclick="lbNav(-1, event)" />
+        <img id="lb-ghost-next" class="lb-ghost" src="" alt="" aria-hidden="true" draggable="false" hidden onclick="lbNav(1, event)" />
+        <img id="lightbox-img" class="lightbox-img" src="" alt="" draggable="false" onclick="event.stopPropagation()" />
+      </div>
       <button type="button" class="lb-btn lb-next" onclick="lbNav(1, event)" aria-label="{{ i18n "photo_next" }}">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+      <a class="lb-btn lb-download" id="lb-download" href="" download aria-label="{{ i18n "download_original" }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>
+        <span>{{ i18n "download_original" }}</span>
+      </a>
       <p class="lb-counter" id="lb-counter" aria-live="polite"></p>
       <p class="lb-hd" id="lb-hd" role="status" hidden><span class="lb-hd-spinner" aria-hidden="true"></span>{{ i18n "loading_original" }}</p>
     </div>
@@ -182,6 +190,7 @@
   {{ $cityNames = merge $cityNames (dict .slug .name) }}
 {{ end }}
 {{ $photos := slice }}
+{{ $names := dict }}
 {{ range hugo.Data.gallery_cities }}
   {{ $city := .slug }}
   {{ with $.Site.GetPage (printf "/gallery/%s" $city) }}
@@ -206,7 +215,15 @@
         {{ with $override.caption }}{{ $caption = . }}{{ end }}
         {{ with $override.alt_text }}{{ $altText = . }}{{ end }}
       {{ end }}
-      {{/* Three sizes, never the original (some are 8 MB):
+      {{/* One readable name per photo, <city>-<NN> (amsterdam-02), used for
+           the three copies below and for the "Download original" file. */}}
+      {{ $name := printf "%s-%s" $city (path.BaseName $filename) }}
+      {{ if lt $num 999999 }}{{ $name = printf "%s-%02d" $city $num }}{{ end }}
+      {{/* 2.jpg and 02.jpg would both be <city>-02 and silently overwrite each
+           other's copies: stop the build and say which files instead. */}}
+      {{ with index $names $name }}{{ errorf "gallery: %s and %s in content/gallery/%s/ would both be published as %s; renumber one" . $filename $city $name }}{{ end }}
+      {{ $names = merge $names (dict $name $filename) }}
+      {{/* Three AVIF sizes, never the original (some are 8 MB):
              full_url    — fits 1920px, what the lightbox settles on;
              preview_url — the same picture at 480px, shown the instant a photo
                            is opened while full_url loads (same shape, so the
@@ -214,13 +231,19 @@
              strip_url   — a 2x crop of the strip's 17rem×22rem frame.
            The two small ones are made from the 1920px copy, not the original,
            so each multi-MB original is decoded once per build, not three times.
+           Each is copied to /gallery/<city>/<name>-<size>.avif, so a visitor
+           saving one gets amsterdam-02-1920.avif, not 2_hu_cf3e9b8e….webp.
+           (Hugo rates AVIF q60 equal to WebP/JPEG q75; here it is ~20% smaller
+           than the WebP q82 it replaced.)
            image_url stays the original's path: it is the key
            data/gallery_photos.json and the portal know the photo by. */}}
+      {{ $dir := printf "gallery/%s" $city }}
       {{ $full := . }}
-      {{ if or (gt .Width 1920) (gt .Height 1920) }}{{ $full = .Fit "1920x1920 webp q82" }}{{ else }}{{ $full = .Process "webp q82" }}{{ end }}
-      {{ $preview := $full.Fit "480x480 webp q60" }}
-      {{ $strip := $full.Fill "544x704 webp q78 smart" }}
-      {{ $photos = $photos | append (dict "city" $city "image_url" $imageURL "strip_url" $strip.RelPermalink "full_url" $full.RelPermalink "preview_url" $preview.RelPermalink "w" $full.Width "h" $full.Height "ow" .Width "oh" .Height "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
+      {{ if or (gt .Width 1920) (gt .Height 1920) }}{{ $full = .Fit "1920x1920 avif q60" }}{{ else }}{{ $full = .Process "avif q60" }}{{ end }}
+      {{ $preview := $full.Fit "480x480 avif q50" | resources.Copy (printf "%s/%s-480.avif" $dir $name) }}
+      {{ $strip := $full.Fill "544x704 avif q55 smart" | resources.Copy (printf "%s/%s-strip.avif" $dir $name) }}
+      {{ $full = $full | resources.Copy (printf "%s/%s-1920.avif" $dir $name) }}
+      {{ $photos = $photos | append (dict "city" $city "name" $name "image_url" $imageURL "strip_url" $strip.RelPermalink "full_url" $full.RelPermalink "preview_url" $preview.RelPermalink "w" $full.Width "h" $full.Height "ow" .Width "oh" .Height "caption" $caption "alt_text" $altText "sortkey" $sortkey) }}
     {{ end }}
   {{ end }}
 {{ end }}
@@ -230,6 +253,7 @@ window.I18N = Object.assign(window.I18N || {}, {{ (dict
   "photosComingSoon" (i18n "photos_coming_soon")
   "galleryEmptyMsg"  (i18n "gallery_empty_msg")
   "countOf"          (i18n "count_of")
+  "downloadOriginal" (i18n "download_original")
 ) | jsonify | safeJS }});
 const galleryData = {{ $photos | jsonify | safeJS }};
 const citiesData = (function shuffle(a) {
@@ -321,6 +345,7 @@ function lbSetTransform(x, y, scale, withTransition) {
 function lbResetZoom(withTransition) {
   lbScale = 1; lbPanX = 0; lbPanY = 0;
   lbSetTransform(0, 0, 1, withTransition);
+  lbSettleSoon();
 }
 
 function lbMaxPan(scale) {
@@ -388,7 +413,7 @@ function lbUpgrade(p, url, onDone) {
 function lbPreloadAround(i) {
   [i + 1, i - 1].forEach(j => {
     const p = lbPhotos[(j + lbPhotos.length) % lbPhotos.length];
-    if (p && !lbReady.has(p.full_url)) lbFetch(p.full_url).catch(() => {});
+    if (p && !lbReady.has(p.full_url)) lbFetch(p.full_url).then(lbRefreshGhosts, () => {});
   });
 }
 
@@ -402,6 +427,11 @@ function lbShow(i) {
   img.alt = p.alt_text || p.caption || '';
   document.getElementById('lb-counter').textContent = `${i + 1} ${I18N.countOf} ${lbPhotos.length}`;
   document.getElementById('lb-hd').hidden = true;
+  // The original, under a readable name: what the photo is, not how it's stored.
+  const dl = document.getElementById('lb-download');
+  dl.href = p.image_url;
+  dl.download = p.name + p.image_url.slice(p.image_url.lastIndexOf('.')).toLowerCase();
+  dl.title = `${I18N.downloadOriginal} · ${p.ow} × ${p.oh}`;
 
   const target = lbScreenWantsOriginal(p) ? p.image_url : p.full_url;
   if (lbReady.has(target)) {
@@ -413,6 +443,38 @@ function lbShow(i) {
     lbUpgrade(p, target);
   }
   lbPreloadAround(i);
+}
+
+// After zooming a large photo in and out, browsers on macOS (Safari, Chrome,
+// Brave) can leave columns of the zoomed photo behind as thin streaks: stale
+// GPU tiles that are never redrawn. The stage is its own GPU layer (see
+// .lb-stage); dropping it for a couple of frames and bringing it back builds
+// it from fresh tiles, so nothing from the zoom can survive.
+function lbRepaint() {
+  const stage = document.querySelector('.lb-stage');
+  stage.style.willChange = 'auto';
+  requestAnimationFrame(() => requestAnimationFrame(() => { stage.style.willChange = ''; }));
+}
+
+// Back at normal size, the original is no longer needed (unless this screen
+// really shows more than the 1920px copy has): drop back to that copy, which
+// is far lighter to keep decoded. Waits out the zoom-out transition, then
+// checks the visitor hasn't zoomed in again.
+let lbSettleTimer = 0;
+function lbSettleSoon() {
+  clearTimeout(lbSettleTimer);
+  lbSettleTimer = setTimeout(() => {
+    const p = lbPhotos[lbIndex];
+    const img = document.getElementById('lightbox-img');
+    if (lbScale !== 1 || !p) return;
+    // No transform at all, rather than an identity one, lets the photo leave
+    // its own GPU layer.
+    img.style.transition = 'none';
+    img.style.transform = 'none';
+    lbRepaint();
+    if (img.getAttribute('src') !== p.image_url || lbScreenWantsOriginal(p)) return;
+    lbUpgrade(p, p.full_url);
+  }, 320);
 }
 
 // Called whenever the visitor zooms in: bring in the original's full detail.
@@ -432,45 +494,164 @@ function openLightbox(i, trigger) {
   const img = document.getElementById('lightbox-img');
   img.style.transition = 'none';
   img.style.opacity = '1';
+  img.style.filter = '';
   lbShow(i);
   lbResetZoom(false);
   const lb = document.getElementById('lightbox');
   lb.hidden = false;
+  lbLayoutGhosts();    // after unhiding: it measures the photos
   document.body.style.overflow = 'hidden';
   lb.querySelector('.lb-close').focus();
 }
 
 function closeLightbox() {
+  if (lbNavFinish) lbNavFinish();
   document.getElementById('lightbox').hidden = true;
   document.body.style.overflow = '';
   if (lbReturnFocus) lbReturnFocus.focus();
 }
 
+/*
+  The previous and next photos sit dimmed and blurred behind the current one,
+  partly tucked under it. Moving to one slides it to the centre and into focus
+  while the current photo steps back into its place on the other side.
+  Transforms, filter and opacity only, so the slide stays on the GPU.
+*/
+const LB_GHOST_SCALE = 0.8;
+const LB_GHOST_TUCK = 0.45;    // share of a neighbour hidden under the photo in front
+const LB_MOVE_MS = 450;
+const LB_EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+const LB_SIDE_FILTER = 'blur(6px) brightness(0.4)';    // as .lb-ghost in main.css
+
+const lbWrap = d => (lbIndex + d + lbPhotos.length) % lbPhotos.length;
+const lbGhost = dir => document.getElementById(dir < 0 ? 'lb-ghost-prev' : 'lb-ghost-next');
+
+// None for a single photo; with two, only the next one: it is also the
+// previous, and the same photo on both sides looks odd.
+const lbHasGhost = dir => lbPhotos.length > 2 || (lbPhotos.length === 2 && dir > 0);
+
+// Where a photo `back` px wide sits, on side `dir`, behind one `front` px wide.
+function lbSideTransform(dir, front, back, extra = 0) {
+  const b = back * LB_GHOST_SCALE;
+  const x = front / 2 + b / 2 - b * LB_GHOST_TUCK + extra;
+  return `translateX(${dir * x}px) scale(${LB_GHOST_SCALE})`;
+}
+
+// The sharpest copy already decoded: the 1920px one once preloaded, so the
+// hand-over to the real photo at the end of a slide is seamless.
+function lbFillGhost(g, p) {
+  g.style.setProperty('--ar', p.w / p.h);
+  g.style.setProperty('--w', p.w + 'px');
+  g.dataset.full = p.full_url;
+  const src = lbReady.has(p.full_url) ? p.full_url : p.preview_url;
+  if (g.getAttribute('src') !== src) g.src = src;
+}
+
+function lbRefreshGhosts() {
+  [-1, 1].forEach(dir => {
+    const g = lbGhost(dir);
+    if (lbReady.has(g.dataset.full) && g.getAttribute('src') !== g.dataset.full) g.src = g.dataset.full;
+  });
+}
+
+// Both neighbours in place behind the current photo, without animation;
+// the one on side `fadeIn`, new after a slide, fades in.
+function lbLayoutGhosts(fadeIn) {
+  const img = document.getElementById('lightbox-img');
+  [-1, 1].forEach(dir => {
+    const g = lbGhost(dir);
+    g.hidden = !lbHasGhost(dir);
+    if (g.hidden) return;
+    lbFillGhost(g, lbPhotos[lbWrap(dir)]);
+    g.style.transition = 'none';
+    g.style.zIndex = g.style.filter = '';
+    g.style.transform = lbSideTransform(dir, img.offsetWidth, g.offsetWidth);
+    g.style.opacity = fadeIn === dir ? '0' : '1';
+    if (fadeIn === dir) {
+      void g.offsetWidth;
+      g.style.transition = `opacity ${LB_MOVE_MS}ms ease`;
+      g.style.opacity = '1';
+    }
+  });
+}
+
+let lbNavFinish = null;
+
 function lbNav(dir, e) {
   if (e) e.stopPropagation();
   if (!lbPhotos.length) return;
+  if (lbNavFinish) lbNavFinish();    // pressed again mid-slide: land that one first
   const img = document.getElementById('lightbox-img');
+  clearTimeout(lbSettleTimer);
+  lbScale = 1; lbPanX = 0; lbPanY = 0;
+
   if (prefersReducedMotion()) {
-    lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
+    lbIndex = lbWrap(dir);
     lbShow(lbIndex);
     lbResetZoom(false);
+    lbLayoutGhosts();
     return;
   }
-  img.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-  img.style.opacity = '0';
-  img.style.transform = `translateX(${-dir * 24}px)`;
-  setTimeout(() => {
-    lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
-    lbShow(lbIndex);
-    lbScale = 1; lbPanX = 0; lbPanY = 0;
-    img.style.transition = 'none';
-    img.style.transform = `translateX(${dir * 24}px)`;
-    void img.offsetWidth;
+
+  // No neighbour to bring forward (one photo, or "previous" out of two):
+  // a short fade instead.
+  if (!lbHasGhost(dir)) {
     img.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-    img.style.opacity = '1';
-    img.style.transform = 'translateX(0px)';
-  }, 180);
+    img.style.opacity = '0';
+    img.style.transform = `translateX(${-dir * 24}px)`;
+    setTimeout(() => {
+      lbIndex = lbWrap(dir);
+      lbShow(lbIndex);
+      img.style.transition = 'none';
+      img.style.transform = `translateX(${dir * 24}px)`;
+      void img.offsetWidth;
+      img.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+      img.style.opacity = '1';
+      img.style.transform = 'translateX(0px)';
+      lbLayoutGhosts();
+      lbSettleSoon();
+    }, 180);
+    return;
+  }
+
+  const incoming = lbGhost(dir), far = lbGhost(-dir);
+  const mainW = img.offsetWidth, inW = incoming.offsetWidth;
+  const t = ['transform', 'filter', 'opacity'].map(prop => `${prop} ${LB_MOVE_MS}ms ${LB_EASE}`).join(', ');
+  // The neighbour comes forward, in front of everything…
+  incoming.style.zIndex = '3';
+  incoming.style.transition = t;
+  incoming.style.transform = 'none';
+  incoming.style.filter = 'none';
+  // …the current photo steps back into its place on the other side…
+  img.style.transition = t;
+  img.style.transform = lbSideTransform(-dir, inW, mainW);
+  img.style.filter = LB_SIDE_FILTER;
+  // …and the neighbour that was there drifts out.
+  if (!far.hidden) {
+    far.style.transition = t;
+    far.style.transform = lbSideTransform(-dir, inW, far.offsetWidth, mainW * 0.5);
+    far.style.opacity = '0';
+  }
+
+  // Then the real photo takes over from the neighbour in the centre (same
+  // box, same picture), and the neighbours are dealt again around it.
+  const timer = setTimeout(() => lbNavFinish && lbNavFinish(), LB_MOVE_MS);
+  lbNavFinish = () => {
+    clearTimeout(timer);
+    lbNavFinish = null;
+    lbIndex = lbWrap(dir);
+    img.style.transition = 'none';
+    img.style.transform = 'none';
+    img.style.filter = '';
+    lbShow(lbIndex);
+    lbLayoutGhosts(dir);
+    lbSettleSoon();
+  };
 }
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('lightbox').hidden && !lbNavFinish) lbLayoutGhosts();
+});
 
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('lightbox');
@@ -480,7 +661,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeLightbox();
   // Keep Tab inside the dialog: it is modal, so the page behind is inert.
   if (e.key === 'Tab') {
-    const btns = [...lb.querySelectorAll('button')];
+    const btns = [...lb.querySelectorAll('button, a[href]')];
     const at = btns.indexOf(document.activeElement);
     e.preventDefault();
     btns[(at + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
@@ -495,13 +676,18 @@ document.addEventListener('keydown', e => {
   let dragOriginPanX = 0, dragOriginPanY = 0;
   let pinchStartDist = 0, pinchStartScale = 1;
   let lastTapTime = 0;
+  // Still a tap: one finger that hasn't moved. A swipe or pan ending is not,
+  // or two quick swipes through the photos counted as a double-tap and zoomed.
+  let tapCandidate = false;
 
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
   img.addEventListener('pointerdown', e => {
+    if (lbNavFinish) lbNavFinish();    // grabbed mid-slide: land it first
     img.setPointerCapture(e.pointerId);
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     img.style.transition = 'none';
+    tapCandidate = activePointers.size === 1;
     if (activePointers.size === 1) {
       gesture = lbScale > 1 ? 'pan' : 'swipe';
       dragStartX = e.clientX; dragStartY = e.clientY;
@@ -517,6 +703,7 @@ document.addEventListener('keydown', e => {
   img.addEventListener('pointermove', e => {
     if (!activePointers.has(e.pointerId)) return;
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) > 10) tapCandidate = false;
 
     if (gesture === 'swipe') {
       const dx = e.clientX - dragStartX;
@@ -569,7 +756,9 @@ document.addEventListener('keydown', e => {
       }
     }
 
-    if (activePointers.size === 0 && !gesture) {
+    // Taps only: a mouse double-click is handled by the dblclick listener
+    // below, and counting it here too zoomed in and straight back out.
+    if (activePointers.size === 0 && !gesture && tapCandidate && e.pointerType !== 'mouse') {
       const now = Date.now();
       if (now - lastTapTime < 300) {
         lbToggleZoom();
@@ -596,6 +785,7 @@ document.addEventListener('keydown', e => {
     lbPanX = p.x; lbPanY = p.y;
     lbSetTransform(lbPanX, lbPanY, lbScale, false);
     if (lbScale > 1.2) lbZoomedIn();
+    else if (lbScale === 1) lbSettleSoon();
   }, { passive: false });
 })();
 

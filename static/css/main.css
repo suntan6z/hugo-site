@@ -1195,17 +1195,33 @@ main:focus { outline: none; }
 
 /* Lightbox */
 .lightbox {
-  position: fixed; inset: 0; z-index: 300; padding: 1rem; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  background: hsl(220 15% 5% / 0.92);
+  position: fixed; inset: 0; z-index: 300;
+  /* Opaque, so the browser can skip painting the page behind it. */
+  background: hsl(220 15% 5%);
+}
+/* Holds the photo and clips it while zoomed. Its own GPU layer, so the zoomed
+   photo is only ever drawn there, never onto the lightbox; lbRepaint() rebuilds
+   that layer after a zoom-out to clear the stale streaks macOS browsers leave.
+   The stage's own transform never changes, so will-change here doesn't freeze
+   the photo's sharpness the way it would on the photo itself. */
+.lb-stage {
+  position: absolute; inset: 0; padding: 1rem;
+  /* One grid cell holds the photo and its two neighbours, all centred on the
+     same spot; the script moves the neighbours aside with transforms only. */
+  display: grid; grid-template: 100% / 100%; place-items: center;
+  overflow: hidden; contain: paint; will-change: transform;
 }
 /* Sized from the full copy's shape (--ar, --w set by the gallery script):
    as large as fits, never wider than the photo itself. The same box holds the
    small preview and the sharp version, so swapping one for the other is still. */
-.lightbox-img {
+.lightbox-img, .lb-ghost {
+  grid-area: 1 / 1;
   width: min(100%, calc(85vh * var(--ar, 1.5)), var(--w, 100%));
   height: auto; aspect-ratio: var(--ar, auto);
   max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 0.5rem;
+}
+.lightbox-img {
+  z-index: 2;
   /* No will-change: transform — it would freeze the image at its unzoomed
      resolution, and zooming in is exactly when the original's detail shows. */
   touch-action: none; user-select: none;
@@ -1214,6 +1230,14 @@ main:focus { outline: none; }
 /* While only the small preview is in: soft on purpose, so it reads as
    "loading", not as a low-quality photo. */
 .lightbox-img.lb-loading { filter: blur(6px); }
+/* The previous and next photos, dimmed and blurred behind the current one;
+   clicking one goes there. Placed (and hidden when there are none) by
+   lbLayoutGhosts(). */
+.lb-ghost {
+  z-index: 1; cursor: pointer; user-select: none;
+  filter: blur(6px) brightness(0.4);
+}
+.lb-ghost[hidden] { display: none; }
 .lb-btn {
   position: absolute; z-index: 1; display: flex; padding: 0.4rem;
   /* A faint dark disc keeps the white icon visible over a bright, zoomed photo. */
@@ -1222,8 +1246,16 @@ main:focus { outline: none; }
 .lb-btn:hover, .lb-btn:focus-visible { opacity: 1; background: hsl(0 0% 0% / 0.6); }
 .lb-btn:focus-visible { outline-color: white; }
 .lb-close { top: 1rem; right: 1rem; }
+.lb-prev, .lb-next { top: 50%; translate: 0 -50%; }
 .lb-prev { left: 1rem; }
 .lb-next { right: 1rem; }
+/* Bottom right: the full-resolution original, so no one has to discover
+   that zooming in is what loads it. */
+.lb-download {
+  bottom: 1rem; right: 1rem; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.9rem; border-radius: 2rem;
+  font-size: 0.85rem; font-weight: 500; text-decoration: none;
+}
 .lb-counter { position: absolute; bottom: 1rem; left: 0; right: 0; text-align: center; color: hsl(0 0% 100% / 0.75); font-size: 0.85rem; }
 /* "Loading full resolution…" while the original comes in after a zoom. */
 .lb-hd {
@@ -1248,4 +1280,7 @@ main:focus { outline: none; }
   /* Inside the strip on phones: at -1rem they were cut off by the screen edge. */
   .gallery-arrow-prev { left: 0.25rem; }
   .gallery-arrow-next { right: 0.25rem; }
+  /* Icon only, so it clears the centred "3 of 12" counter. */
+  .lb-download { padding: 0.55rem; border-radius: 50%; }
+  .lb-download span { display: none; }
 }
