@@ -3,7 +3,8 @@ import type { PageServerLoad, Actions } from './$types';
 import { readAuthState, removeCredential, bumpEpoch } from '$lib/server/auth/state.ts';
 import { issueSession } from '$lib/server/auth/session.ts';
 import { store, audit } from '$lib/server/store/kv.ts';
-import { MODE, auth, integrations } from '$lib/server/env.ts';
+import { MODE, IS_LOCAL, auth, integrations, github } from '$lib/server/env.ts';
+import { backupLinks, readRepoFacts } from '$lib/server/content/backup.ts';
 import { readQueue } from '$lib/server/integrations/indexnow.ts';
 import { isConfigured as bingConfigured } from '$lib/server/integrations/bing.ts';
 import { isConfigured as deeplConfigured, usage as deeplUsage } from '$lib/server/integrations/deepl.ts';
@@ -21,6 +22,26 @@ import {
 } from '$lib/server/content/site-files.ts';
 import { isConfigured as litlyxConfigured } from '$lib/server/integrations/litlyx.ts';
 import { LANGS } from '$lib/server/langs.ts';
+
+/**
+ * How big the repository is and when it last changed, from GitHub's own API.
+ * Only when deployed (local mode has no network to rely on, and tests must not
+ * knock on GitHub), cached for an hour, and a failure is just a missing figure.
+ */
+const repoFacts = () =>
+	IS_LOCAL
+		? Promise.resolve(null)
+		: memo('github:repo-facts', 60 * 60_000, async () => {
+				try {
+					const r = await fetch(`https://api.github.com/repos/${github.owner}/${github.repo}`, {
+						headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'loconsole-admin' },
+						signal: AbortSignal.timeout(4000)
+					});
+					return r.ok ? readRepoFacts(await r.json()) : null;
+				} catch {
+					return null;
+				}
+			});
 
 async function loadSocials(): Promise<{ raw: string; socials: Socials }> {
 	const raw = await repo.readText('hugo.toml');
@@ -73,6 +94,7 @@ export const load: PageServerLoad = async () => {
 		siteUrl: integrations.siteUrl,
 		socials: { fields: SOCIALS, ...socials },
 		nav: { ...nav, titleMax: TITLE_MAX, labelMax: MENU_LABEL_MAX },
+		backup: { links: backupLinks(github.owner, github.repo, github.branch), facts: await repoFacts(), subscribers: !!integrations.resendApiKey },
 		site: { ...site, articles, ideal: DESCRIPTION_IDEAL, canReplaceResume: !!resumePath(site.resumeUrl) },
 		redirects,
 		integrations: {

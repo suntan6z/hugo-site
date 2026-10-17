@@ -6,6 +6,10 @@ Every visible string that is not article text — button labels, section heading
 
 By hand: add the key to all three files. Keys are case-sensitive.
 
+## Backup
+
+Settings → **Backup** links a zip of the whole site (GitHub serves it: articles, pictures, pages, settings), the command to clone it with its full history, and the subscriber list as a CSV, which is the one thing that is not in GitHub. The portal does not build archives itself: at a few hundred megabytes it would not fit its memory, and GitHub already does it.
+
 ## `hugo.toml`
 
 In the portal, **Settings** edits the site name, the navigation menu (what each entry is called in each language, and their order, which is shared), the homepage quote (and the article it links to), each language's description, the social links, the homepage photo and the CV file — rewriting only the lines that change. Everything else below is edited by hand.

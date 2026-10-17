@@ -215,6 +215,27 @@
 	</div>
 </section>
 
+<section class="backup">
+	<h2>Backup</h2>
+	<p class="lede">
+		Everything the site is made of, its articles, pictures, pages and settings, is kept in GitHub together with every earlier version of each. Download a copy of all of it:
+	</p>
+	<div class="bk-row">
+		<a class="btn-primary" href={data.backup.links.zip}>Download the whole site (zip)</a>
+		<span class="bk-note">
+			{#if data.backup.facts}{data.backup.facts.sizeLabel}{#if data.backup.facts.pushedAt} · last changed {new Date(data.backup.facts.pushedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}{/if}{:else}A few hundred MB{/if}
+		</span>
+	</div>
+	<p class="lede">
+		To keep the full history, not just today: <code>{data.backup.links.clone}</code>
+		{#if data.backup.facts?.isPrivate}<br />The repository is private, so GitHub asks you to sign in first.{/if}
+	</p>
+	<div class="bk-row">
+		{#if data.backup.subscribers}<a class="btn-outline" href="/newsletter/subscribers.csv" download>Download the subscriber list (CSV)</a>{/if}
+		<span class="bk-note">The one thing not in GitHub. Everything else here can be set up again.</span>
+	</div>
+</section>
+
 <section>
 	<h2>Old addresses</h2>
 	<p class="lede">
@@ -323,6 +344,10 @@
 </section>
 
 <style>
+	.backup { display: grid; gap: 0.8rem; max-width: 46rem; }
+	.bk-row { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+	.bk-note { font-size: 0.82rem; color: var(--muted-foreground); }
+	.backup code { font-size: 0.8rem; word-break: break-all; }
 	.navform { display: grid; gap: 1rem; max-width: 46rem; }
 	.navform > button[type='submit'] { justify-self: start; }
 	.menu { display: grid; gap: 0.45rem; }

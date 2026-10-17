@@ -383,6 +383,20 @@ describe('subscribers', () => {
 	});
 });
 
+describe('the backup section', () => {
+	test('Settings links the whole site as a zip, a clone command and the subscriber list', async () => {
+		const html = await (await portal.get('/settings', { cookie })).text();
+		assert.match(html, /Backup/);
+		assert.match(html, /https:\/\/github\.com\/[^"]+\/archive\/refs\/heads\/main\.zip/);
+		assert.match(html, /git clone https:\/\/github\.com\//);
+		assert.match(html, /\/newsletter\/subscribers\.csv/);
+	});
+
+	test('it makes no call to GitHub from a local run, which tests must never do', async () => {
+		assert.ok(!fakes.seen.some((s) => /github/.test(s.headers.host ?? '')));
+	});
+});
+
 describe('the subscriber export', () => {
 	test('it downloads as a spreadsheet file, with everyone on the list and who has left', async () => {
 		const r = await portal.get('/newsletter/subscribers.csv', { cookie });
