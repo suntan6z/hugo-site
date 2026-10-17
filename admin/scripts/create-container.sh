@@ -103,22 +103,23 @@ EXISTING=$(scw container container list namespace-id="$NS_ID" region=$REGION -o 
 if [ -n "$EXISTING" ]; then
   echo "updating existing container $EXISTING"
   scw container container update "$EXISTING" region=$REGION \
-    image="$IMAGE" "${ENVS[@]}" "${SECRETS[@]}"
+    image="$IMAGE" memory-limit-bytes=0.5GB max-scale=1 "${ENVS[@]}" "${SECRETS[@]}"
 else
   echo "creating container $NAME from $IMAGE"
   scw container container create name=$NAME namespace-id="$NS_ID" region=$REGION \
     image="$IMAGE" port=8080 protocol=http1 \
-    min-scale=0 max-scale=3 memory-limit-bytes=1GB mvcpu-limit=250 \
+    min-scale=0 max-scale=1 memory-limit-bytes=0.5GB mvcpu-limit=250 \
     https-connections-only=true privacy=public \
     description="Admin portal for lorenzo.loconsole.eu" \
     "${ENVS[@]}" "${SECRETS[@]}"
 fi
 
-# Scheduled publishing: a Scaleway cron trigger asks the portal on the hour to
-# publish whatever is due, and ten minutes later to send newsletters for what
-# the rebuilt site now serves. Twice an hour rather than every quarter: the
-# container scales to zero after 15 idle minutes, so a quarter-hourly call would
-# keep it awake around the clock. The editor's picker offers whole hours to
+# Scheduled publishing: a Scaleway cron trigger asks the portal at 9:00 Paris
+# time to publish whatever is due (the editor only offers that moment), and at
+# 9:30 to send newsletters for what the rebuilt site now serves. Twice a day
+# and no more: the container scales to zero after 15 idle minutes, so every call
+# keeps it (and its billed memory) awake for a quarter of an hour, and calling
+# it twice an hour pushed September 2026 over the free tier. The editor's picker offers whole hours to
 # match. The token is set here for both the container and the trigger, so there
 # is no second copy anywhere to drift out of step.
 C_ID=$(scw container container list namespace-id="$NS_ID" region=$REGION -o json \
@@ -141,8 +142,8 @@ if [ -n "${CRON_TOKEN:-}" ]; then
   CRON=(
     "destination-config.http-path=/api/cron"
     "destination-config.http-method=post"
-    "cron-config.schedule=0,10 * * * *"
-    "cron-config.timezone=Etc/UTC"
+    "cron-config.schedule=0,30 9 * * *"
+    "cron-config.timezone=Europe/Paris"
     "cron-config.headers.Authorization=Bearer $CRON_TOKEN"
     # SvelteKit's CSRF check refuses a POST with no Origin whose content type a
     # form could send, so say JSON explicitly rather than trust the default.

@@ -1,5 +1,7 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { startPortal, startFakeDeepL, type Portal, type FakeDeepL } from './harness.ts';
 import { FrontMatter } from '../../src/lib/server/content/frontmatter.ts';
 
@@ -436,8 +438,11 @@ describe('machine translation, against a stand-in DeepL', () => {
 
 describe('publishing later', () => {
 	const SLUG = 'schedule-subject';
-	const soon = () => new Date(Date.now() + 60 * 60_000).toISOString().slice(0, 16);
-	const past = () => new Date(Date.now() - 5 * 60_000).toISOString().slice(0, 16);
+	// Days, in Paris: only a day after today can be picked, and it goes live at 9:00.
+	const parisDay = (offsetDays: number) =>
+		new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date(Date.now() + offsetDays * 86_400_000));
+	const soon = () => parisDay(2);
+	const past = () => parisDay(-1);
 
 	before(async () => {
 		await portal.action(
@@ -458,18 +463,35 @@ describe('publishing later', () => {
 	});
 
 	test('signed out, nothing can be scheduled', async () => {
-		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0' });
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { day: soon() });
 		assert.equal(r.status, 401);
 	});
 
-	test('a moment in the past is refused', async () => {
-		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: past(), offset: '0' }, { cookie });
-		assert.equal(r.type, 'failure');
-		assert.match(String(r.data?.message), /in the past/);
+	test('a day in the past, or today, is refused', async () => {
+		for (const day of [past(), parisDay(0)]) {
+			const r = await portal.action(`/posts/${SLUG}?/schedule`, { day }, { cookie });
+			assert.equal(r.type, 'failure');
+			assert.match(String(r.data?.message), /after today/);
+		}
+	});
+
+	test('it is stored as 9:00 Paris time on that day', async () => {
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { day: soon() }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const at = new Date(String(r.data?.at));
+		const paris = new Intl.DateTimeFormat('en-GB', {
+			timeZone: 'Europe/Paris',
+			hourCycle: 'h23',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(at);
+		assert.equal(paris, '09:00');
+		assert.equal(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(at), soon());
+		await portal.action(`/posts/${SLUG}?/unschedule`, {}, { cookie });
 	});
 
 	test('scheduling shows on the article and in the list, and publishes nothing yet', async () => {
-		const r = await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0', newsletter: 'on' }, { cookie });
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { day: soon(), newsletter: 'on' }, { cookie });
 		assert.equal(r.type, 'success', r.raw);
 		assert.match(portal.read(`content/blog/${SLUG}/index.md`)!, /\ndraft: true\n/, 'published early');
 
@@ -503,14 +525,14 @@ describe('publishing later', () => {
 	});
 
 	test('when its time comes, the runner publishes it', async () => {
-		// The minute we are in: due immediately, and inside the slack the picker
-		// needs anyway (its value is the start of the chosen minute).
-		const r = await portal.action(
-			`/posts/${SLUG}?/schedule`,
-			{ at: new Date().toISOString().slice(0, 16), offset: '0' },
-			{ cookie }
-		);
+		// Only future days can be picked, so schedule one, then let the clock
+		// "arrive" by moving the stored moment to now.
+		const r = await portal.action(`/posts/${SLUG}?/schedule`, { day: soon() }, { cookie });
 		assert.equal(r.type, 'success', r.raw);
+		const file = path.join(portal.state, 'state/scheduled.json');
+		const items = JSON.parse(fs.readFileSync(file, 'utf8')) as { slug: string; at: string; state: string }[];
+		for (const i of items) if (i.slug === SLUG && i.state === 'pending') i.at = new Date().toISOString();
+		fs.writeFileSync(file, JSON.stringify(items));
 
 		const run = await fetch(`${portal.url}/api/cron`, {
 			method: 'POST',
@@ -530,7 +552,7 @@ describe('publishing later', () => {
 	});
 
 	test('cancelling removes it', async () => {
-		await portal.action(`/posts/${SLUG}?/schedule`, { at: soon(), offset: '0' }, { cookie });
+		await portal.action(`/posts/${SLUG}?/schedule`, { day: soon() }, { cookie });
 		const r = await portal.action(`/posts/${SLUG}?/unschedule`, {}, { cookie });
 		assert.equal(r.type, 'success', r.raw);
 		const list = await (await portal.get('/posts', { cookie })).text();

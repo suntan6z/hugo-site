@@ -9,12 +9,36 @@ never touches StaticHost.
 | Thing | Name |
 |---|---|
 | Container namespace | `loconsole-admin` |
-| Container | `admin` (port 8080, min-scale 0, max-scale 3, 1 GB / 250 mCPU) |
+| Container | `admin` (port 8080, min-scale 0, max-scale 1, 512 MB / 250 mCPU) |
 | Endpoint | `https://loconsoleadmin46c00049-admin.functions.fnc.fr-par.scw.cloud` |
 | Registry namespace | `loconsole-admin` (private) |
 | Object Storage bucket | `loconsole-admin-state` (private) |
 | GitHub App | `loconsole-admin-portal`, `contents:write` + `metadata:read`, `suntan6z/hugo-site` only |
 | IAM application | `loconsole-admin-portal` — the container's storage key, Object Storage objects only |
+| Billing budget | €1 a month, emailing the account address when reached (`scw billing budget list`) |
+
+## What it costs
+
+Everything Scaleway runs for this site — the portal container, its cron
+trigger, registry and bucket, and the two form functions in `functions/` — is
+meant to stay inside the free tier, which resets every month: 200,000 vCPU-s
+and 400,000 GB-s for serverless containers. Only the container comes close.
+It is billed for every second it is awake, and it stays awake 15 idle minutes
+after each request, so what matters is **how often something wakes it**:
+
+- the cron trigger, twice a morning (≈ 30 min/day);
+- your own time in the portal (plus 15 minutes after you leave).
+
+At 0.5 GB × 0.25 vCPU that leaves room for about 7 hours of portal use a day
+before memory runs out of free tier. In September 2026 it ran at 1 GB with the
+trigger twice an hour, was awake about 12 hours a day, and cost €0.86. Before
+adding anything that calls the container on a timer, work it out against those
+numbers. `max-scale 1` caps the worst case (someone hammering the URL) at one
+instance: roughly €2 a month.
+
+```bash
+scw billing consumption list   # this month so far, per product
+```
 
 ## Where secrets live
 
@@ -91,7 +115,7 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 ## Scheduled publishing
 
 A Scaleway cron trigger on the container, `scheduled-publish`, calls
-`POST /api/cron` at `:00` and `:10` past every hour (UTC).
+`POST /api/cron` at 9:00 and 9:30, Paris time (`Europe/Paris`), every day.
 `create-container.sh` creates, updates or removes it, depending on whether
 `CRON_TOKEN` is set. That endpoint is the one route that answers without a
 session. It is gated on `CRON_TOKEN`, takes no parameters, and only performs
@@ -111,15 +135,14 @@ Things worth knowing:
   never count. Dead links appear in *Worth doing*. The home screen can also run
   the check on demand.
 
-- **Articles go live on the hour.** The editor's picker offers whole hours,
-  so the time you pick is the time the article is published. (A time between
-  hours still works: the next pass, `:00` or `:10`, picks it up.) The container
-  scales to zero after 15 idle minutes, and checking every quarter hour would
-  keep it awake (and billed) around the clock.
-- **The newsletter is sent on the `:10` pass, not with the publish**, once
-  `/en/build-info.json` shows the article is actually live. Otherwise the link
-  in the email 404s for every subscriber until StaticHost finishes. A build
-  slower than ten minutes pushes the email to the next hour.
+- **Articles go live at 9:00 Paris time, on a day after today.** The editor
+  only asks for a day; `PUBLISH_HOUR` and `PUBLISH_TZ` in
+  `src/lib/server/schedule/plan.ts` fix the hour, and must match the trigger's
+  schedule and timezone in `create-container.sh`. To publish today, use Publish.
+- **The newsletter goes out on the 9:30 pass**, once `/en/build-info.json`
+  shows the article is actually live. Otherwise the link in the email 404s for
+  every subscriber until StaticHost finishes. A build slower than half an hour
+  pushes the email to the next morning (or to whenever you open the portal).
 - **Opening the portal also runs anything due**, so a missed trigger delays
   publishing rather than losing it.
 - Scheduling used to run from a GitHub Actions workflow. It was dropped

@@ -46,20 +46,28 @@
 
 	/* ------------------------------------------------------------- scheduling */
 	let showSchedule = $state(false);
-	let scheduleAt = $state('');
+	let scheduleDay = $state('');
 	let alsoNewsletter = $state(false);
-	// The browser sends what its own clock means, so the server can store UTC.
-	const offset = -new Date().getTimezoneOffset();
+	// Always shown in Paris time, which is when it actually goes live.
 	const whenLocal = (iso: string) =>
-		new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-	// Default to tomorrow morning, the most likely answer.
+		new Date(iso).toLocaleString('en-GB', {
+			timeZone: 'Europe/Paris',
+			weekday: 'short',
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	// The day after today in Paris: the earliest allowed, and the most likely answer.
+	const tomorrow = $derived.by(() => {
+		const d = new Date(`${data.today}T12:00:00Z`);
+		d.setUTCDate(d.getUTCDate() + 1);
+		return d.toISOString().slice(0, 10);
+	});
 	function openSchedule() {
 		showSchedule = !showSchedule;
-		if (!showSchedule || scheduleAt) return;
-		const d = new Date();
-		d.setDate(d.getDate() + 1);
-		d.setHours(9, 0, 0, 0);
-		scheduleAt = new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+		if (!showSchedule || scheduleDay) return;
+		scheduleDay = tomorrow;
 	}
 
 	// After a blocked publish the server returns the findings it rejected on;
@@ -793,20 +801,19 @@
 		</button>
 		{#if showSchedule}
 			<form method="POST" action="?/schedule" use:enhance>
-				<input type="hidden" name="offset" value={offset} />
-				<label>When
-					<input type="datetime-local" name="at" step="3600" bind:value={scheduleAt} />
+				<label>Day
+					<input type="date" name="day" min={tomorrow} bind:value={scheduleDay} />
 				</label>
 				<label class="check">
 					<input type="checkbox" name="newsletter" bind:checked={alsoNewsletter} disabled={!data.canSendNewsletter} />
 					Send the newsletter too
 				</label>
 				<p class="hint">
-					Goes live at the start of the hour you pick.
+					Goes live at 9:00 (Paris time) on the day you pick.
 					{#if !data.canSendNewsletter}
 						Sending needs RESEND_API_KEY.
 					{:else if alsoNewsletter}
-						The newsletter follows about ten minutes later, once the site has rebuilt, so the link in it works.
+						The newsletter follows at 9:30, once the site has rebuilt, so the link in it works.
 						<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
 					{:else}
 						Nothing is emailed.

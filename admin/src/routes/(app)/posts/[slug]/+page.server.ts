@@ -14,7 +14,7 @@ import { clearDraft } from '$lib/server/content/drafts.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 import { fundingTextFor } from '$lib/server/content/erasmus.ts';
 import { readScheduled, schedule as addSchedule, cancel as cancelSchedule } from '$lib/server/schedule/runner.ts';
-import { whyNot, forSlug } from '$lib/server/schedule/plan.ts';
+import { whyNotDay, morningOf, forSlug, todayIn } from '$lib/server/schedule/plan.ts';
 import { isConfigured as canSendNewsletter } from '$lib/server/integrations/resend.ts';
 import { auth } from '$lib/server/env.ts';
 
@@ -27,6 +27,8 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		findings: await preflight(post),
 		canTranslate: canTranslate(),
 		scheduled: forSlug(await readScheduled(), params.slug),
+		// Paris's date, not the browser's: the earliest day the picker offers is the one after it.
+		today: todayIn(),
 		canSendNewsletter: canSendNewsletter(),
 		// Without a token there is no trigger, so scheduled work waits for you to open the portal.
 		canRunOnSchedule: !!auth.cronToken,
@@ -231,22 +233,13 @@ export const actions: Actions = {
 	/** Publishes later, optionally announcing it once the site has rebuilt. */
 	schedule: async ({ request, params }) => {
 		const f = await request.formData();
-		const local = fromForm(f.get('at')).trim();
-		if (!local) return fail(400, { message: 'Pick a date and time.' });
-		// <input type="datetime-local"> carries no timezone: it means the clock on
-		// the machine it was typed on, so the browser sends that clock's offset
-		// with it. Parsing it here without that would silently use the server's
-		// timezone — UTC in the container, not UTC wherever you are.
-		const offset = Number(f.get('offset') ?? 0);
-		if (!Number.isFinite(offset) || Math.abs(offset) > 14 * 60) {
-			return fail(400, { message: 'That time zone makes no sense.' });
-		}
-		const picked = Date.parse(`${local}:00Z`);
-		if (Number.isNaN(picked)) return fail(400, { message: 'That is not a date and time.' });
-		const at = new Date(picked - offset * 60_000).toISOString();
-
-		const bad = whyNot(at);
+		// Only the day is chosen: it always goes live at 9:00 Paris time, which
+		// is when the trigger runs (see plan.ts).
+		const day = fromForm(f.get('day')).trim();
+		if (!day) return fail(400, { message: 'Pick a day.' });
+		const bad = whyNotDay(day);
 		if (bad) return fail(400, { message: bad });
+		const at = morningOf(day)!;
 
 		const post = await loadPost(params.slug);
 		if (!post) return fail(404, { message: 'Article not found.' });
