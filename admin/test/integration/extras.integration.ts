@@ -446,6 +446,19 @@ describe('visitor numbers', () => {
 		assert.equal(r.visitors.summary.visits, 6);
 		assert.equal(r.visitors.summary.views, 14);
 	});
+
+	test('and a daily line for the sparkline, and the audience with its month of growth', async () => {
+		const r = (await (await portal.get('/api/insights', { cookie })).json()) as {
+			visitors: { summary: { series: number[] } };
+			subscribers: { total: number; newThisMonth: number; series: number[] } | null;
+		};
+		assert.ok(r.visitors.summary.series.length >= 7 && r.visitors.summary.series.every((n) => Number.isFinite(n)));
+		// Two contacts on the list, one of whom unsubscribed: one reader.
+		assert.equal(r.subscribers?.total, 1);
+		assert.equal(r.subscribers?.series.length, 30);
+		assert.equal(r.subscribers?.series.at(-1), 1, 'today\'s figure is the whole list');
+		assert.ok(r.subscribers!.series.every((n, i, a) => i === 0 || n >= a[i - 1]), 'cumulative, so it never falls');
+	});
 });
 
 describe('outside links', () => {

@@ -499,7 +499,7 @@ describe('publishing later', () => {
 		const editor = await (await portal.get(`/posts/${SLUG}`, { cookie })).text();
 		assert.match(editor, /Publishing/);
 		const list = await (await portal.get('/posts', { cookie })).text();
-		assert.match(list, /publishing/i);
+		assert.match(list, /goes live/i);
 	});
 
 	test('the runner leaves it alone until its time comes', async () => {
@@ -557,7 +557,7 @@ describe('publishing later', () => {
 		const r = await portal.action(`/posts/${SLUG}?/unschedule`, {}, { cookie });
 		assert.equal(r.type, 'success', r.raw);
 		const list = await (await portal.get('/posts', { cookie })).text();
-		assert.doesNotMatch(list, /publishing \d/);
+		assert.doesNotMatch(list, /goes live/i);
 	});
 
 	test('the newsletter page opens on the article it was asked about', async () => {

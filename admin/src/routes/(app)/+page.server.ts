@@ -9,18 +9,20 @@ import type { Actions } from './$types';
 import { openTasks } from '$lib/server/tasks/corpus.ts';
 import { readSession } from '$lib/server/tasks/session.ts';
 import { readLinkState, runLinkCheck } from '$lib/server/integrations/linkcheck.ts';
+import { readScheduled } from '$lib/server/schedule/runner.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 
 export const load: PageServerLoad = async ({ url }) => {
-	const [info, last, posts, indexNowQueue, tasks, session, links] = await Promise.all([
+	const [info, last, posts, indexNowQueue, tasks, session, links, scheduled] = await Promise.all([
 		fetchBuildInfo(url.searchParams.has('refresh')),
 		readLastPublish(),
 		listPosts(),
 		readQueue(),
 		openTasks(),
 		readSession(),
-		readLinkState()
+		readLinkState(),
+		readScheduled()
 	]);
 
 	const status = deployStatus(info, last);
@@ -39,8 +41,21 @@ export const load: PageServerLoad = async ({ url }) => {
 				LANGS.filter((l) => !p.langs.includes(l)).map((l) => ({ slug: p.slug, lang: l }))
 			);
 
+	// Who has which language, from the same source as the debt above.
+	const rows = (info ? info.posts : posts.filter((p) => !p.draft)).slice().sort((a, b) => b.date.localeCompare(a.date));
+	const coverage = {
+		total: rows.length,
+		langs: Object.fromEntries(LANGS.map((l) => [l, rows.filter((r) => r.langs.includes(l)).length]))
+	};
+
 	return {
 		posts: posts.slice(0, 8),
+		coverage,
+		grid: rows.map((r) => ({ slug: r.slug, title: r.title, langs: r.langs as string[] })).slice(0, 6),
+		schedule: {
+			waiting: scheduled.filter((i) => i.state === 'pending').length,
+			failed: scheduled.filter((i) => i.state === 'failed').map((i) => ({ slug: i.slug, error: i.error ?? '' }))
+		},
 		// The home screen shows the shape of the queue; focus mode works it.
 		tasks: {
 			total: tasks.length,
