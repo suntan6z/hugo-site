@@ -141,14 +141,36 @@ export function scanBlocks(html: string): Block[] {
 	return blocks;
 }
 
-/** The html with `data-ed="<id>"` on every block's start tag, for the editing frame. */
+/** One `<img>` in the page, by where its tag sits. Pictures are edited by their attributes, never their content. */
+export interface ImgTag {
+	id: number;
+	tagStart: number;
+	tagEnd: number;
+}
+
+export function scanImages(html: string): ImgTag[] {
+	const out: ImgTag[] = [];
+	for (const m of blanked(html).matchAll(/<img\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi)) {
+		out.push({ id: out.length, tagStart: m.index ?? 0, tagEnd: (m.index ?? 0) + m[0].length });
+	}
+	return out;
+}
+
+/**
+ * The html with `data-ed="<id>"` on every block's start tag and `data-edimg` on
+ * every picture, for the editing frame. Taking them out again gives the source.
+ */
 export function annotate(html: string): string {
-	const blocks = scanBlocks(html);
+	const marks: { at: number; attr: string }[] = [
+		...scanBlocks(html).map((b) => ({ at: b.tagEnd - 1, attr: ` data-ed="${b.id}"` })),
+		// The mark goes before a closing slash and the space ahead of it, so that taking it out restores the tag exactly.
+		...scanImages(html).map((i) => ({ at: i.tagStart + html.slice(i.tagStart, i.tagEnd).search(/\s*\/?>$/), attr: ` data-edimg="${i.id}"` }))
+	].sort((a, b) => a.at - b.at);
 	let out = '';
 	let from = 0;
-	for (const b of blocks) {
-		out += html.slice(from, b.tagEnd - 1) + ` data-ed="${b.id}"`;
-		from = b.tagEnd - 1;
+	for (const m of marks) {
+		out += html.slice(from, m.at) + m.attr;
+		from = m.at;
 	}
 	return out + html.slice(from);
 }
@@ -170,25 +192,39 @@ const attrRe = (name: string) => new RegExp(`(\\s${name}\\s*=\\s*)("[^"]*"|'[^']
 const escAttr = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const unescAttr = (v: string) => v.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
 
+const readAttr = (tag: string, name: string): string | null => {
+	const m = attrRe(name).exec(tag);
+	return m ? unescAttr(m[2].replace(/^["']|["']$/g, '')) : null;
+};
+
+/** A tag with one attribute set or added; the rest of it is kept as written, including a closing slash. */
+const withAttr = (tag: string, name: string, value: string): string => {
+	const re = attrRe(name);
+	if (re.test(tag)) return tag.replace(re, (_m, lead: string) => `${lead}"${escAttr(value)}"`);
+	return tag.replace(/(\s*\/?>)$/, ` ${name}="${escAttr(value)}"$1`);
+};
+
 /** An attribute on the block's own start tag, or null. */
 export function attrOf(html: string, id: number, name: string): string | null {
 	const b = block(html, id);
-	if (!b) return null;
-	const m = attrRe(name).exec(html.slice(b.tagStart, b.tagEnd));
-	if (!m) return null;
-	return unescAttr(m[2].replace(/^["']|["']$/g, ''));
+	return b ? readAttr(html.slice(b.tagStart, b.tagEnd), name) : null;
 }
 
 /** An attribute on the block's own start tag set or added; the rest of the tag is kept as written. */
 export function patchAttr(html: string, id: number, name: string, value: string): string {
 	const b = block(html, id);
 	if (!b) return html;
-	const tag = html.slice(b.tagStart, b.tagEnd);
-	const re = attrRe(name);
-	const next = re.test(tag)
-		? tag.replace(re, (_m, lead: string) => `${lead}"${escAttr(value)}"`)
-		: tag.replace(/\s*>$/, ` ${name}="${escAttr(value)}">`);
-	return html.slice(0, b.tagStart) + next + html.slice(b.tagEnd);
+	return html.slice(0, b.tagStart) + withAttr(html.slice(b.tagStart, b.tagEnd), name, value) + html.slice(b.tagEnd);
+}
+
+export function imgAttr(html: string, id: number, name: string): string | null {
+	const t = scanImages(html).find((i) => i.id === id);
+	return t ? readAttr(html.slice(t.tagStart, t.tagEnd), name) : null;
+}
+
+export function patchImgAttr(html: string, id: number, name: string, value: string): string {
+	const t = scanImages(html).find((i) => i.id === id);
+	return t ? html.slice(0, t.tagStart) + withAttr(html.slice(t.tagStart, t.tagEnd), name, value) + html.slice(t.tagEnd) : html;
 }
 
 /**

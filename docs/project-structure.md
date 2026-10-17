@@ -58,7 +58,7 @@ A SvelteKit app; full picture in [CLAUDE.md](../CLAUDE.md) and [`admin/DEPLOY.md
 
 ```
 admin/
-  src/routes/              → pages (dashboard, posts, pages, gallery, newsletter,
+  src/routes/              → pages (dashboard, posts, pages, gallery, library, newsletter,
                              strings, redirects, visitors, analytics, audit,
                              settings) and the JSON endpoints
   src/lib/client/          → browser-side image processing, passkeys

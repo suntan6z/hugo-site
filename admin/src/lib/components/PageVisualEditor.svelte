@@ -16,8 +16,9 @@
 	import { onMount, tick } from 'svelte';
 	import siteCss from '$lib/brand/site.css?raw';
 	import {
-		annotate, scanBlocks, patchInner, patchAttr, attrOf, removeBlock, duplicateBlock, blockName, isRepeatable
+		annotate, scanBlocks, patchInner, patchAttr, attrOf, imgAttr, patchImgAttr, removeBlock, duplicateBlock, blockName, isRepeatable
 	} from '$lib/page-blocks';
+	import { prepareReplacement, ImageError } from '$lib/client/image';
 
 	let { html = $bindable(), lang, siteUrl, theme }: { html: string; lang: string; siteUrl: string; theme: 'light' | 'dark' } = $props();
 
@@ -31,7 +32,7 @@
 	let lastEmitted = '';
 	let activeEl: HTMLElement | null = null;
 
-	let active = $state<{ id: number; tag: string } | null>(null);
+	let active = $state<{ id: number; tag: string; kind: 'block' | 'img' } | null>(null);
 	let pos = $state({ top: 0, left: 0 });
 	let bold = $state(false);
 	let italic = $state(false);
@@ -43,7 +44,11 @@
 	let savedRange: Range | null = null;
 	let blockHref = $state('');
 	let textVal = $state('');
-	let toast = $state<{ text: string } | null>(null);
+	let toast = $state<{ text: string; undo?: boolean } | null>(null);
+	let altVal = $state('');
+	let imgSrc = $state('');
+	let imgBusy = $state(false);
+	let imgFile = $state<HTMLInputElement | null>(null);
 	let undo: string[] = [];
 
 	/** Edited in the toolbar rather than in place: a button or a summary does not take typing reliably. */
@@ -57,6 +62,10 @@
 		[data-ed]:focus,[data-ed].on{outline:2px solid var(--primary);outline-offset:3px;background-color:color-mix(in srgb,var(--primary) 7%,transparent)}
 		html.show-all [data-ed]{outline:1px dashed color-mix(in srgb,var(--primary) 50%,transparent);outline-offset:3px}
 		[contenteditable]{caret-color:var(--primary)}
+		img[data-edimg]{cursor:pointer;border-radius:3px}
+		img[data-edimg]:hover{outline:2px dashed color-mix(in srgb,var(--primary) 65%,transparent);outline-offset:3px}
+		img[data-edimg].on{outline:2px solid var(--primary);outline-offset:3px}
+		html.show-all img[data-edimg]{outline:1px dashed color-mix(in srgb,var(--primary) 50%,transparent);outline-offset:3px}
 	`;
 
 	const doc = () => frame.contentDocument!;
@@ -126,6 +135,11 @@
 		const click = (e: Event) => {
 			const t = e.target as Element;
 			if (t.closest('a, button, summary')) e.preventDefault();
+			const im = t.closest?.('img[data-edimg]') as HTMLElement | null;
+			if (im) {
+				activateImage(im);
+				return;
+			}
 			const b = blockOf(t);
 			if (!b) {
 				clearActive();
@@ -199,11 +213,59 @@
 		const id = Number(el.dataset.ed);
 		const tag = el.tagName.toLowerCase();
 		if (active?.id !== id) linkMode = false;
-		active = { id, tag };
+		active = { id, tag, kind: 'block' };
 		blockHref = tag === 'a' ? (attrOf(html, id, 'href') ?? '') : '';
 		textVal = FIELD_TAGS.has(tag) ? (el.textContent ?? '').trim() : '';
 		syncState();
 		place();
+	}
+
+	function activateImage(el: HTMLElement) {
+		if (activeEl && activeEl !== el) activeEl.classList.remove('on');
+		activeEl = el;
+		el.classList.add('on');
+		const id = Number(el.dataset.edimg);
+		linkMode = false;
+		active = { id, tag: 'img', kind: 'img' };
+		altVal = imgAttr(html, id, 'alt') ?? '';
+		imgSrc = imgAttr(html, id, 'src') ?? '';
+		place();
+	}
+
+	function setAlt(v: string) {
+		if (!active || active.kind !== 'img') return;
+		altVal = v;
+		const next = patchImgAttr(html, active.id, 'alt', v);
+		lastEmitted = next;
+		html = next;
+		activeEl?.setAttribute('alt', v);
+	}
+
+	/** A picture served from the site's own img folder is a file in the Library, and can be replaced there. */
+	const libraryPath = $derived(/^\/img\/[A-Za-z0-9._-]+$/.test(imgSrc) ? `static${imgSrc}` : null);
+
+	async function replacePicture(files: FileList | null) {
+		const file = files?.[0];
+		if (!file || !libraryPath || !activeEl) return;
+		imgBusy = true;
+		try {
+			const name = libraryPath.split('/').pop()!;
+			const blob = await prepareReplacement(file, name);
+			const fd = new FormData();
+			fd.set('path', libraryPath);
+			fd.set('name', /\.(jpe?g|png|webp)$/i.test(name) ? name : file.name);
+			fd.set('file', blob, name);
+			const r = await fetch('/api/media', { method: 'POST', body: fd });
+			if (!r.ok) throw new Error((await r.json().catch(() => null))?.message ?? `Replacing failed (HTTP ${r.status}).`);
+			// The frame shows the new picture at once; the live site has it after the rebuild.
+			(activeEl as HTMLImageElement).src = URL.createObjectURL(blob);
+			toast = { text: 'Picture replaced. The site shows it in a minute or two.' };
+		} catch (e) {
+			toast = { text: e instanceof ImageError || e instanceof Error ? e.message : String(e) };
+		} finally {
+			imgBusy = false;
+			if (imgFile) imgFile.value = '';
+		}
 	}
 
 	/** The toolbar sits just above the block, or just below it when the block is at the top. */
@@ -356,7 +418,7 @@
 		if (undo.length > 20) undo.shift();
 		html = kind === 'copy' ? duplicateBlock(html, active.id) : removeBlock(html, active.id);
 		clearActive();
-		toast = { text: kind === 'copy' ? `Copied the ${label} below it. Edit the copy.` : `Removed the ${label}.` };
+		toast = { text: kind === 'copy' ? `Copied the ${label} below it. Edit the copy.` : `Removed the ${label}.`, undo: true };
 	}
 
 	function undoStructural() {
@@ -369,7 +431,7 @@
 
 <div class="stage" bind:this={stage}>
 	<div class="hint">
-		<span><strong>Click any text to edit it.</strong> Select words for bold, italic or a link. Saved when you press Save.</span>
+		<span><strong>Click any text or picture to edit it.</strong> Select words for bold, italic or a link. Saved when you press Save.</span>
 		<label class="all"><input type="checkbox" bind:checked={showAll} /> Show what I can edit</label>
 	</div>
 
@@ -386,9 +448,17 @@
 			class="tb" role="group" aria-label="Edit this text" style="top:{pos.top}px;left:{pos.left}px"
 			onmousedown={(e) => { if (!(e.target as HTMLElement).closest('input')) e.preventDefault(); }}
 		>
-			<span class="what">{blockName(active.tag)}</span>
+			<span class="what">{active.kind === 'img' ? 'Picture' : blockName(active.tag)}</span>
 
-			{#if FIELD_TAGS.has(active.tag)}
+			{#if active.kind === 'img'}
+				<input class="field" aria-label="Describe the picture" placeholder="Describe it, for people who cannot see it" value={altVal} oninput={(e) => setAlt(e.currentTarget.value)} />
+				{#if libraryPath}
+					<input bind:this={imgFile} type="file" accept="image/*" hidden onchange={(e) => replacePicture(e.currentTarget.files)} />
+					<button type="button" class="go" disabled={imgBusy} onclick={() => imgFile?.click()}>{imgBusy ? 'Replacing…' : 'Replace'}</button>
+				{:else}
+					<span class="tip">Not a Library picture</span>
+				{/if}
+			{:else if FIELD_TAGS.has(active.tag)}
 				<input class="field" aria-label="Text" value={textVal} oninput={(e) => setBlockText(e.currentTarget.value)} />
 			{:else if linkMode}
 				<input
@@ -420,7 +490,7 @@
 	{#if toast}
 		<div class="toast" role="status">
 			{toast.text}
-			<button type="button" onclick={undoStructural}>Undo</button>
+			{#if toast.undo}<button type="button" onclick={undoStructural}>Undo</button>{/if}
 			<button type="button" class="x" aria-label="Dismiss" onclick={() => (toast = null)}>×</button>
 		</div>
 	{/if}

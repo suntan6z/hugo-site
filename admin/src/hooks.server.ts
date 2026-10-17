@@ -70,7 +70,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (!isPublicPath(event.url.pathname) || event.url.pathname.startsWith('/api/')) {
 		response.headers.set('Cache-Control', 'private, no-store');
 	}
-	response.headers.set(
+	// An endpoint that sets its own policy keeps it: the Library serves SVGs under
+	// `sandbox`, and the portal-wide policy below would otherwise replace that with
+	// one that lets a script inside an SVG run in the portal's origin.
+	if (!response.headers.has('Content-Security-Policy')) response.headers.set(
 		'Content-Security-Policy',
 		[
 			"default-src 'self'",

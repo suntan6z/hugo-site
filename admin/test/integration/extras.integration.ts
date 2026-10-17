@@ -11,6 +11,7 @@ import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { startPortal, startFakeDeepL, type Portal, type FakeDeepL } from './harness.ts';
 import { FrontMatter } from '../../src/lib/server/content/frontmatter.ts';
@@ -374,6 +375,89 @@ describe('subscribers', () => {
 		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
 		assert.match(log, /subscriber-removed/);
 		assert.doesNotMatch(log, /reader@example\.com/);
+	});
+});
+
+describe('the library', () => {
+	// A real 1×1 PNG; the repository checks that what it is given is an image.
+	const PNG = (shade: number) => {
+		const crc = (b: Buffer) => {
+			let c = ~0;
+			for (const x of b) { c ^= x; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); }
+			return ~c >>> 0;
+		};
+		const chunk = (type: string, data: Buffer) => {
+			const body = Buffer.concat([Buffer.from(type), data]);
+			const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+			const sum = Buffer.alloc(4); sum.writeUInt32BE(crc(body));
+			return Buffer.concat([len, body, sum]);
+		};
+		const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(1, 0); ihdr.writeUInt32BE(1, 4); ihdr[8] = 8; ihdr[9] = 0;
+		const idat = zlib.deflateSync(Buffer.from([0, shade]));
+		return new Uint8Array(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]));
+	};
+	const orphan = 'content/blog/first-home-nas/zz-unused.png';
+	const pngFile = (name: string, shade: number) => new File([PNG(shade)], name, { type: 'image/png' });
+
+	// Written before anything has asked for the library, which keeps its answer for a few minutes.
+	before(() => fs.writeFileSync(path.join(portal.root, orphan), PNG(10)));
+
+	test('it lists the pictures, and marks the one nothing refers to', async () => {
+		const html = await (await portal.get('/media', { cookie })).text();
+		assert.match(html, /zz-unused\.png/);
+		assert.match(html, /Unused/);
+		assert.match(html, /contact-chill\.gif/);
+	});
+
+	test('a picture is served to a signed-in visitor only, and only from where pictures live', async () => {
+		const ok = await portal.get(`/api/media/${orphan}`, { cookie });
+		assert.equal(ok.status, 200);
+		assert.equal(ok.headers.get('content-type'), 'image/png');
+		assert.match(ok.headers.get('content-security-policy') ?? '', /sandbox/);
+		assert.notEqual((await portal.get(`/api/media/${orphan}`)).status, 200);
+		assert.equal((await portal.get('/api/media/hugo.toml', { cookie })).status, 404);
+		assert.equal((await portal.get('/api/media/content/blog/first-home-nas/index.md', { cookie })).status, 404);
+	});
+
+	test('a picture something uses cannot be deleted', async () => {
+		const r = await portal.action('/media?/delete', { path: 'static/img/contact-chill.gif', confirm: 'delete' }, { cookie });
+		assert.equal(r.status, 400);
+		assert.ok(portal.exists('static/img/contact-chill.gif'));
+	});
+
+	test('deleting needs the dialog\'s confirmation', async () => {
+		const r = await portal.action('/media?/delete', { path: orphan }, { cookie });
+		assert.equal(r.status, 400);
+		assert.ok(portal.exists(orphan));
+	});
+
+	test('a replacement must be the same kind of file, or every reference would break', async () => {
+		const r = await portal.action('/api/media', { path: orphan, name: 'zz-unused.jpg', file: pngFile('zz-unused.jpg', 50) }, { cookie, multipart: true });
+		assert.equal(r.status, 400);
+		assert.match(r.raw, /PNG/);
+	});
+
+	test('only a picture the library lists can be replaced', async () => {
+		const r = await portal.action('/api/media', { path: 'hugo.toml', name: 'x.png', file: pngFile('x.png', 50) }, { cookie, multipart: true });
+		assert.equal(r.status, 400);
+		assert.match(portal.read('hugo.toml')!, /baseURL|title/);
+	});
+
+	test('replacing keeps the name and changes the bytes, and the log says so', async () => {
+		const before = fs.readFileSync(path.join(portal.root, orphan));
+		const r = await portal.action('/api/media', { path: orphan, name: 'zz-unused.png', file: pngFile('zz-unused.png', 200) }, { cookie, multipart: true });
+		assert.equal(r.status, 200, r.raw);
+		assert.notDeepEqual(fs.readFileSync(path.join(portal.root, orphan)), before);
+		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
+		assert.match(log, /image-replaced/);
+	});
+
+	test('an unused article picture can be deleted, once', async () => {
+		const r = await portal.action('/media?/delete', { path: orphan, confirm: 'delete' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.equal(portal.exists(orphan), false);
+		const again = await portal.action('/media?/delete', { path: orphan, confirm: 'delete' }, { cookie });
+		assert.equal(again.status, 400);
 	});
 });
 

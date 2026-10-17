@@ -38,6 +38,8 @@ function seedSite(root: string) {
 		if (f.endsWith('.md')) copy(path.join('content', f));
 	}
 	copy('content/redirects');
+	// One picture a page uses (contact.md shows it), for the library.
+	copy('static/img/contact-chill.gif');
 	copy('content/gallery/bari');
 	copy('content/gallery/paris/index.md');
 	// Every blog bundle's Markdown (needed for slug and link checks), but only

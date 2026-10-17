@@ -118,5 +118,26 @@ export async function prepareHero(file: File): Promise<{ webp: Blob; jpeg: Blob;
 	return { webp, jpeg, previewUrl: URL.createObjectURL(jpeg), width, height };
 }
 
+/**
+ * A new picture to take an existing one's place under the same name. Bitmaps
+ * are scaled like any upload and re-encoded in the target's own format, so every
+ * reference to the old file keeps working. A GIF, SVG or icon cannot go through
+ * a canvas without losing what makes it one (animation, vectors, sizes), so it
+ * is kept as it is and must already be the same kind.
+ */
+export async function prepareReplacement(file: File, targetName: string): Promise<Blob> {
+	const ext = targetName.split('.').pop()!.toLowerCase().replace('jpeg', 'jpg');
+	if (/^(gif|svg|ico|avif)$/.test(ext)) {
+		const got = file.name.split('.').pop()!.toLowerCase();
+		if (got !== ext) throw new ImageError(`This one has to be a ${ext.toUpperCase()} file: it cannot be converted without breaking it.`);
+		return file;
+	}
+	const { canvas } = await decodeScaled(file);
+	const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+	const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, QUALITY));
+	if (!blob) throw new ImageError(`Could not encode ${file.name}.`);
+	return blob;
+}
+
 export const formatBytes = (n: number) =>
 	n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`;

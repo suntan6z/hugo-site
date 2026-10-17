@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-	scanBlocks, annotate, innerOf, patchInner, attrOf, patchAttr, removeBlock, duplicateBlock, isRepeatable
+	scanBlocks, scanImages, annotate, innerOf, patchInner, attrOf, patchAttr, imgAttr, patchImgAttr, removeBlock, duplicateBlock, isRepeatable
 } from '../src/lib/page-blocks.ts';
 import { unbalanced, checkPage, CONTACT_IDS, PAGES, LANGS, pageFile } from '../src/lib/pages.ts';
 
@@ -79,7 +79,7 @@ describe('editing leaves everything else as written', () => {
 	test('annotate marks exactly the blocks, and removing the marks gives the source back', () => {
 		const out = annotate(sample);
 		assert.equal(out.match(/data-ed="/g)?.length, scanBlocks(sample).length);
-		assert.equal(out.replace(/ data-ed="\d+"/g, ''), sample);
+		assert.equal(out.replace(/ data-ed(?:img)?="\d+"/g, ''), sample);
 		assert.match(out, /<h1 data-ed="0">/);
 		assert.match(out, /<a class="btn" href="\/en\/contact\/" data-ed="5">/);
 	});
@@ -145,7 +145,7 @@ describe('on the real pages', () => {
 				assert.doesNotMatch(html.slice(b.start, b.end), /\sid\s*=/);
 				assert.equal(patchInner(html, b.id, html.slice(b.start, b.end)), html);
 			}
-			assert.equal(annotate(html).replace(/ data-ed="\d+"/g, ''), html);
+			assert.equal(annotate(html).replace(/ data-ed(?:img)?="\d+"/g, ''), html);
 		});
 	}
 
@@ -164,5 +164,50 @@ describe('on the real pages', () => {
 		const tags = scanBlocks(html).map((b) => b.tag);
 		assert.ok(tags.filter((t) => t === 'p').length >= 8);
 		assert.ok(tags.includes('h1') && tags.includes('h3'));
+	});
+});
+
+describe('pictures on a page', () => {
+	const html = `<div>
+  <p>Words</p>
+  <img src="/img/a.gif" alt="Old text" style="width:4rem" />
+  <!-- <img src="/img/commented.png"> -->
+  <img src='/img/b.png'>
+</div>
+`;
+
+	test('every picture is found, in order, and a commented-out one is not', () => {
+		assert.deepEqual(scanImages(html).map((i) => html.slice(i.tagStart, i.tagEnd).match(/\/img\/[a-z.]+/)![0]), ['/img/a.gif', '/img/b.png']);
+	});
+
+	test('annotate marks them, closing slash intact, and nothing else changes', () => {
+		const out = annotate(html);
+		assert.match(out, /<img src="\/img\/a\.gif" alt="Old text" style="width:4rem" data-edimg="0" \/>/);
+		assert.match(out, /<img src='\/img\/b\.png' data-edimg="1">/);
+		assert.equal(out.replace(/ data-ed(?:img)?="\d+"/g, ''), html);
+	});
+
+	test('alt text is read and set on the picture\'s own tag only', () => {
+		assert.equal(imgAttr(html, 0, 'alt'), 'Old text');
+		const out = patchImgAttr(html, 0, 'alt', 'A "new" one');
+		assert.match(out, /alt="A &quot;new&quot; one" style="width:4rem" \/>/);
+		assert.equal(imgAttr(out, 0, 'alt'), 'A "new" one');
+		assert.equal(out.replace(/alt="[^"]*"/, 'alt="Old text"').replace('&quot;', ''), html.replace('&quot;', ''));
+	});
+
+	test('a picture with no alt gets one, before its closing slash or bracket', () => {
+		assert.match(patchImgAttr(html, 1, 'alt', 'Described'), /<img src='\/img\/b\.png' alt="Described">/);
+		assert.match(patchImgAttr('<img src="x.png" />', 0, 'alt', 'Y'), /<img src="x\.png" alt="Y" \/>/);
+	});
+
+	test('a picture inside a text block makes it a non-block, as before', () => {
+		assert.equal(scanBlocks('<p>See <img src="x.png"> here</p>').length, 0);
+	});
+
+	test('the real pages\' pictures are all found and all annotated', () => {
+		for (const file of PAGES.flatMap((p) => LANGS.map((l) => pageFile(p.name, l)))) {
+			const src = bodyOf(file);
+			assert.equal(annotate(src).match(/data-edimg="/g)?.length ?? 0, src.match(/<img\b/gi)?.length ?? 0, file);
+		}
 	});
 });
