@@ -13,7 +13,7 @@ A production build is `hugo --minify`, but you rarely run it by hand — see [De
 
 **On versions:** the site is built in production with the image pinned in [`statichost.yml`](../statichost.yml) (currently Hugo 0.165.0 extended). Homebrew will usually be a version or two ahead, and that is fine: `.github/workflows/hugo-build.yml` builds every push with the pinned image, so drift shows up as a failed check rather than a broken deploy. It must be the **extended** edition either way — the homepage hero is resized to WebP through Hugo Pipes.
 
-There are no tests, linters or build tooling for the site itself.
+There are no tests or linters for the site itself, apart from `node scripts/image-metadata.mjs [--fix]`, which checks that no image carries metadata (camera, dates, GPS). CI runs it, and so does the Hugo build for bundle images; `--fix` needs `jpegtran` (`brew install jpeg-turbo`).
 
 ## The admin portal
 

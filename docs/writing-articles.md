@@ -8,10 +8,11 @@ Then, in the editor:
 
 - **Write** in Markdown, with **Split** or **Preview** showing the article rendered in the site's own stylesheet — fonts, colours and layout as readers will see them. The preview is close but not identical; the live site is the reference.
 - **Your work is saved as you type** — first in the browser, then to your account a few seconds later. Neither is a commit, so it costs nothing. Come back later, from any device, and the editor offers to restore it.
-- **Images**: drop them in and they are resized, converted to WebP and stripped of EXIF (including GPS) in your browser before upload. Give each one alt text. They are committed together with the text, never separately.
+- **Images**: drop them in and they are resized (1600px longest side), converted to WebP and stripped of EXIF (including GPS) in your browser before upload. The portal strips metadata again on every commit, and the build refuses any image that still has some. Give each one alt text. They are committed together with the text, never separately.
 - **French and Italian** have their own tabs. **Draft from English** fills a tab with a DeepL translation for you to correct — file names, links and formatting are protected from the translator. Nothing is saved until you save it.
 - **Review changes** shows the exact commit — every file, every changed line — before you make it.
 - **Publish** runs the pre-publish checks (see [SEO](seo.md)). Problems that would damage the published page block it; suggestions never do. Save keeps it as a draft.
+- **Schedule** picks a day, not a time: the article goes live at 9:00 Paris time that morning, and the newsletter follows at 9:30. The day must be after today; to go live now, use Publish. Why only one moment: [`admin/DEPLOY.md`](../admin/DEPLOY.md).
 
 The dashboard then tracks the rebuild: *Publishing… → Live*.
 

@@ -27,6 +27,10 @@ Each city folder is a Hugo page bundle (same pattern as a blog post), but its `i
 
 The folder name must match a `slug` in `gallery_cities.json` — that's how the filter tabs know which photos to show. A city listed without any photos shows a friendly "Photos coming soon" placeholder.
 
+### What visitors get
+
+Each photo is published as AVIF in three sizes plus the original: a 544×704 crop for the strip, and in the lightbox a 480px preview (shown instantly, blurred), then a 1920px version, then the original only when the visitor zooms in or the screen needs it. The copies are named `<city>-<NN>-{strip,480,1920}.avif`, and the lightbox's *Download original* button saves `<city>-<NN>.<ext>`. Originals must carry no metadata (see [Local Development](local-development.md)).
+
 ### Adding a city by hand
 
 1. Add a line to `data/gallery_cities.json`:
@@ -45,6 +49,8 @@ The folder name must match a `slug` in `gallery_cities.json` — that's how the 
      list: never
    ---
    ```
+
+   Copy it to `index.fr.md` and `index.it.md` in the same folder (identical front matter), or the strip is empty on the French and Italian homepages. The same goes for a new `_index` if you ever recreate it.
 
 ### Adding photos by hand
 

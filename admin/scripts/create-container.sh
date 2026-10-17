@@ -119,8 +119,7 @@ fi
 # 9:30 to send newsletters for what the rebuilt site now serves. Twice a day
 # and no more: the container scales to zero after 15 idle minutes, so every call
 # keeps it (and its billed memory) awake for a quarter of an hour, and calling
-# it twice an hour pushed September 2026 over the free tier. The editor's picker offers whole hours to
-# match. The token is set here for both the container and the trigger, so there
+# it twice an hour pushed September 2026 over the free tier. The token is set here for both the container and the trigger, so there
 # is no second copy anywhere to drift out of step.
 C_ID=$(scw container container list namespace-id="$NS_ID" region=$REGION -o json \
   | jq -r --arg n "$NAME" '.[] | select(.name==$n) | .id')

@@ -58,8 +58,9 @@ A SvelteKit app; full picture in [CLAUDE.md](../CLAUDE.md) and [`admin/DEPLOY.md
 
 ```
 admin/
-  src/routes/              → pages (dashboard, posts, gallery, newsletter, strings,
-                             analytics, activity, settings) and the JSON endpoints
+  src/routes/              → pages (dashboard, posts, pages, gallery, newsletter,
+                             strings, redirects, visitors, analytics, audit,
+                             settings) and the JSON endpoints
   src/lib/client/          → browser-side image processing, passkeys
   src/lib/server/
     langs.ts, diff.ts, cache.ts, env.ts   → site-wide values and utilities
@@ -67,7 +68,8 @@ admin/
     auth/                  → passkeys, sessions, the access allow-list
     store/                 → object storage (drafts, audit, settings)
     github/                → the GitHub App, for committing
-    integrations/          → Bing, Resend, DeepL, IndexNow, build status
+    integrations/          → Bing, Litlyx, Resend, DeepL, IndexNow, link check, build status
+    schedule/              → scheduled publishing (one fixed morning, see DEPLOY.md)
     seo/                   → the pre-publish checks
   test/                    → unit tests named after the module they cover
   test/integration/        → boots the built app and drives it over HTTP
