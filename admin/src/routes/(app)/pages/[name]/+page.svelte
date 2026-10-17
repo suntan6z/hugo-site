@@ -4,6 +4,7 @@
 	import FileChanges from '$lib/components/FileChanges.svelte';
 	import HistoryPanel from '$lib/components/HistoryPanel.svelte';
 	import PagePreview from '$lib/components/PagePreview.svelte';
+	import PageVisualEditor from '$lib/components/PageVisualEditor.svelte';
 	import { checkPage, stampOf, restamp, LANGS, DESCRIPTION_MIN, DESCRIPTION_MAX, type Lang } from '$lib/pages';
 
 	let { data, form } = $props();
@@ -42,14 +43,13 @@
 
 	/* ------------------------------------------------------ layout and theme */
 
-	type View = 'write' | 'split' | 'preview';
-	let view = $state<View>('split');
+	// Editing happens on the page itself; the HTML is there for what clicking cannot reach.
+	let mode = $state<'visual' | 'html'>('visual');
 	let theme = $state<'light' | 'dark'>('light');
 	let narrow = $state(false);
 	onMount(() => {
 		try {
-			const v = localStorage.getItem('pages:view');
-			if (v === 'write' || v === 'split' || v === 'preview') view = v;
+			if (localStorage.getItem('pages:mode') === 'html') mode = 'html';
 		} catch {}
 		const readTheme = () => (theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
 		readTheme();
@@ -70,10 +70,16 @@
 			removeEventListener('beforeunload', warn);
 		};
 	});
-	const shown = $derived<View>(narrow && view === 'split' ? 'write' : view);
-	function setView(v: View) {
-		view = v;
-		try { localStorage.setItem('pages:view', v); } catch {}
+	// The HTML view is source beside a preview, or the source alone on a narrow screen.
+	const shown = $derived<'write' | 'split'>(narrow ? 'write' : 'split');
+	function setMode(m: 'visual' | 'html') {
+		mode = m;
+		try { localStorage.setItem('pages:mode', m); } catch {}
+	}
+
+	/** A translation starts from the English page: same layout, words to be replaced in place. */
+	function copyFromEnglish(l: 'fr' | 'it') {
+		Object.assign(page[l], { title: page.en.title, description: page.en.description, body: page.en.body });
 	}
 
 	/* ------------------------------------------------------------ helpers */
@@ -121,10 +127,13 @@
 
 <svelte:head><title>{data.label} · loconsole admin</title></svelte:head>
 
-<div class="head">
-	<a class="back" href="/pages">← Pages</a>
-	<h1>{data.label}</h1>
-	<a class="live" href="{data.siteUrl}/{tab}/{data.name}/" target="_blank" rel="noreferrer">Open the live page ↗</a>
+<div class="page-head">
+	<div>
+		<a class="back" href="/pages">← Pages</a>
+		<h1>{data.label}</h1>
+		<p>Click the text you want to change and type, right on the page. Nothing is public until you press Save.</p>
+	</div>
+	<a class="btn-outline btn-sm" href="{data.siteUrl}/{tab}/{data.name}/" target="_blank" rel="noreferrer">Open the live page ↗</a>
 </div>
 
 {#if form?.review}
@@ -173,10 +182,9 @@
 		};
 	}}>
 	<div class="tabs">
-		<div class="view-switch" role="group" aria-label="Editor layout">
-			{#each [['write', 'Source'], ['split', 'Split'], ['preview', 'Preview']] as [v, label]}
-				<button type="button" class="pill" class:active={shown === v} class:split-only={v === 'split'} onclick={() => setView(v as View)}>{label}</button>
-			{/each}
+		<div class="seg" role="group" aria-label="How to edit">
+			<button type="button" class:on={mode === 'visual'} onclick={() => setMode('visual')}>Edit page</button>
+			<button type="button" class:on={mode === 'html'} onclick={() => setMode('html')}>HTML (advanced)</button>
 		</div>
 		{#each LANGS as l}
 			<button type="button" class="lang-tab" class:active={tab === l} onclick={() => (tab = l)}>
@@ -218,18 +226,34 @@
 				</p>
 			{/if}
 
-			<div class="writing" data-view={shown}>
-				<label class="source">
-					<span class="sr">HTML of the {LANG_NAMES[l]} page</span>
-					<textarea name="body_{l}" bind:value={page[l].body} spellcheck="false" autocapitalize="off" wrap="off"></textarea>
-				</label>
-				{#if l === tab && shown !== 'write'}
-					<div class="preview">
-						<span class="preview-label">Preview · styled like the site; forms and scripts do not run here</span>
-						<PagePreview html={page[l].body} lang={l} siteUrl={data.siteUrl} {theme} />
-					</div>
+			{#if mode === 'visual'}
+				<!-- The page is written back into this hidden copy as you click and type. -->
+				<input type="hidden" name="body_{l}" value={page[l].body} />
+				{#if l === tab}
+					{#if page[l].body.trim()}
+						<PageVisualEditor bind:html={page[l].body} lang={l} siteUrl={data.siteUrl} {theme} />
+					{:else}
+						<div class="empty">
+							<h3>There is no {LANG_NAMES[l]} version yet</h3>
+							<p>Start from the English page and replace its words in place, or let DeepL draft it first.</p>
+							<button type="button" class="btn-primary" onclick={() => copyFromEnglish(l as 'fr' | 'it')} disabled={!page.en.body.trim()}>Start from the English page</button>
+						</div>
+					{/if}
 				{/if}
-			</div>
+			{:else}
+				<div class="writing" data-view={shown}>
+					<label class="source">
+						<span class="sr">HTML of the {LANG_NAMES[l]} page</span>
+						<textarea name="body_{l}" bind:value={page[l].body} spellcheck="false" autocapitalize="off" wrap="off"></textarea>
+					</label>
+					{#if l === tab && shown !== 'write'}
+						<div class="preview">
+							<span class="preview-label">Preview · styled like the site; forms and scripts do not run here</span>
+							<PagePreview html={page[l].body} lang={l} siteUrl={data.siteUrl} {theme} />
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	{/each}
 
@@ -251,10 +275,7 @@
 />
 
 <style>
-	.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1rem; margin-bottom: 1rem; }
-	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); width: 100%; }
-	h1 { font-size: 1.4rem; margin: 0; letter-spacing: -0.015em; }
-	.live { font-size: 0.82rem; text-decoration: none; }
+	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); display: inline-block; margin-bottom: 0.4rem; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
@@ -272,12 +293,16 @@
 	.lang { font-size: 0.72rem; font-variant: small-caps; color: var(--muted-foreground); }
 
 	.tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.9rem; border-bottom: 1px solid var(--border); padding-bottom: 0.6rem; }
-	.view-switch { display: flex; gap: 0.3rem; margin-right: auto; }
+	.seg { display: inline-flex; padding: 0.2rem; margin-right: auto; border-radius: 0.7rem; background: var(--muted); }
+	.seg button { padding: 0.4rem 0.95rem; border: 0; border-radius: 0.55rem; background: none; font-size: 0.86rem; font-weight: 600; color: var(--muted-foreground); cursor: pointer; }
+	.seg button.on { background: var(--card); color: var(--foreground); box-shadow: 0 1px 3px hsl(0 0% 0% / 0.15); }
+	.empty { padding: 2.5rem 1.5rem; text-align: center; border: 2px dashed var(--border); border-radius: var(--radius); }
+	.empty h3 { margin: 0 0 0.4rem; font-size: 1.15rem; }
+	.empty p { margin: 0 0 1.1rem; color: var(--muted-foreground); font-size: 0.92rem; }
 	.lang-tab { display: inline-flex; align-items: center; gap: 0.35rem; background: none; border: 0; padding: 0.35rem 0.7rem; border-radius: 8px; cursor: pointer; font-size: 0.88rem; color: var(--muted-foreground); }
 	.lang-tab.active { background: var(--accent); color: var(--accent-foreground); font-weight: 600; }
 	.lang-tab i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
 	.lang-tab i.on { background: var(--ok); }
-	@media (max-width: 1100px) { .split-only { display: none; } }
 
 	.pane { display: grid; gap: 0.8rem; }
 	.mt { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted-foreground); }
@@ -293,8 +318,7 @@
 
 	.writing { display: grid; gap: 1rem; }
 	.writing[data-view='split'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-	.writing[data-view='preview'] .source { display: none; }
-	.source textarea { width: 100%; min-height: 70vh; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem; line-height: 1.55; tab-size: 2; white-space: pre; overflow: auto; }
+		.source textarea { width: 100%; min-height: 70vh; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem; line-height: 1.55; tab-size: 2; white-space: pre; overflow: auto; }
 	.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 	.preview { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
 	.preview-label { font-size: 0.72rem; color: var(--muted-foreground); }

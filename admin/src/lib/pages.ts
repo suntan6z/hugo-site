@@ -4,7 +4,8 @@
  *
  * Unlike articles these are hand-built HTML (goldmark passes it through), with
  * the site's own classes and, on Contact, the form static/js/main.js drives.
- * So they are edited as source with a live preview, never through the visual
+ * So they are edited on the rendered page (page-blocks.ts says how an edit maps
+ * back to the source), or as source in the HTML view, never through the visual
  * Markdown editor, and saving checks the two things raw HTML most easily
  * breaks: an element left unclosed, and an id the form script looks for.
  *
