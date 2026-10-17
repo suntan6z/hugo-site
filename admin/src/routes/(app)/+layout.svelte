@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
+	import type { Item } from '$lib/search';
 	let { children, data } = $props();
 
 	// Grouped by what the visit is for, not by how the code is organised.
@@ -68,11 +71,42 @@
 		await goto('/login', { invalidateAll: true });
 	}
 
+	// The palette: screens and actions are known here; the rest it fetches when first opened.
+	let paletteOpen = $state(false);
+	let mac = $state(false);
+	onMount(() => (mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)));
+	const fixed = $derived<Item[]>([
+		{ kind: 'action', title: 'New article', hint: 'Start writing', href: '/posts/new' },
+		{ kind: 'action', title: 'Write to subscribers', hint: 'The newsletter flow', href: '/newsletter' },
+		...groups.flatMap((g) => g.items.map((i): Item => ({ kind: 'screen', title: i.label, hint: g.label ?? 'Dashboard', href: i.href }))),
+		{ kind: 'action', title: 'Open the live site', hint: data.siteUrl, href: data.siteUrl },
+		{ kind: 'action', title: dark ? 'Switch to light mode' : 'Switch to dark mode', keywords: 'theme appearance', action: 'theme' },
+		{ kind: 'action', title: 'Sign out', action: 'signout' }
+	]);
+	function onAction(name: string) {
+		if (name === 'theme') toggleTheme();
+		else if (name === 'signout') signOut();
+	}
+	// ⌘K or Ctrl+K from anywhere; "/" when not typing. A handler that already used the key
+	// (the article editor's own ⌘K for a link) has called preventDefault, and wins.
+	function shortcut(e: KeyboardEvent) {
+		if (e.defaultPrevented) return;
+		const typing = (e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable="true"]');
+		if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey)) {
+			e.preventDefault();
+			paletteOpen = !paletteOpen;
+		}
+	}
+
 	$effect(() => {
 		page.url.pathname;
 		menuOpen = false;
 	});
 </script>
+
+<svelte:window onkeydown={shortcut} />
+
+<CommandPalette bind:open={paletteOpen} {fixed} {onAction} />
 
 <div class="shell">
 	<!-- Narrow screens: a slim bar with the logo and a menu button. -->
@@ -94,6 +128,12 @@
 			<img src="/brand/logo.svg" alt="Lorenzo Loconsole" width="701" height="362" />
 			<span class="tag">admin</span>
 		</a>
+
+		<button type="button" class="find" onclick={() => (paletteOpen = true)}>
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3" /></svg>
+			<span>Search</span>
+			<kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
+		</button>
 
 		<nav aria-label="Sections">
 			{#each groups as g}
@@ -155,6 +195,10 @@
 		padding-left: 0.55rem; border-left: 1px solid var(--border);
 	}
 
+	.find { display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: 0.65rem; background: var(--card); color: var(--muted-foreground); font: inherit; font-size: 0.88rem; cursor: pointer; text-align: left; transition: border-color 0.15s; }
+	.find:hover { border-color: var(--primary); color: var(--foreground); }
+	.find span { flex: 1; }
+	.find kbd { font: inherit; font-size: 0.68rem; padding: 0.05rem 0.4rem; border: 1px solid var(--border); border-radius: 0.35rem; }
 	nav { display: flex; flex-direction: column; gap: 1.1rem; flex: 1; }
 	.group { display: flex; flex-direction: column; gap: 0.12rem; }
 	.group-label {

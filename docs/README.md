@@ -2,7 +2,7 @@
 
 Practical guides for running this site. The top-level [README](../README.md) explains what the project *is* — start here for anything hands-on.
 
-**Most day-to-day work happens in the admin portal at [admin.loconsole.eu](https://admin.loconsole.eu)**, not in a code editor: writing and translating articles, adding gallery photos, editing interface strings, sending the newsletter. These guides cover the portal first and the underlying files second, because the files are still the truth — the portal just writes them for you.
+**Most day-to-day work happens in the admin portal at [admin.loconsole.eu](https://admin.loconsole.eu)** (press ⌘K, or Ctrl+K, anywhere in it to find an article, page, text or screen), not in a code editor: writing and translating articles, adding gallery photos, editing interface strings, sending the newsletter. These guides cover the portal first and the underlying files second, because the files are still the truth — the portal just writes them for you.
 
 - [Local Development](local-development.md) — run the site, and the portal, on your Mac
 - [Writing Articles](writing-articles.md) — in the portal, and by hand

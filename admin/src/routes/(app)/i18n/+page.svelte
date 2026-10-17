@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	let { data, form } = $props();
 
-	let filter = $state('');
+	// ?q= arrives from the search palette, already filtered to the text it found.
+	let filter = $state(page.url.searchParams.get('q') ?? '');
 	let onlyProblems = $state(false);
 	let showAdd = $state(false);
 	let newKey = $state('');

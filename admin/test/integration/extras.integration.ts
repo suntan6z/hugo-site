@@ -378,6 +378,31 @@ describe('subscribers', () => {
 	});
 });
 
+describe('the search palette\'s index', () => {
+	type Index = { items: { kind: string; title: string; hint?: string; href?: string }[] };
+	const index = async () => (await (await portal.get('/api/search', { cookie })).json()) as Index;
+
+	test('it lists articles, pages, cities and the site\'s own texts, each with where it goes', async () => {
+		const { items } = await index();
+		const kinds = new Set(items.map((i) => i.kind));
+		for (const k of ['article', 'page', 'gallery', 'string']) assert.ok(kinds.has(k), k);
+		assert.ok(items.some((i) => i.kind === 'article' && i.href === '/posts/first-home-nas'));
+		assert.ok(items.some((i) => i.kind === 'page' && i.href === '/pages/contact'));
+		assert.ok(items.some((i) => i.kind === 'gallery' && i.href === '/gallery/bari'));
+		assert.ok(items.every((i) => i.title && i.href?.startsWith('/')), 'nothing without a way to open it');
+	});
+
+	test('a string opens the Strings screen already filtered to its key', async () => {
+		const s = (await index()).items.find((i) => i.kind === 'string')!;
+		assert.match(s.href!, /^\/i18n\?q=/);
+		assert.equal(decodeURIComponent(s.href!.split('q=')[1]), s.hint);
+	});
+
+	test('it is for a signed-in visitor only', async () => {
+		assert.notEqual((await portal.get('/api/search')).status, 200);
+	});
+});
+
 describe('site name and menu', () => {
 	const nav = (over: Record<string, string> = {}): Record<string, string> => {
 		const f: Record<string, string> = { title: 'Lorenzo Loconsole' };
