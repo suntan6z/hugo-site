@@ -50,6 +50,7 @@ async function startFakes() {
 		if (url.pathname === '/emails' && req.method === 'POST') return res.end(JSON.stringify({ id: 'email-test-1' }));
 		if (url.pathname === '/broadcasts' && req.method === 'POST') return res.end(JSON.stringify({ id: 'bc-test-1' }));
 		if (/^\/broadcasts\/[^/]+\/send$/.test(url.pathname) && req.method === 'POST') return res.end('{}');
+		if (url.pathname === '/broadcasts/bc-test-1' && req.method === 'GET') return res.end(JSON.stringify({ id: 'bc-test-1', status: 'sent', sent_at: '2026-10-17T07:30:00.000Z' }));
 		if (url.pathname === '/alive') return res.end('{}');
 		if (url.pathname === '/gone') {
 			res.statusCode = 404;
@@ -424,6 +425,59 @@ describe('newsletter: test copy and confirmed send', () => {
 		const body = JSON.parse(sent('/broadcasts')[0].body ?? '{}');
 		assert.equal(body.subject, 'A subject');
 		assert.ok(String(body.html).includes('RESEND_UNSUBSCRIBE_URL'), 'a broadcast keeps Resend\'s own token');
+	});
+});
+
+describe('newsletter: scheduling from the flow', () => {
+	const mail = { slug: 'first-home-nas', subject: 'Held subject', title: 'A headline', intro: 'An intro for readers.', note: 'A word first.', confirm: 'send' };
+	const broadcasts = () => fakes.seen.filter((s) => s.method === 'POST' && s.path === '/broadcasts').length;
+	const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+
+	test('today is refused, and nothing is held', async () => {
+		const r = await portal.action('/newsletter?/schedule', { ...mail, day: day(0) }, { cookie });
+		assert.equal(r.status, 400);
+		assert.match(r.raw, /after today/);
+	});
+
+	test('without the dialog\'s confirmation nothing is held either', async () => {
+		const r = await portal.action('/newsletter?/schedule', { ...mail, confirm: '', day: day(3) }, { cookie });
+		assert.equal(r.status, 400);
+	});
+
+	test('a later morning is held: listed as scheduled, and nothing is sent', async () => {
+		const before = broadcasts();
+		const r = await portal.action('/newsletter?/schedule', { ...mail, day: day(3) }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.equal(broadcasts(), before, 'held, not sent');
+		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
+		assert.match(html, /Held subject/);
+		assert.match(html, /Waiting/);
+	});
+
+	test('the runner leaves it alone until its morning', async () => {
+		const before = broadcasts();
+		await portal.send('POST', '/api/schedule/run', { cookie, json: undefined });
+		assert.equal(broadcasts(), before);
+	});
+
+	test('scheduling again replaces it rather than doubling it', async () => {
+		await portal.action('/newsletter?/schedule', { ...mail, subject: 'Replaced subject', day: day(4) }, { cookie });
+		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
+		assert.match(html, /Replaced subject/);
+		assert.doesNotMatch(html, /Held subject/);
+	});
+
+	test('cancelling removes it', async () => {
+		const r = await portal.action('/newsletter?/cancelScheduled', { slug: 'first-home-nas' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
+		assert.doesNotMatch(html, /Replaced subject/);
+	});
+
+	test('what has been sent has a way to its numbers at Resend, and Resend\'s own word for its state', async () => {
+		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
+		assert.match(html, /resend\.com\/broadcasts\/bc-test-1/);
+		assert.ok(fakes.seen.some((x) => x.method === 'GET' && x.path === '/broadcasts/bc-test-1'), 'Resend was asked how it stands');
 	});
 });
 

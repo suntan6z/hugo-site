@@ -6,7 +6,7 @@ import { sendBroadcast, isConfigured as canSend, SITE_NAME } from '../integratio
 import { integrations } from '../env.ts';
 import { thumbnailOf, thumbnailUrl } from '../../thumbnail.ts';
 import { invalidate } from '../cache.ts';
-import { dueToPublish, dueToAnnounce, prune, type Scheduled } from './plan.ts';
+import { dueToPublish, dueToAnnounce, isHeldNewsletter, prune, type Scheduled } from './plan.ts';
 
 /**
  * Carries out scheduled publishing. Called by the scheduled trigger, and by
@@ -32,6 +32,21 @@ export async function schedule(entry: Scheduled): Promise<void> {
 export async function cancel(slug: string): Promise<boolean> {
 	const items = await readScheduled();
 	const next = items.filter((i) => !(i.slug === slug && i.state === 'pending'));
+	if (next.length === items.length) return false;
+	await writeScheduled(next);
+	return true;
+}
+
+/** A newsletter held for a morning, for an article that is already live. Replaces one held before. */
+export async function scheduleNewsletter(entry: Scheduled): Promise<void> {
+	const items = (await readScheduled()).filter((i) => !(i.slug === entry.slug && isHeldNewsletter(i)));
+	items.push(entry);
+	await writeScheduled(items);
+}
+
+export async function cancelNewsletter(slug: string): Promise<boolean> {
+	const items = await readScheduled();
+	const next = items.filter((i) => !(i.slug === slug && isHeldNewsletter(i)));
 	if (next.length === items.length) return false;
 	await writeScheduled(next);
 	return true;
@@ -89,19 +104,22 @@ export async function runDue(now = new Date()): Promise<RunReport> {
 		// The manifest only lists what the build produced, so being in it is
 		// exactly what "live" means here.
 		const live = (info?.posts ?? []).map((p) => p.slug);
-		for (const item of dueToAnnounce(items, live)) {
+		for (const item of dueToAnnounce(items, live, now)) {
 			item.tries = (item.tries ?? 0) + 1;
 			try {
 				if (!canSend()) throw new Error('RESEND_API_KEY is not configured');
 				const post = await loadPost(item.slug);
 				if (!post) throw new Error('the article no longer exists');
-				const title = post.translations.en.title;
+				// What the author wrote in the newsletter flow, or else the article's own words.
+				const written = item.broadcast;
+				const title = written?.title ?? post.translations.en.title;
 				const image = thumbnailOf(post.featured_image, post.translations.en.body);
 				const r = await sendBroadcast({
 					slug: item.slug,
-					subject: title,
+					subject: written?.subject ?? title,
 					title,
-					intro: post.translations.en.description,
+					intro: written?.intro ?? post.translations.en.description,
+					note: written?.note,
 					url: `${integrations.siteUrl}/en/blog/${item.slug}/`,
 					imageUrl: image ? thumbnailUrl(integrations.siteUrl, item.slug, image) : undefined,
 					siteName: SITE_NAME,
@@ -112,7 +130,7 @@ export async function runDue(now = new Date()): Promise<RunReport> {
 				item.announcedAt = new Date().toISOString();
 				delete item.error;
 				report.announced.push(item.slug);
-				await audit('newsletter-sent', { slug: item.slug, subject: title, id: r.id, scheduled: true });
+				await audit('newsletter-sent', { slug: item.slug, subject: written?.subject ?? title, id: r.id, scheduled: true });
 			} catch (e) {
 				item.error = e instanceof Error ? e.message : String(e);
 				report.failed.push({ slug: item.slug, error: item.error });

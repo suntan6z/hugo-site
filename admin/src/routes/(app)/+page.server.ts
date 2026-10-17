@@ -54,6 +54,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		grid: rows.map((r) => ({ slug: r.slug, title: r.title, langs: r.langs as string[] })).slice(0, 6),
 		schedule: {
 			waiting: scheduled.filter((i) => i.state === 'pending').length,
+			newsletters: scheduled.filter((i) => i.state === 'published' && i.newsletter && !!i.announceAt && !i.announcedAt).length,
 			failed: scheduled.filter((i) => i.state === 'failed').map((i) => ({ slug: i.slug, error: i.error ?? '' }))
 		},
 		// The home screen shows the shape of the queue; focus mode works it.

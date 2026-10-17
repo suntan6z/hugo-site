@@ -78,6 +78,7 @@
 		if (dead > 0) out.push({ level: 'warn', text: `${dead} outside link${dead === 1 ? '' : 's'} no longer work.`, href: '/focus', cta: 'Fix them' });
 		if (tasks.pending > 0) out.push({ level: 'info', text: `${tasks.pending} answered fix${tasks.pending === 1 ? '' : 'es'} waiting to be published together.`, href: '/focus', cta: 'Publish' });
 		if (data.schedule.waiting > 0) out.push({ level: 'info', text: `${data.schedule.waiting} article${data.schedule.waiting === 1 ? ' is' : 's are'} scheduled to go live.`, href: '/posts', cta: 'See which' });
+		if (data.schedule.newsletters > 0) out.push({ level: 'info', text: `${data.schedule.newsletters} newsletter${data.schedule.newsletters === 1 ? ' is' : 's are'} scheduled to be sent.`, href: '/newsletter?tab=sent', cta: 'See which' });
 		return out;
 	});
 

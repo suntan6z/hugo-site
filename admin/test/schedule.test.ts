@@ -1,6 +1,9 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { whyNotDay, morningOf, todayIn, dueToPublish, dueToAnnounce, forSlug, prune, isSettled, MAX_TRIES, type Scheduled } from '../src/lib/server/schedule/plan.ts';
+import {
+	whyNotDay, morningOf, todayIn, dueToPublish, dueToAnnounce, forSlug, prune, isSettled, MAX_TRIES,
+	announceTimeOf, tomorrowIn, isHeldNewsletter, type Scheduled
+} from '../src/lib/server/schedule/plan.ts';
 
 const NOW = new Date('2026-09-12T12:00:00Z');
 const at = (mins: number) => new Date(NOW.getTime() + mins * 60_000).toISOString();
@@ -91,5 +94,50 @@ describe('housekeeping', () => {
 		assert.equal(isSettled(item({ state: 'published', newsletter: true })), false);
 		assert.equal(isSettled(item({ state: 'announced', newsletter: true })), true);
 		assert.equal(isSettled(item({ tries: MAX_TRIES })), true);
+	});
+});
+
+describe('a newsletter held for a morning', () => {
+	const held = (over: Partial<Scheduled> = {}) =>
+		item({ state: 'published', newsletter: true, announceAt: announceTimeOf('2026-09-13')!, publishedAt: NOW.toISOString(), ...over });
+
+	test('it is sent at 9:30 Paris time, half an hour after articles go live', () => {
+		assert.equal(announceTimeOf('2026-09-13'), '2026-09-13T07:30:00.000Z');
+		assert.equal(announceTimeOf('2026-12-01'), '2026-12-01T08:30:00.000Z');
+		assert.equal(announceTimeOf('nonsense'), null);
+	});
+
+	test('the first day to pick is tomorrow in Paris, not in UTC', () => {
+		assert.equal(tomorrowIn(NOW), '2026-09-13');
+		assert.equal(tomorrowIn(new Date('2026-09-12T23:30:00Z')), '2026-09-14');
+		assert.equal(tomorrowIn(new Date('2026-12-31T12:00:00Z')), '2027-01-01');
+	});
+
+	test('it is recognised, and an ordinary announced or unscheduled item is not', () => {
+		assert.equal(isHeldNewsletter(held()), true);
+		assert.equal(isHeldNewsletter(held({ announcedAt: NOW.toISOString() })), false);
+		assert.equal(isHeldNewsletter(item({ state: 'published', newsletter: true })), false, 'no hold date: sent as soon as live');
+		assert.equal(isHeldNewsletter(held({ newsletter: false })), false);
+	});
+
+	test('it waits for its morning even though the article is live', () => {
+		const items = [held()];
+		assert.deepEqual(dueToAnnounce(items, ['a-post'], NOW), []);
+		assert.deepEqual(dueToAnnounce(items, ['a-post'], new Date('2026-09-13T07:29:59Z')), []);
+		assert.equal(dueToAnnounce(items, ['a-post'], new Date('2026-09-13T07:30:00Z')).length, 1);
+	});
+
+	test('once its morning comes it still waits for the site to serve the article', () => {
+		assert.deepEqual(dueToAnnounce([held()], [], new Date('2026-09-14T00:00:00Z')), []);
+	});
+
+	test('an article announced as soon as it is live is unaffected by any of this', () => {
+		assert.equal(dueToAnnounce([item({ state: 'published', newsletter: true })], ['a-post'], NOW).length, 1);
+	});
+
+	test('it survives clean-up while its date is ahead, however old the entry', () => {
+		const old = held({ createdAt: '2026-06-01T00:00:00Z', publishedAt: '2026-06-01T00:00:00Z', announceAt: '2026-10-01T07:30:00Z' });
+		assert.equal(prune([old], NOW).length, 1);
+		assert.equal(prune([{ ...old, announcedAt: '2026-06-02T00:00:00Z' }], NOW).length, 0, 'once sent long ago it goes');
 	});
 });

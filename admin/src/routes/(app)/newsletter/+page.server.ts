@@ -2,8 +2,10 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import {
 	isConfigured, listSubscribers, removeSubscriber, sentBroadcasts, sendBroadcast, sendTest, looksLikeEmail,
-	SITE_NAME, FROM_NAME, type Subscriber
+	broadcastStates, buildBroadcastHtml, validateBroadcast, SITE_NAME, FROM_NAME, type Subscriber
 } from '$lib/server/integrations/resend.ts';
+import { readScheduled, scheduleNewsletter, cancelNewsletter } from '$lib/server/schedule/runner.ts';
+import { whyNotDay, announceTimeOf, morningOf, tomorrowIn, isHeldNewsletter } from '$lib/server/schedule/plan.ts';
 import { listPosts, fromForm } from '$lib/server/content/post.ts';
 import { integrations } from '$lib/server/env.ts';
 import { audit } from '$lib/server/store/kv.ts';
@@ -27,10 +29,11 @@ async function sendablePosts() {
 
 export const load: PageServerLoad = async ({ url }) => {
 	const configured = isConfigured();
-	const [posts, sent, subscribers] = await Promise.all([
+	const [posts, sent, subscribers, scheduledAll] = await Promise.all([
 		sendablePosts(),
 		configured ? sentBroadcasts() : Promise.resolve([]),
-		configured ? listSubscribers().catch((): Subscriber[] | null => null) : Promise.resolve(null)
+		configured ? listSubscribers().catch((): Subscriber[] | null => null) : Promise.resolve(null),
+		readScheduled()
 	]);
 	const audience = subscribers && {
 		total: subscribers.length,
@@ -52,7 +55,16 @@ export const load: PageServerLoad = async ({ url }) => {
 		siteName: SITE_NAME,
 		fromName: FROM_NAME,
 		siteUrl: integrations.siteUrl,
-		chosen
+		chosen,
+		// Newsletters waiting for their morning, for articles that are already live.
+		held: scheduledAll
+			.filter(isHeldNewsletter)
+			.map((i) => ({ slug: i.slug, at: i.announceAt!, subject: i.broadcast?.subject ?? null, error: i.error ?? null })),
+		earliestDay: tomorrowIn(),
+		// ?tab=sent opens on what is scheduled and sent, as a link from the dashboard does.
+		tab: (['sent', 'subscribers'] as const).find((t) => t === url.searchParams.get('tab')) ?? ('compose' as const),
+		// Streamed: the tabs show at once and Resend's answer fills in.
+		states: (configured ? broadcastStates(sent.slice(0, 10).map((s) => s.id)) : Promise.resolve({})) as ReturnType<typeof broadcastStates>
 	};
 };
 
@@ -116,6 +128,43 @@ export const actions: Actions = {
 		} catch (e) {
 			return fail(502, { testError: e instanceof Error ? e.message : String(e) });
 		}
+	},
+
+	/** Hold a newsletter for a morning (9:30 Paris): the trigger sends it once the site is live. */
+	schedule: async ({ request }) => {
+		if (!isConfigured()) return fail(400, { message: 'Resend is not connected.' });
+		const f = await request.formData();
+		const input = inputFrom(f, await sendablePosts());
+		if (!input) return fail(400, { message: 'Pick an article first.' });
+		if (fromForm(f.get('confirm')).trim() !== 'send') {
+			return fail(400, { message: 'Confirm first — a sent broadcast cannot be recalled.' });
+		}
+		const day = fromForm(f.get('day')).trim();
+		const why = whyNotDay(day);
+		if (why) return fail(400, { message: why });
+		const check = validateBroadcast({ ...input, html: buildBroadcastHtml(input) });
+		if (!check.ok) return fail(400, { message: check.errors.join(' ') });
+
+		const now = new Date().toISOString();
+		await scheduleNewsletter({
+			slug: input.slug,
+			at: morningOf(day)!,
+			announceAt: announceTimeOf(day)!,
+			newsletter: true,
+			state: 'published',
+			createdAt: now,
+			publishedAt: now,
+			broadcast: { subject: input.subject, title: input.title, intro: input.intro, note: input.note }
+		});
+		await audit('newsletter-scheduled', { slug: input.slug, day });
+		return { scheduled: true, at: announceTimeOf(day)! };
+	},
+
+	cancelScheduled: async ({ request }) => {
+		const slug = fromForm((await request.formData()).get('slug')).trim();
+		const done = await cancelNewsletter(slug);
+		if (done) await audit('newsletter-schedule-cancelled', { slug });
+		return { cancelled: done ? slug : null };
 	},
 
 	send: async ({ request }) => {

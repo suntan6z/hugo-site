@@ -792,7 +792,13 @@
 			<button type="submit" class="linkish">Cancel that</button>
 		</form>
 	{:else if data.scheduled?.state === 'published' && data.scheduled.newsletter}
-		<p class="scheduled-now">Published. The newsletter goes out as soon as the site has rebuilt.</p>
+		<p class="scheduled-now">
+			{#if data.scheduled.announceAt && !data.scheduled.announcedAt}
+				Published. The newsletter is scheduled for <strong>{whenLocal(data.scheduled.announceAt)}</strong>. <a href="/newsletter?slug={post.slug}">Change it</a>
+			{:else}
+				Published. The newsletter goes out as soon as the site has rebuilt.
+			{/if}
+		</p>
 	{:else if data.scheduled?.error}
 		<p class="msg err">Scheduled publishing failed: {data.scheduled.error}</p>
 	{:else}

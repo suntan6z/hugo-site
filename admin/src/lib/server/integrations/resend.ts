@@ -109,6 +109,33 @@ async function recordSent(b: SentBroadcast): Promise<void> {
 	await store.put(SENT_KEY, [b, ...all].slice(0, 50));
 }
 
+export interface BroadcastState {
+	/** Resend's word for it: draft, queued, sent. */
+	status: string;
+	sentAt: string | null;
+}
+
+/**
+ * Where each broadcast stands at Resend. That is all its API says about one:
+ * there are no open, click or bounce counts to read back (see the broadcast
+ * object in their reference), and a webhook would wake this scale-to-zero
+ * container for every event. Counts live in Resend's own dashboard, which the
+ * page links to. A broadcast that cannot be read is null, never an error.
+ */
+export async function broadcastStates(ids: string[]): Promise<Record<string, BroadcastState | null>> {
+	const one = (id: string) =>
+		memo(`resend:broadcast:${id}`, 5 * 60_000, async (): Promise<BroadcastState | null> => {
+			if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return null;
+			try {
+				const r = await call<{ status?: string; sent_at?: string | null }>('GET', `/broadcasts/${id}`);
+				return typeof r.status === 'string' ? { status: r.status, sentAt: r.sent_at ?? null } : null;
+			} catch {
+				return null;
+			}
+		});
+	return Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await one(id)] as const)));
+}
+
 export interface SendInput extends BroadcastInput {
 	subject: string;
 	slug: string;

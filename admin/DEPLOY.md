@@ -143,6 +143,7 @@ Things worth knowing:
   shows the article is actually live. Otherwise the link in the email 404s for
   every subscriber until StaticHost finishes. A build slower than half an hour
   pushes the email to the next morning (or to whenever you open the portal).
+- **A newsletter can be held for a later morning on its own**, for an article that is already live: the Newsletter page stores it as a `published` item with `announceAt` (9:30 Paris on the chosen day) and the words the author wrote, and the 9:30 pass sends it. Resend's API reports no opens or clicks, and a webhook for them would wake the container on every event, so the page links to Resend's dashboard instead.
 - **Opening the portal also runs anything due**, so a missed trigger delays
   publishing rather than losing it.
 - Scheduling used to run from a GitHub Actions workflow. It was dropped

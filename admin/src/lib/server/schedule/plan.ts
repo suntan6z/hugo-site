@@ -22,6 +22,14 @@ export interface Scheduled {
 	publishedAt?: string;
 	announcedAt?: string;
 	sha?: string;
+	/**
+	 * Hold the announcement until then. Set on a newsletter for an article that
+	 * is already published: the item starts life as 'published', and without
+	 * this the next pass would send it at once.
+	 */
+	announceAt?: string;
+	/** What to send, when the author wrote it in the newsletter flow rather than taking the article's own words. */
+	broadcast?: { subject: string; title: string; intro: string; note?: string };
 	error?: string;
 	/** Attempts made to publish or announce, so a broken item cannot spin forever. */
 	tries?: number;
@@ -78,6 +86,25 @@ export function morningOf(day: string): string | null {
 	return new Date(wall - offsetAt(wall, PUBLISH_TZ) * 60_000).toISOString();
 }
 
+/** The announcement goes out on the trigger's second pass, half an hour after articles go live. */
+export const ANNOUNCE_DELAY_MIN = 30;
+
+/** When a newsletter scheduled for `day` is sent (9:30 Paris), or null if `day` is not a date. */
+export function announceTimeOf(day: string): string | null {
+	const at = morningOf(day);
+	return at ? new Date(Date.parse(at) + ANNOUNCE_DELAY_MIN * 60_000).toISOString() : null;
+}
+
+/** The first day that may be picked: the day after today in Paris. */
+export function tomorrowIn(now = new Date()): string {
+	const [y, m, d] = todayIn(now).split('-').map(Number);
+	return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
+/** A newsletter for an already-published article, waiting for its morning. */
+export const isHeldNewsletter = (i: Scheduled): boolean =>
+	i.state === 'published' && i.newsletter && !!i.announceAt && !i.announcedAt;
+
 /** Why this day will not do, or null if it will. */
 export function whyNotDay(day: string, now = new Date()): string | null {
 	const at = morningOf(day);
@@ -97,9 +124,14 @@ export const dueToPublish = (items: Scheduled[], now = new Date()): Scheduled[] 
  * actually serves, so an announcement can never point at a page that is not
  * there yet.
  */
-export const dueToAnnounce = (items: Scheduled[], liveSlugs: string[]): Scheduled[] =>
+export const dueToAnnounce = (items: Scheduled[], liveSlugs: string[], now = new Date()): Scheduled[] =>
 	items.filter(
-		(i) => i.state === 'published' && i.newsletter && (i.tries ?? 0) < MAX_TRIES && liveSlugs.includes(i.slug)
+		(i) =>
+			i.state === 'published' &&
+			i.newsletter &&
+			(i.tries ?? 0) < MAX_TRIES &&
+			liveSlugs.includes(i.slug) &&
+			(!i.announceAt || Date.parse(i.announceAt) <= now.getTime())
 	);
 
 /** What the editor shows for an article: its own entry, if it still matters. */
@@ -112,7 +144,8 @@ export function prune(items: Scheduled[], now = new Date()): Scheduled[] {
 	const cutoff = now.getTime() - 30 * 86_400_000;
 	return items.filter((i) => {
 		if (i.state === 'pending') return true;
-		const done = Date.parse(i.announcedAt ?? i.publishedAt ?? i.createdAt);
+		// A held newsletter is not finished work: its date is still ahead.
+		const done = Date.parse(i.announcedAt ?? i.announceAt ?? i.publishedAt ?? i.createdAt);
 		return Number.isNaN(done) || done > cutoff;
 	});
 }

@@ -8,7 +8,7 @@
 	const STEPS = ['Article', 'Write', 'Test', 'Send'] as const;
 	// Arriving from an article's schedule panel: that article is already chosen.
 	let step = $state(untrack(() => (data.chosen ? 2 : 1)));
-	let tab = $state<'compose' | 'subscribers' | 'sent'>(untrack(() => (form?.removed || form?.removeError ? 'subscribers' : 'compose')));
+	let tab = $state<'compose' | 'subscribers' | 'sent'>(untrack(() => (form?.removed || form?.removeError ? 'subscribers' : data.tab)));
 
 	let slug = $state(untrack(() => data.chosen?.slug ?? ''));
 	let subject = $state(untrack(() => data.chosen?.title ?? ''));
@@ -24,6 +24,14 @@
 	});
 
 	const post = $derived(data.posts.find((p) => p.slug === slug));
+	// Now, or a later morning: the trigger sends it at 9:30 Paris time, once the site is live.
+	let when = $state<'now' | 'later'>('now');
+	let sendDay = $state(untrack(() => data.earliestDay));
+	const dayOk = $derived(sendDay >= data.earliestDay && /^\d{4}-\d{2}-\d{2}$/.test(sendDay));
+	const dayLabel = $derived(
+		dayOk ? new Date(sendDay + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) : ''
+	);
+	const held = $derived(data.held.find((h) => h.slug === slug));
 	const alreadySent = $derived(data.sent.filter((s) => s.slug === slug));
 	const readers = $derived(data.audience?.subscribed ?? 0);
 
@@ -52,7 +60,7 @@
 	const verdict = $derived(
 		validateBroadcast({ subject, title, intro, url: post?.url ?? '', html: rawHtml })
 	);
-	const blocking = $derived(verdict.errors.length > 0);
+	const blocking = $derived(verdict.errors.length > 0 || (when === 'later' && !dayOk));
 
 	// A test only vouches for the content it was sent with.
 	const contentKey = $derived(JSON.stringify([slug, subject, title, intro, note]));
@@ -88,6 +96,14 @@
 				text: `Already sent ${alreadySent.map((s) => new Date(s.at).toLocaleDateString('en-GB')).join(', ')}. Sending again reaches the same people twice.`
 			});
 		}
+		if (held) {
+			const when2 = new Date(held.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+			out.push({
+				level: 'warn',
+				text: when === 'later' ? `One is already scheduled for ${when2}. This replaces it.` : `One is already scheduled for ${when2}. It will still go out then, so they would get it twice.`
+			});
+		}
+		if (when === 'later' && !dayOk) out.push({ level: 'bad', text: 'Pick a day after today.' });
 		out.push(
 			testedOk
 				? { level: 'ok', text: 'A test copy was sent and nothing has changed since.' }
@@ -100,7 +116,7 @@
 	let dialog = $state<HTMLDialogElement | null>(null);
 	let sending = $state(false);
 	let sendError = $state('');
-	let sentInfo = $state<{ subject: string; to: number; warnings: string[] } | null>(null);
+	let sentInfo = $state<{ subject: string; to: number; warnings: string[]; at: string | null } | null>(null);
 
 	// ---- subscribers -------------------------------------------------------
 	let who = $state('');
@@ -197,8 +213,15 @@
 			<span class="tick" aria-hidden="true">
 				<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7" /></svg>
 			</span>
-			<h2>Sent to {sentInfo.to} {sentInfo.to === 1 ? 'person' : 'people'}</h2>
-			<p>“{sentInfo.subject}” is on its way. Delivery takes a few minutes.</p>
+			{#if sentInfo.at}
+				<h2>Scheduled</h2>
+				<p>“{sentInfo.subject}” goes to {sentInfo.to} {sentInfo.to === 1 ? 'person' : 'people'} on
+					<strong>{new Date(sentInfo.at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' })} at 9:30</strong>,
+					once the site is live. You can cancel it from the Sent tab until then.</p>
+			{:else}
+				<h2>Sent to {sentInfo.to} {sentInfo.to === 1 ? 'person' : 'people'}</h2>
+				<p>“{sentInfo.subject}” is on its way. Delivery takes a few minutes.</p>
+			{/if}
 			{#each sentInfo.warnings as w}<p class="chip warn">{w}</p>{/each}
 			<div class="row-actions">
 				<a class="btn-primary" href="/newsletter" data-sveltekit-reload>Write another</a>
@@ -375,8 +398,8 @@
 								sending = false;
 								dialog?.close();
 								if (result.type === 'success') {
-									const r = result.data as { warnings?: string[] };
-									sentInfo = { subject, to: readers, warnings: r?.warnings ?? [] };
+									const r = result.data as { warnings?: string[]; at?: string };
+									sentInfo = { subject, to: readers, warnings: r?.warnings ?? [], at: r?.at ?? null };
 								} else if (result.type === 'failure') {
 									sendError = (result.data as { message?: string })?.message ?? 'Sending failed.';
 								} else sendError = 'Sending failed.';
@@ -387,23 +410,42 @@
 						{@render fields()}
 						<input type="hidden" name="confirm" value="send" />
 
+						<fieldset class="when">
+							<legend>When</legend>
+							<label class="opt-row"><input type="radio" bind:group={when} value="now" /> Send now</label>
+							<label class="opt-row"><input type="radio" bind:group={when} value="later" /> Send on a later morning</label>
+							{#if when === 'later'}
+								<div class="day">
+									<input type="date" name="day" bind:value={sendDay} min={data.earliestDay} aria-label="Day to send" />
+									<span class="hint">{dayOk ? `${dayLabel}, 9:30 Paris time, once the site is live.` : 'Pick a day after today.'}</span>
+								</div>
+							{/if}
+						</fieldset>
+
 						<div class="nav">
 							<button type="button" class="btn-outline" onclick={() => (step = 3)}>← Test</button>
-							<button type="button" class="btn-danger btn-lg" disabled={blocking || !data.configured || readers === 0}
+							<button type="button" class={when === 'now' ? 'btn-danger btn-lg' : 'btn-primary btn-lg'} disabled={blocking || !data.configured || readers === 0}
 								onclick={() => dialog?.showModal()}>
-								Send to {readers} {readers === 1 ? 'subscriber' : 'subscribers'}…
+								{when === 'now' ? `Send to ${readers} ${readers === 1 ? 'subscriber' : 'subscribers'}…` : `Schedule for ${dayOk ? dayLabel : '…'}…`}
 							</button>
 						</div>
 						{#if !data.configured}<p class="note">Connect Resend to send.</p>
 						{:else if readers === 0}<p class="note">There is nobody to send to yet.</p>{/if}
 
 						<dialog bind:this={dialog} aria-labelledby="confirm-title">
-							<h2 id="confirm-title">Send to {readers} {readers === 1 ? 'person' : 'people'} now?</h2>
-							<p>“{subject}” goes out immediately and cannot be recalled.</p>
+							{#if when === 'now'}
+								<h2 id="confirm-title">Send to {readers} {readers === 1 ? 'person' : 'people'} now?</h2>
+								<p>“{subject}” goes out immediately and cannot be recalled.</p>
+							{:else}
+								<h2 id="confirm-title">Schedule for {dayLabel}?</h2>
+								<p>“{subject}” goes to everyone on the list at 9:30 that morning, once the site is live. It cannot be recalled after that, and you can cancel it until then.</p>
+							{/if}
 							{#if alreadySent.length > 0}<p class="chip warn block">This article was already sent. These readers will get it twice.</p>{/if}
 							<div class="dlg-actions">
 								<button type="button" class="btn-outline" onclick={() => dialog?.close()} disabled={sending}>Go back</button>
-								<button type="submit" class="btn-danger" disabled={sending}>{sending ? 'Sending…' : 'Yes, send it now'}</button>
+								<button type="submit" formaction={when === 'now' ? '?/send' : '?/schedule'} class={when === 'now' ? 'btn-danger' : 'btn-primary'} disabled={sending}>
+									{sending ? (when === 'now' ? 'Sending…' : 'Scheduling…') : when === 'now' ? 'Yes, send it now' : 'Yes, schedule it'}
+								</button>
 							</div>
 						</dialog>
 					</form>
@@ -458,6 +500,25 @@
 
 {#if tab === 'sent'}
 	<section class="pane plain">
+		{#if form?.cancelled}<p class="chip ok block">The scheduled newsletter for “{form.cancelled}” is cancelled.</p>{/if}
+		{#if data.held.length > 0}
+			<h3 class="sub-title">Scheduled</h3>
+			<ul class="sent">
+				{#each data.held as h (h.slug)}
+					<li>
+						<span class="subj">{h.subject ?? data.posts.find((p) => p.slug === h.slug)?.title ?? h.slug}</span>
+						{#if h.error}<span class="chip danger" title={h.error}>Failed, will retry</span>{:else}<span class="chip info">Waiting</span>{/if}
+						<span class="meta">{new Date(h.at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Paris' })} · 9:30</span>
+						<form method="POST" action="?/cancelScheduled" use:enhance>
+							<input type="hidden" name="slug" value={h.slug} />
+							<button type="submit" class="btn-danger-quiet btn-sm">Cancel</button>
+						</form>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+
+		<h3 class="sub-title">Sent</h3>
 		{#if data.sent.length === 0}
 			<p class="note">Nothing has been sent from here yet.</p>
 		{:else}
@@ -465,11 +526,22 @@
 				{#each data.sent as s}
 					<li>
 						<span class="subj">{s.subject}</span>
-						<span class="chip ok">Sent</span>
+						<!-- Resend's own word for it fills in when it answers; until then it was sent. -->
+						{#await data.states}
+							<span class="chip">Sent</span>
+						{:then states}
+							{@const st = states[s.id]}
+							{#if st?.status === 'sent'}<span class="chip ok">Sent</span>
+							{:else if st?.status === 'queued'}<span class="chip info">Sending</span>
+							{:else if st?.status === 'draft'}<span class="chip warn" title="Created at Resend but never sent">Not sent</span>
+							{:else}<span class="chip">Sent</span>{/if}
+						{/await}
 						<span class="meta">{new Date(s.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · {s.recipients} {s.recipients === 1 ? 'recipient' : 'recipients'}</span>
+						<a class="btn-ghost btn-sm" href="https://resend.com/broadcasts/{s.id}" target="_blank" rel="noreferrer" title="Opens, clicks and bounces are in Resend">Opens and clicks ↗</a>
 					</li>
 				{/each}
 			</ul>
+			<p class="note">Resend does not share opens and clicks with other tools, so they are one click away in its own dashboard.</p>
 		{/if}
 	</section>
 {/if}
@@ -587,6 +659,15 @@
 	.row-actions { display: flex; justify-content: center; gap: 0.7rem; flex-wrap: wrap; margin-top: 1.4rem; }
 
 	/* lists */
+	.sub-title { margin: 0 0 0.4rem; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
+	.sub-title:not(:first-child) { margin-top: 1.6rem; }
+	.when { margin: 1.1rem 0 0; padding: 0.8rem 1rem 0.9rem; border: 1px solid var(--border); border-radius: 0.75rem; display: grid; gap: 0.35rem; }
+	.when legend { padding: 0 0.4rem; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
+	.opt-row { display: flex; align-items: center; gap: 0.55rem; margin: 0; font-weight: 500; cursor: pointer; }
+	.opt-row input { accent-color: var(--primary); width: 1rem; height: 1rem; }
+	.day { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; padding: 0.3rem 0 0 1.55rem; }
+	.day input { width: auto; }
+	.day .hint { margin: 0; }
 	.who { width: 100%; margin-bottom: 0.8rem; }
 	.people, .sent { list-style: none; padding: 0; margin: 0 0 0.8rem; font-size: 0.9rem; }
 	.people li, .sent li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.9rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
