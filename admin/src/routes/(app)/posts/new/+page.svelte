@@ -67,7 +67,7 @@
 		</span>
 	</label>
 
-	<button type="submit" disabled={busy || !title.trim() || taken}>
+	<button type="submit" class="btn-primary btn-lg" disabled={busy || !title.trim() || taken}>
 		{busy ? 'Creating…' : 'Create and start writing'}
 	</button>
 
@@ -90,8 +90,6 @@
 	.path.bad { color: var(--danger); }
 	.count { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted-foreground); }
 	.count.warn { color: var(--warn); }
-	button { justify-self: start; padding: 0.6rem 1.2rem; border: 0; border-radius: 8px;
-		background: var(--primary); color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
-	button:disabled { opacity: 0.5; cursor: default; }
+	button { justify-self: start; }
 	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }
 </style>

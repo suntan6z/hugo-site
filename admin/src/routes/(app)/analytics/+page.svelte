@@ -18,7 +18,7 @@
 	<h1>Search</h1>
 	{#if bing.configured}
 		<form method="POST" action="?/refresh" use:enhance>
-			<button type="submit">Refresh</button>
+			<button type="submit" class="btn-outline btn-sm">Refresh</button>
 		</form>
 	{/if}
 </div>
@@ -167,9 +167,6 @@
 <style>
 	.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
-	.head button { padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 8px;
-		background: var(--card); font-size: 0.85rem; cursor: pointer; color: var(--muted-foreground); }
-	.head button:hover { color: var(--foreground); }
 	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
 
 	.setup { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }

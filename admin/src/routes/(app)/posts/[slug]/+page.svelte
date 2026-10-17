@@ -748,14 +748,14 @@
 	{/each}
 
 	<div class="actions">
-		<button type="submit" name="intent" value="save" disabled={saving}>
+		<button type="submit" name="intent" value="save" class="btn-outline" disabled={saving}>
 			{saving ? 'Saving…' : 'Save'}
 		</button>
 		<button
 			type="submit"
 			name="intent"
 			value="publish"
-			class="primary"
+			class="btn-primary"
 			disabled={saving || errors.length > 0}
 			title={errors.length > 0 ? 'Fix the blocking problems above first' : ''}
 		>
@@ -888,7 +888,7 @@
 				to confirm.
 			</p>
 			<input name="confirm" bind:value={confirmSlug} placeholder={post.slug} autocomplete="off" />
-			<button type="submit" class="danger" disabled={confirmSlug !== post.slug}>
+			<button type="submit" class="btn-danger" disabled={confirmSlug !== post.slug}>
 				Delete {post.slug}
 			</button>
 		</form>
@@ -982,9 +982,7 @@
 	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
 	.danger-zone p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
 	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
-	.danger-zone .danger { justify-self: start; padding: 0.5rem 1rem; border: 1px solid var(--danger);
-		border-radius: 8px; background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
-	.danger-zone .danger:disabled { opacity: 0.4; cursor: default; }
+	.danger-zone .btn-danger { justify-self: start; }
 
 	.findings { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card);
 		padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
@@ -1027,7 +1025,4 @@
 		border-radius: 5px; background: var(--card); cursor: pointer; }
 	.grid .row button.danger { color: var(--danger); }
 	.actions { display: flex; gap: 0.6rem; margin-top: 1.5rem; position: sticky; bottom: 0; padding: 1rem 0; background: linear-gradient(transparent, var(--background) 35%); }
-	.actions button { padding: 0.6rem 1.1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-weight: 600; font-size: 0.9rem; }
-	.actions button.primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
-	.actions button:disabled { opacity: 0.6; cursor: default; }
 </style>

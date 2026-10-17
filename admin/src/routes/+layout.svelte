@@ -8,22 +8,50 @@
 {@render children()}
 
 <style>
-	/* Colours, fonts and radius come from the site via brand.css. Only states
-	   the site has no need for — success, warning, destructive — are defined
-	   here, tuned to sit alongside the cream and burgundy. */
-	:global(:root) {
-		--ok: hsl(152, 38%, 30%);
-		--warn: hsl(36, 78%, 32%);
-		--danger: hsl(4, 66%, 44%);
-		--warn-bg: hsl(45, 90%, 94%);
+	/* Brand colours, fonts and radius come from the site via brand.css. The
+	   portal adds what a working tool needs and a showcase site does not:
+	   status colours that are told apart at a glance (green done, amber
+	   needs a look, red irreversible, blue information), a sidebar surface,
+	   and edges and shadows strong enough to separate a card from the page.
+	   `html:root` outranks brand.css's plain `:root`, whatever the load order. */
+	:global(html:root) {
+		--ok: hsl(152, 48%, 26%);
+		--ok-bg: hsl(150, 46%, 92%);
+		--ok-line: hsl(150, 32%, 74%);
+		--warn: hsl(30, 90%, 28%);
+		--warn-bg: hsl(43, 96%, 90%);
+		--warn-line: hsl(40, 72%, 68%);
+		--danger: hsl(4, 68%, 42%);
+		--danger-bg: hsl(4, 82%, 95%);
+		--danger-line: hsl(4, 62%, 80%);
+		--info: hsl(213, 64%, 38%);
+		--info-bg: hsl(213, 72%, 94%);
+		--info-line: hsl(213, 52%, 78%);
 		--brand-yellow-soft: hsl(42, 100%, 90%);
+		--sidebar-bg: hsl(30, 22%, 93%);
+		--border: hsl(30, 14%, 83%);
+		--card-shadow: 0 1px 2px hsl(220 15% 15% / 0.06), 0 6px 18px -8px hsl(220 15% 15% / 0.14);
+		--primary-strong: hsl(350, 48%, 32%);
+		--sidebar-w: 15.5rem;
 	}
-	:global([data-theme='dark']) {
-		--ok: hsl(150, 40%, 58%);
-		--warn: hsl(40, 80%, 62%);
-		--danger: hsl(4, 72%, 64%);
-		--warn-bg: hsl(40, 30%, 16%);
+	:global(html[data-theme='dark']) {
+		--ok: hsl(150, 46%, 62%);
+		--ok-bg: hsl(150, 24%, 15%);
+		--ok-line: hsl(150, 24%, 28%);
+		--warn: hsl(40, 88%, 66%);
+		--warn-bg: hsl(40, 32%, 16%);
+		--warn-line: hsl(40, 38%, 30%);
+		--danger: hsl(4, 80%, 68%);
+		--danger-bg: hsl(4, 34%, 17%);
+		--danger-line: hsl(4, 36%, 32%);
+		--info: hsl(212, 80%, 70%);
+		--info-bg: hsl(212, 34%, 17%);
+		--info-line: hsl(212, 34%, 32%);
 		--brand-yellow-soft: hsl(42, 30%, 18%);
+		--sidebar-bg: hsl(25, 14%, 8%);
+		--border: hsl(25, 9%, 27%);
+		--card-shadow: 0 1px 2px hsl(0 0% 0% / 0.4), 0 6px 18px -8px hsl(0 0% 0% / 0.6);
+		--primary-strong: hsl(350, 50%, 64%);
 	}
 
 	:global(*) { box-sizing: border-box; }
@@ -53,31 +81,56 @@
 
 	/* Components mirrored from static/css/main.css, so the portal shares the
 	   site's shapes as well as its colours. */
+	/* One button vocabulary. A screen has a single .btn-primary, named for what
+	   it does ("Publish", "Send to 3 people"); everything else is quieter. */
+	:global(.btn-primary, .btn-outline, .btn-ghost, .btn-danger, .btn-danger-quiet) {
+		display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+		min-height: 2.6rem; padding: 0.55rem 1.3rem; border: 1.5px solid transparent;
+		border-radius: 0.65rem; font-size: 0.92rem; font-weight: 600; line-height: 1.2;
+		cursor: pointer; text-decoration: none; white-space: nowrap;
+		transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.08s;
+	}
+	:global(.btn-primary:active:not(:disabled), .btn-danger:active:not(:disabled)) { transform: translateY(1px); }
 	:global(.btn-primary) {
-		display: inline-flex; align-items: center; gap: 0.5rem;
-		padding: 0.6rem 1.25rem; border: none; border-radius: 0.5rem;
 		background: var(--primary); color: var(--primary-foreground);
-		font-weight: 500; cursor: pointer; text-decoration: none;
-		transition: opacity 0.2s;
+		box-shadow: 0 1px 0 hsl(350 50% 22% / 0.35), 0 6px 14px -6px hsl(350 45% 38% / 0.6);
 	}
-	:global(.btn-primary:hover:not(:disabled)) { opacity: 0.88; }
-	:global(.btn-outline) {
-		display: inline-flex; align-items: center; gap: 0.5rem;
-		padding: 0.55rem 1.15rem; border: 2px solid var(--border); border-radius: 0.5rem;
-		background: var(--card); color: var(--foreground);
-		font-weight: 500; cursor: pointer; text-decoration: none;
-		transition: all 0.2s;
-	}
-	:global(.btn-outline:hover:not(:disabled)) { border-color: var(--primary); color: var(--primary); }
+	:global(.btn-primary:hover:not(:disabled)) { background: color-mix(in srgb, var(--primary) 86%, black); }
+	:global(.btn-outline) { background: var(--card); color: var(--foreground); border-color: var(--border); }
+	:global(.btn-outline:hover:not(:disabled)) { border-color: var(--primary); color: var(--primary); background: var(--accent); }
+	:global(.btn-ghost) { background: transparent; color: var(--primary); padding-inline: 0.8rem; }
+	:global(.btn-ghost:hover:not(:disabled)) { background: var(--accent); }
 	:global(.btn-danger) {
-		display: inline-flex; align-items: center; gap: 0.5rem;
-		padding: 0.55rem 1.15rem; border: 2px solid var(--danger); border-radius: 0.5rem;
-		background: transparent; color: var(--danger);
-		font-weight: 600; cursor: pointer;
+		background: var(--danger); color: #fff;
+		box-shadow: 0 1px 0 hsl(4 66% 24% / 0.35), 0 6px 14px -6px hsl(4 66% 40% / 0.6);
 	}
-	:global(.btn-primary:disabled, .btn-outline:disabled, .btn-danger:disabled) {
-		opacity: 0.45; cursor: default;
+	:global(.btn-danger:hover:not(:disabled)) { background: color-mix(in srgb, var(--danger) 86%, black); }
+	:global(.btn-danger-quiet) { background: transparent; color: var(--danger); border-color: var(--danger-line); }
+	:global(.btn-danger-quiet:hover:not(:disabled)) { background: var(--danger-bg); border-color: var(--danger); }
+	:global(.btn-lg) { min-height: 3rem; padding: 0.7rem 1.7rem; font-size: 1rem; }
+	:global(.btn-sm, .btn-primary.small, .btn-outline.small) {
+		min-height: 2.1rem; padding: 0.3rem 0.85rem; font-size: 0.82rem; border-radius: 0.55rem;
 	}
+	:global(.btn-primary:disabled, .btn-outline:disabled, .btn-ghost:disabled, .btn-danger:disabled, .btn-danger-quiet:disabled) {
+		opacity: 0.45; cursor: not-allowed; box-shadow: none;
+	}
+	/* Status chips: the same four colours everywhere, text plus a dot so colour
+	   is never the only signal. */
+	:global(.chip) {
+		display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.65rem;
+		border-radius: 2rem; font-size: 0.76rem; font-weight: 600; border: 1px solid transparent;
+		background: var(--muted); color: var(--muted-foreground);
+	}
+	:global(.chip::before) { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: currentColor; }
+	:global(.chip.ok) { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-line); }
+	:global(.chip.warn) { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-line); }
+	:global(.chip.danger) { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-line); }
+	:global(.chip.info) { background: var(--info-bg); color: var(--info); border-color: var(--info-line); }
+	/* Page title row: title and one-line purpose on the left, the screen's
+	   primary action on the right. */
+	:global(.page-head) { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+	:global(.page-head h1) { margin: 0; font-size: 1.75rem; letter-spacing: -0.02em; }
+	:global(.page-head p) { margin: 0.25rem 0 0; color: var(--muted-foreground); font-size: 0.92rem; }
 	:global(.pill) {
 		display: inline-flex; align-items: center;
 		padding: 0.3rem 0.85rem; border-radius: 2rem; border: none;

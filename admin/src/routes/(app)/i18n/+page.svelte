@@ -42,7 +42,7 @@
 
 <div class="head">
 	<h1>Interface strings</h1>
-	<button class="add" onclick={() => (showAdd = !showAdd)}>{showAdd ? 'Cancel' : 'Add a key'}</button>
+	<button class="btn-primary" onclick={() => (showAdd = !showAdd)}>{showAdd ? 'Cancel' : 'Add a key'}</button>
 </div>
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
@@ -100,7 +100,7 @@
 	{/each}
 
 	<div class="actions">
-		<button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
+		<button type="submit" class="btn-primary btn-lg" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
 		<span class="note">Writes all three files in one commit, and refuses to save if their key sets would diverge.</span>
 	</div>
 </form>
@@ -108,8 +108,6 @@
 <style>
 	.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
 	h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.015em; }
-	.add { background: var(--primary); color: var(--primary-foreground); padding: 0.45rem 0.85rem; border: 0;
-		border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
@@ -143,9 +141,6 @@
 
 	.actions { display: flex; align-items: center; gap: 0.9rem; margin-top: 1.25rem; position: sticky; bottom: 0;
 		padding: 1rem 0; background: linear-gradient(transparent, var(--background) 35%); flex-wrap: wrap; }
-	.actions button { padding: 0.6rem 1.2rem; border: 0; border-radius: 8px; background: var(--primary);
-		color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
-	.actions button:disabled { opacity: 0.6; cursor: default; }
 	.note { font-size: 0.8rem; color: var(--muted-foreground); margin: 0; }
 	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>

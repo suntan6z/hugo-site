@@ -92,7 +92,7 @@
 					<span class="count" class:over={n < idealMin || n > idealMax}>{n} characters · {idealMin}–{idealMax} reads best</span>
 				</label>
 			{/each}
-			<button type="submit">Save homepage text</button>
+			<button type="submit" class="btn-primary">Save homepage text</button>
 		</form>
 	{/if}
 </section>
@@ -130,7 +130,7 @@
 						<span>{hero ? 'Choose another' : 'Choose a photo'}</span>
 					</label>
 					{#if hero}
-						<button type="submit">Replace the photo</button>
+						<button type="submit" class="btn-outline">Replace the photo</button>
 						<span class="note">{hero.width}×{hero.height}, not saved yet</span>
 					{/if}
 				</form>
@@ -146,7 +146,7 @@
 			{#if data.site.canReplaceResume}
 				<form method="POST" action="?/saveResume" enctype="multipart/form-data" use:enhance>
 					<input type="file" name="resume" accept="application/pdf" required />
-					<button type="submit">Replace the CV</button>
+					<button type="submit" class="btn-outline">Replace the CV</button>
 				</form>
 			{:else}
 				<p class="note">That link is not a PDF on this site, so there is no file here to replace.</p>
@@ -186,7 +186,7 @@
 					{/if}
 				</label>
 			{/each}
-			<button type="submit">Save links</button>
+			<button type="submit" class="btn-primary">Save links</button>
 		</form>
 	{/if}
 </section>
@@ -205,19 +205,19 @@
 				<div><strong>{c.label}</strong><span>added {c.createdAt.slice(0, 10)}</span></div>
 				<form method="POST" action="?/removePasskey" use:enhance>
 					<input type="hidden" name="id" value={c.id} />
-					<button type="submit" class="danger" disabled={data.credentials.length <= 1}>Remove</button>
+					<button type="submit" class="btn-danger-quiet btn-sm" disabled={data.credentials.length <= 1}>Remove</button>
 				</form>
 			</li>
 		{/each}
 	</ul>
-	<button onclick={addPasskey} disabled={adding}>{adding ? 'Waiting for passkey…' : 'Add a passkey'}</button>
+	<button class="btn-outline" onclick={addPasskey} disabled={adding}>{adding ? 'Waiting for passkey…' : 'Add a passkey'}</button>
 	<p class="note">Passkeys are bound to <code>{data.rpId}</code> and cannot be used on another domain.</p>
 </section>
 
 <section>
 	<h2>Sessions</h2>
 	<form method="POST" action="?/signOutEverywhere" use:enhance>
-		<button type="submit" class="danger">Sign out everywhere</button>
+		<button type="submit" class="btn-danger-quiet">Sign out everywhere</button>
 	</form>
 	<p class="note">Invalidates every signed-in session on every device. You stay signed in here.</p>
 </section>
@@ -277,11 +277,6 @@
 		padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.creds div { display: flex; flex-direction: column; gap: 0.1rem; }
 	.creds span { font-size: 0.78rem; color: var(--muted-foreground); }
-	button { padding: 0.45rem 0.9rem; border: 1px solid var(--border); border-radius: 8px;
-		background: var(--card); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-	button:hover:not(:disabled) { border-color: var(--primary); }
-	button.danger { color: var(--danger); font-weight: 500; }
-	button:disabled { opacity: 0.4; cursor: default; }
 	.lede { font-size: 0.85rem; color: var(--muted-foreground); margin: 0 0 0.8rem; }
 	.socials { display: grid; gap: 0.5rem; max-width: 36rem; }
 	.socials label { display: grid; grid-template-columns: 7.5rem 1fr 1.5rem; align-items: center; gap: 0.6rem; font-size: 0.87rem; }

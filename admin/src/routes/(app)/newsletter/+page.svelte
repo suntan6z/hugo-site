@@ -128,7 +128,7 @@
 		{/if}
 
 		<div class="actions">
-			<button type="submit" formaction="?/preview" disabled={busy || !post}>Preview</button>
+			<button type="submit" formaction="?/preview" class="btn-outline" disabled={busy || !post}>Preview</button>
 		</div>
 
 		<fieldset class="send">
@@ -138,7 +138,7 @@
 				and cannot be recalled. Type the subject line to confirm.
 			</p>
 			<input name="confirm" bind:value={confirm} placeholder={subject || 'the subject line'} autocomplete="off" />
-			<button type="submit" formaction="?/send" class="danger" disabled={busy || !canSend}>
+			<button type="submit" formaction="?/send" class="btn-danger" disabled={busy || !canSend}>
 				{busy ? 'Sending…' : 'Send to subscribers'}
 			</button>
 		</fieldset>
@@ -245,17 +245,13 @@
 	.count-hint.warn { color: var(--warn); background: none; border: 0; padding: 0; }
 	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }
 	.actions { display: flex; gap: 0.6rem; }
-	.actions button { padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px;
-		background: var(--card); font-weight: 600; font-size: 0.88rem; cursor: pointer; }
 
 	.send { border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--radius);
 		padding: 0.9rem 1rem 1rem; display: grid; gap: 0.6rem; }
 	.send legend { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
 		color: var(--danger); padding: 0 0.35rem; }
 	.send p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
-	.send .danger { justify-self: start; padding: 0.55rem 1.1rem; border: 1px solid var(--danger);
-		border-radius: 8px; background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
-	.send .danger:disabled { opacity: 0.4; cursor: default; }
+	.send .btn-danger { justify-self: start; }
 
 	.preview { margin-top: 2rem; }
 	.preview iframe { width: 100%; height: 620px; border: 1px solid var(--border); border-radius: var(--radius); background: #f9f7f5; }

@@ -132,7 +132,7 @@
 			{#if missingAlt > 0}<em>· {missingAlt} without alt text</em>{/if}
 			{#if pendingCount > 0}<strong>· {pendingCount} to upload</strong>{/if}
 		</span>
-		<button type="submit" class="primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+		<button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
 	</div>
 	{#if imgError}<p class="hint">{imgError}</p>{/if}
 	<p class="note">
@@ -189,7 +189,7 @@
 				<strong>{data.city.slug}</strong>. Type the slug to confirm.
 			</p>
 			<input name="confirm" bind:value={confirmSlug} placeholder={data.city.slug} />
-			<button type="submit" class="danger" disabled={confirmSlug !== data.city.slug}>
+			<button type="submit" class="btn-danger" disabled={confirmSlug !== data.city.slug}>
 				Remove {data.city.slug}
 			</button>
 		</form>
@@ -206,7 +206,7 @@
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 
-	.bar { display: flex; align-items: center; gap: 0.9rem; position: sticky; top: 3rem; z-index: 4;
+	.bar { display: flex; align-items: center; gap: 0.9rem; position: sticky; top: var(--bar-h, 0rem); z-index: 4;
 		background: var(--background); padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.picker input { display: none; }
 	.picker span { display: inline-block; padding: 0.45rem 0.85rem; border: 1px dashed var(--border);
@@ -215,9 +215,7 @@
 	.stats { font-size: 0.82rem; color: var(--muted-foreground); }
 	.stats em { color: var(--warn); font-style: normal; }
 	.stats strong { color: var(--primary); }
-	.bar .primary { margin-left: auto; padding: 0.5rem 1.1rem; border: 0; border-radius: 8px;
-		background: var(--primary); color: var(--primary-foreground); font-weight: 600; cursor: pointer; }
-	.bar .primary:disabled { opacity: 0.6; cursor: default; }
+	.bar .btn-primary { margin-left: auto; }
 	.note { font-size: 0.8rem; color: var(--muted-foreground); margin: 0.7rem 0 0.9rem; }
 	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.5rem 0 0; }
 	.empty { color: var(--muted-foreground); font-size: 0.9rem; }
@@ -245,7 +243,4 @@
 	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
 	.danger-zone p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
 	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
-	.danger-zone .danger { padding: 0.5rem 1rem; border: 1px solid var(--danger); border-radius: 8px;
-		background: none; color: var(--danger); font-weight: 600; cursor: pointer; }
-	.danger-zone .danger:disabled { opacity: 0.4; cursor: default; }
 </style>
