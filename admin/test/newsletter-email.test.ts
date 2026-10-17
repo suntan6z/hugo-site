@@ -1,8 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-	buildBroadcastHtml, buildBroadcastText, validateBroadcast, UNSUBSCRIBE_TOKEN
-} from '../src/lib/server/integrations/newsletter-email.ts';
+	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient, looksLikeEmail, UNSUBSCRIBE_TOKEN
+} from '../src/lib/newsletter-email.ts';
 
 const base = {
 	title: 'It\'s not over. Chat control... Again !',
@@ -92,5 +92,21 @@ describe('validation', () => {
 		const r = validateBroadcast({ ...valid, subject: 'x'.repeat(120) });
 		assert.equal(r.ok, true);
 		assert.equal(r.warnings.length, 1);
+	});
+});
+
+describe('single-recipient mail', () => {
+	test('a test copy has no unsubscribe token left in it, only a real link', () => {
+		const out = forSingleRecipient(buildBroadcastHtml(base), base.siteUrl);
+		assert.ok(!out.includes(UNSUBSCRIBE_TOKEN));
+		assert.ok(out.includes(`href="${base.siteUrl}"`));
+		assert.ok(!forSingleRecipient(buildBroadcastText(base), base.siteUrl).includes(UNSUBSCRIBE_TOKEN));
+	});
+
+	test('addresses: ordinary ones pass, obvious typos do not', () => {
+		for (const ok of ['me@example.com', 'a.b+tag@sub.example.eu']) assert.equal(looksLikeEmail(ok), true, ok);
+		for (const bad of ['', 'me', 'me@', 'me@example', 'me @example.com', '<me@example.com>', 'me@@example.com']) {
+			assert.equal(looksLikeEmail(bad), false, bad);
+		}
 	});
 });

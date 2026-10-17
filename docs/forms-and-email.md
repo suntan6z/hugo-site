@@ -25,4 +25,4 @@ If you add any new external endpoint here, also update the CSP `connect-src` dir
 
 The portal's dashboard runs the same CORS preflight a browser makes before submitting either form, and checks the answer allows the site's origin — so a silently broken contact form shows up there rather than in a message that never arrives. These functions scale to zero, so a first check after a quiet spell can report the container waking up ("was asleep") rather than a fault.
 
-**Newsletter broadcasts** are separate from the signup handler above: the portal talks to Resend directly, with its own key, and sends to the same audience this signup form fills. See the portal's **Newsletter** page.
+**Newsletter broadcasts** are separate from the signup handler above: the portal talks to Resend directly, with its own key, and sends to the same audience this signup form fills. See the portal's **Newsletter** page: pick a published article, write the email beside a live preview (desktop or phone width), optionally send yourself a test copy, then review the checks and confirm in a dialog. Nothing is sent before that last confirmation, and it cannot be recalled.

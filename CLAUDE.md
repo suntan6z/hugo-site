@@ -83,7 +83,7 @@ Articles are normally written in the admin portal (see below), which produces ex
 
 ## The admin portal (`admin/`)
 
-A SvelteKit app at **admin.loconsole.eu** (Scaleway Serverless Container) for writing and publishing without a code editor: article editor with preview, autosave and DeepL first drafts for FR/IT, an HTML editor for the standalone pages (About, Now, Contact, Privacy), version history with restore for both, gallery manager, UI-strings editor, site settings (homepage quote, per-language descriptions, hero photo, CV, social links), redirect management, newsletter broadcasts and subscribers (Resend), visitor numbers (self-hosted Litlyx) and Bing search stats, SEO pre-flight, a weekly outside-link check and IndexNow. Hugo ignores the directory. Deployment, secrets and recovery: [`admin/DEPLOY.md`](admin/DEPLOY.md).
+A SvelteKit app at **admin.loconsole.eu** (Scaleway Serverless Container) for writing and publishing without a code editor: article editor with preview, autosave and DeepL first drafts for FR/IT, an HTML editor for the standalone pages (About, Now, Contact, Privacy), version history with restore for both, gallery manager, UI-strings editor, site settings (homepage quote, per-language descriptions, hero photo, CV, social links), redirect management, newsletter broadcasts and subscribers (Resend; a four-step flow — article, write with live preview, test copy, review and confirm in a dialog), visitor numbers (self-hosted Litlyx) and Bing search stats, SEO pre-flight, a weekly outside-link check and IndexNow. Hugo ignores the directory. Deployment, secrets and recovery: [`admin/DEPLOY.md`](admin/DEPLOY.md).
 
 **It writes to this repo; it is not a CMS database.** Each save is one commit to `main` via a GitHub App (Git Data API: blobs → tree → commit → fast-forward ref, never force), and StaticHost builds it like any push. Work in progress is autosaved to object storage, not committed. Two consequences: expect commits authored by the app, and **any push touching only `admin/` still costs a StaticHost build** (StaticHost can't path-filter), so batch portal changes.
 
@@ -104,7 +104,7 @@ Local mode (no GitHub App configured) reads and writes the working tree and keep
 | `content/frontmatter.ts`, `content/rename.ts`, `diff.ts` | `content/post.ts`, `content/repo.ts` |
 | `content/gallery-data.ts` | `content/gallery.ts` |
 | `integrations/bing-parse.ts` | `integrations/bing.ts` |
-| `integrations/newsletter-email.ts` | `integrations/resend.ts` |
+| `src/lib/newsletter-email.ts` | `integrations/resend.ts` |
 | `translate/markdown-xml.ts` | `integrations/deepl.ts` |
 | `seo/rules.ts` | `seo/preflight.ts` |
 | `auth/access.ts`, `auth/ratelimit.ts` | `auth/session.ts`, `auth/state.ts` |
@@ -115,7 +115,7 @@ Local mode (no GitHub App configured) reads and writes the working tree and keep
 | `integrations/litlyx-parse.ts` | `integrations/litlyx.ts` |
 | `src/lib/pages.ts`, `src/lib/thumbnail.ts` | `content/page.ts`, the editors |
 
-That is why `npm test` can drive front-matter serialisation, machine-translation round-trips, the diff, the SEO rules and the access allow-list with no key, no network and no build step — SvelteKit's `$env` cannot even be imported by the plain Node test runner, so a pure module that starts importing it breaks its own tests immediately. **Keep new logic on the pure side and let the thin module pass it data.** Site-wide values that several domains need (`langs.ts`) sit at the root of `lib/server/`, not inside one domain folder. The two pure modules the **browser** also runs (`pages.ts`: page checks and "last updated" stamps; `thumbnail.ts`) sit in `src/lib/` instead, because SvelteKit refuses to bundle anything under `lib/server/` into client code.
+That is why `npm test` can drive front-matter serialisation, machine-translation round-trips, the diff, the SEO rules and the access allow-list with no key, no network and no build step — SvelteKit's `$env` cannot even be imported by the plain Node test runner, so a pure module that starts importing it breaks its own tests immediately. **Keep new logic on the pure side and let the thin module pass it data.** Site-wide values that several domains need (`langs.ts`) sit at the root of `lib/server/`, not inside one domain folder. The pure modules the **browser** also runs (`pages.ts`: page checks and "last updated" stamps; `thumbnail.ts`; `newsletter-email.ts`, whose output is the newsletter wizard's live preview) sit in `src/lib/` instead, because SvelteKit refuses to bundle anything under `lib/server/` into client code.
 
 **Contracts between the site and the portal** — change one side, check the other:
 - **Front matter is edited line by line, never re-serialised** (`admin/src/lib/server/content/frontmatter.ts`), preserving comments, key order and trailing newlines. Output must start with `---\n` at byte 0 or `layouts/partials/auto-untranslated-pages.html`'s regex silently stops generating the FR/IT placeholder pages. The round-trip test reads `content/blog/**` and `content/gallery/**` directly, which is why content changes also run the admin test workflow.

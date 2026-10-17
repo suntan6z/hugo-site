@@ -69,6 +69,7 @@ describe('access control on the running app', () => {
 		['/gallery/bari?/save', { order: '[]' }],
 		['/gallery?/add', { name: 'X', flag: '🏳️' }],
 		['/newsletter?/send', { slug: 'first-home-nas' }],
+		['/newsletter?/test', { slug: 'first-home-nas', to: 'x@example.com' }],
 		['/i18n?/save', {}],
 		['/settings?/signOutEverywhere', {}],
 		['/settings?/saveSocials', { mastodon: 'https://evil.example/@x' }],

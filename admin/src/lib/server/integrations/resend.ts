@@ -2,11 +2,11 @@ import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
 import { memo, invalidate } from '../cache.ts';
 import {
-	buildBroadcastHtml, buildBroadcastText, validateBroadcast,
+	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient,
 	type BroadcastInput
-} from './newsletter-email.ts';
+} from '../../newsletter-email.ts';
 
-export * from './newsletter-email.ts';
+export * from '../../newsletter-email.ts';
 
 /**
  * Resend, for the subscriber list and broadcasts.
@@ -20,7 +20,9 @@ export * from './newsletter-email.ts';
 const API = integrations.resendApiUrl || 'https://api.resend.com';
 /** The name a broadcast comes from, shared by the newsletter page and the scheduler. */
 export const SITE_NAME = 'Lorenzo Loconsole';
-const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
+/** What an inbox shows as the sender. */
+export const FROM_NAME = 'Lorenzo Loconsole 〡Blog';
+const FROM = `${FROM_NAME} <newsletter@loconsole.eu>`;
 const SENT_KEY = 'state/broadcasts';
 
 export const isConfigured = () => !!integrations.resendApiKey;
@@ -158,7 +160,23 @@ export async function sendBroadcast(input: SendInput): Promise<SendResult> {
 	return { ok: true, id: created.id, errors: [], warnings: check.warnings };
 }
 
-/** Renders the email without sending, for the preview pane. */
-export function previewBroadcast(input: BroadcastInput): string {
-	return buildBroadcastHtml(input);
+/**
+ * Sends the email to one address, so it can be seen in a real inbox before it
+ * goes to everyone. It is an ordinary message, not a broadcast: no audience, no
+ * unsubscribe state, and nothing is recorded as sent.
+ */
+export async function sendTest(input: SendInput, to: string): Promise<SendResult> {
+	const html = buildBroadcastHtml(input);
+	const check = validateBroadcast({
+		subject: input.subject, title: input.title, intro: input.intro, url: input.url, html
+	});
+	if (!check.ok) return { ok: false, errors: check.errors, warnings: check.warnings };
+	const r = await call<{ id: string }>('POST', '/emails', {
+		from: FROM,
+		to: [to],
+		subject: `[Test] ${input.subject}`,
+		html: forSingleRecipient(html, input.siteUrl),
+		text: forSingleRecipient(buildBroadcastText(input), input.siteUrl)
+	});
+	return { ok: true, id: r.id, errors: [], warnings: check.warnings };
 }

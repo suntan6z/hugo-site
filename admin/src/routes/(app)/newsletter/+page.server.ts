@@ -1,8 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import {
-	isConfigured, listSubscribers, removeSubscriber, sentBroadcasts, sendBroadcast, previewBroadcast, SITE_NAME,
-	type Subscriber
+	isConfigured, listSubscribers, removeSubscriber, sentBroadcasts, sendBroadcast, sendTest, looksLikeEmail,
+	SITE_NAME, FROM_NAME, type Subscriber
 } from '$lib/server/integrations/resend.ts';
 import { listPosts, fromForm } from '$lib/server/content/post.ts';
 import { integrations } from '$lib/server/env.ts';
@@ -20,6 +20,7 @@ async function sendablePosts() {
 			description: p.description,
 			date: p.date,
 			image: p.thumbnail,
+			imageUrl: p.thumbnail ? thumbnailUrl(integrations.siteUrl, p.slug, p.thumbnail) : null,
 			url: `${integrations.siteUrl}/en/blog/${p.slug}/`
 		}));
 }
@@ -37,20 +38,10 @@ export const load: PageServerLoad = async ({ url }) => {
 		unsubscribed: subscribers.filter((s) => s.unsubscribed).length
 	};
 
-	// Arriving from an article's schedule panel: that article, already chosen,
-	// with the email rendered so "what will it look like" is answered on arrival.
+	// Arriving from an article's schedule panel: that article is already
+	// chosen, so the wizard opens on the writing step.
 	const asked = url.searchParams.get('slug');
 	const chosen = posts.find((p) => p.slug === asked) ?? null;
-	const preview = chosen
-		? previewBroadcast({
-				title: chosen.title,
-				intro: chosen.description,
-				url: chosen.url,
-				imageUrl: chosen.image ? thumbnailUrl(integrations.siteUrl, chosen.slug, chosen.image) : undefined,
-				siteName: SITE_NAME,
-				siteUrl: integrations.siteUrl
-			})
-		: null;
 
 	return {
 		configured,
@@ -59,9 +50,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		audience,
 		subscribers,
 		siteName: SITE_NAME,
+		fromName: FROM_NAME,
 		siteUrl: integrations.siteUrl,
-		chosen,
-		preview
+		chosen
 	};
 };
 
@@ -108,11 +99,23 @@ export const actions: Actions = {
 		return { removed: email };
 	},
 
-	preview: async ({ request }) => {
+	/** One copy to one address, to see it in a real inbox first. Nothing is recorded as sent. */
+	test: async ({ request }) => {
+		if (!isConfigured()) return fail(400, { testError: 'Resend is not connected.' });
 		const f = await request.formData();
 		const input = inputFrom(f, await sendablePosts());
-		if (!input) return fail(400, { message: 'Pick an article first.' });
-		return { preview: previewBroadcast(input), values: input };
+		if (!input) return fail(400, { testError: 'Pick an article first.' });
+		const to = fromForm(f.get('to')).trim();
+		if (!looksLikeEmail(to)) return fail(400, { testError: 'That does not look like an email address.' });
+		try {
+			const r = await sendTest(input, to);
+			if (!r.ok) return fail(400, { testError: r.errors.join(' ') });
+			// The address stays out of the log, as with removed subscribers.
+			await audit('newsletter-test', { slug: input.slug });
+			return { tested: true };
+		} catch (e) {
+			return fail(502, { testError: e instanceof Error ? e.message : String(e) });
+		}
 	},
 
 	send: async ({ request }) => {
@@ -121,29 +124,19 @@ export const actions: Actions = {
 		const input = inputFrom(f, posts);
 		if (!input) return fail(400, { message: 'Pick an article first.' });
 
-		// Typing the subject back is the confirmation. A broadcast cannot be
-		// recalled, so this should not be a single click.
-		if (fromForm(f.get('confirm')).trim() !== input.subject) {
-			return fail(400, {
-				message: 'Type the subject line exactly to confirm — a sent broadcast cannot be recalled.',
-				values: input,
-				preview: previewBroadcast(input)
-			});
+		// A broadcast cannot be recalled, so the page asks in a dialog and sends
+		// this flag only from that dialog's button; nothing else triggers it.
+		if (fromForm(f.get('confirm')).trim() !== 'send') {
+			return fail(400, { message: 'Confirm the send first — a sent broadcast cannot be recalled.', values: input });
 		}
 
 		try {
 			const r = await sendBroadcast(input);
-			if (!r.ok) {
-				return fail(400, { message: r.errors.join(' '), values: input, preview: previewBroadcast(input) });
-			}
+			if (!r.ok) return fail(400, { message: r.errors.join(' '), values: input });
 			await audit('newsletter-sent', { slug: input.slug, subject: input.subject, id: r.id });
 			return { sent: true, id: r.id, warnings: r.warnings };
 		} catch (e) {
-			return fail(502, {
-				message: e instanceof Error ? e.message : String(e),
-				values: input,
-				preview: previewBroadcast(input)
-			});
+			return fail(502, { message: e instanceof Error ? e.message : String(e), values: input });
 		}
 	}
 };

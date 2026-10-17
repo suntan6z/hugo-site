@@ -20,7 +20,7 @@ const LANGS = ['en', 'fr', 'it'] as const;
 const AUDIENCE = 'aud-test-0000';
 const SHARE = 'test-share-link';
 
-type Seen = { method: string; path: string; headers: http.IncomingHttpHeaders };
+type Seen = { method: string; path: string; headers: http.IncomingHttpHeaders; body?: string };
 
 /** Resend, Litlyx and two outside websites (one alive, one gone) on one port. */
 async function startFakes() {
@@ -41,10 +41,15 @@ async function startFakes() {
 		'/api/timeline/visits': [{ _id: today, count: 14 }],
 		'/api/timeline/sessions': [{ _id: today, count: 6 }]
 	};
-	const server = http.createServer((req, res) => {
+	const server = http.createServer(async (req, res) => {
 		const url = new URL(req.url ?? '/', 'http://x');
-		seen.push({ method: req.method ?? '', path: url.pathname, headers: req.headers });
+		let body = '';
+		for await (const chunk of req) body += chunk;
+		seen.push({ method: req.method ?? '', path: url.pathname, headers: req.headers, body: body || undefined });
 		res.setHeader('Content-Type', 'application/json');
+		if (url.pathname === '/emails' && req.method === 'POST') return res.end(JSON.stringify({ id: 'email-test-1' }));
+		if (url.pathname === '/broadcasts' && req.method === 'POST') return res.end(JSON.stringify({ id: 'bc-test-1' }));
+		if (/^\/broadcasts\/[^/]+\/send$/.test(url.pathname) && req.method === 'POST') return res.end('{}');
 		if (url.pathname === '/alive') return res.end('{}');
 		if (url.pathname === '/gone') {
 			res.statusCode = 404;
@@ -368,6 +373,57 @@ describe('subscribers', () => {
 		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
 		assert.match(log, /subscriber-removed/);
 		assert.doesNotMatch(log, /reader@example\.com/);
+	});
+});
+
+describe('newsletter: test copy and confirmed send', () => {
+	const mail = { slug: 'first-home-nas', subject: 'A subject', title: 'A headline', intro: 'An intro for readers.', note: '' };
+	const sent = (p: string) => fakes.seen.filter((s) => s.method === 'POST' && s.path === p);
+
+	test('a test copy goes to one address, marked as a test, with a real unsubscribe link', async () => {
+		const r = await portal.action('/newsletter?/test', { ...mail, to: 'me@example.com' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const [call] = sent('/emails');
+		const body = JSON.parse(call.body ?? '{}');
+		assert.deepEqual(body.to, ['me@example.com']);
+		assert.equal(body.subject, '[Test] A subject');
+		assert.ok(!String(body.html).includes('RESEND_UNSUBSCRIBE_URL'));
+		assert.equal(sent('/broadcasts').length, 0, 'a test is not a broadcast');
+	});
+
+	test('a test to something that is not an address is refused before Resend is asked', async () => {
+		const before = sent('/emails').length;
+		const r = await portal.action('/newsletter?/test', { ...mail, to: 'not-an-address' }, { cookie });
+		assert.equal(r.status, 400);
+		assert.equal(sent('/emails').length, before);
+	});
+
+	test('the audit log records a test without keeping the address', async () => {
+		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
+		assert.match(log, /newsletter-test/);
+		assert.doesNotMatch(log, /me@example\.com/);
+	});
+
+	test('sending without the dialog\'s confirmation reaches nobody', async () => {
+		const r = await portal.action('/newsletter?/send', { ...mail }, { cookie });
+		assert.equal(r.status, 400);
+		assert.equal(sent('/broadcasts').length, 0);
+	});
+
+	test('the old confirmation, the subject typed back, no longer sends', async () => {
+		const r = await portal.action('/newsletter?/send', { ...mail, confirm: mail.subject }, { cookie });
+		assert.equal(r.status, 400);
+		assert.equal(sent('/broadcasts').length, 0);
+	});
+
+	test('a confirmed send creates the broadcast and sends it', async () => {
+		const r = await portal.action('/newsletter?/send', { ...mail, confirm: 'send' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.equal(sent('/broadcasts').length, 1);
+		assert.equal(sent('/broadcasts/bc-test-1/send').length, 1);
+		const body = JSON.parse(sent('/broadcasts')[0].body ?? '{}');
+		assert.equal(body.subject, 'A subject');
+		assert.ok(String(body.html).includes('RESEND_UNSUBSCRIBE_URL'), 'a broadcast keeps Resend\'s own token');
 	});
 });
 

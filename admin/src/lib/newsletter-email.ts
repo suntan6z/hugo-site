@@ -6,7 +6,9 @@
  * table-free, inline-styled, single-column layout with generous fallbacks
  * rather than anything clever.
  *
- * Free of SvelteKit imports so the suite can drive it directly.
+ * Free of SvelteKit imports so the suite can drive it directly, and kept out
+ * of lib/server/ because the newsletter page runs it in the browser too: the
+ * live preview beside the form is this function, not a copy of it.
  */
 
 export interface BroadcastInput {
@@ -25,6 +27,15 @@ export interface BroadcastInput {
 
 /** Resend rejects a broadcast whose body lacks this token. */
 export const UNSUBSCRIBE_TOKEN = '{{{RESEND_UNSUBSCRIBE_URL}}}';
+
+/**
+ * A broadcast's unsubscribe token only means something to Resend's broadcast
+ * sender. For a test email or an on-screen preview, point it somewhere real.
+ */
+export const forSingleRecipient = (body: string, siteUrl: string): string => body.split(UNSUBSCRIBE_TOKEN).join(siteUrl);
+
+/** Good enough to catch a typo; the provider has the last word. */
+export const looksLikeEmail = (s: string): boolean => /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]{2,}$/.test(s);
 
 const esc = (s: string) =>
 	s
