@@ -13,6 +13,23 @@
 	$effect(() => {
 		descriptions = { ...(text?.description ?? {}) };
 	});
+	// The site's name and menu: a refused save comes back with what was typed.
+	const NAV_LABEL: Record<string, string> = { '/about': 'About', '/now': 'Now', '/blog': 'Blog', '/contact': 'Contact' };
+	let navOrder = $state<string[]>([]);
+	let navNames = $state<Record<string, Record<string, string>>>({});
+	let siteTitle = $state('');
+	$effect(() => {
+		const m = form?.navValues ?? data.nav.menu;
+		if (!m) return;
+		navOrder = [...m.order];
+		navNames = structuredClone(m.names);
+		siteTitle = form?.navTitle ?? data.nav.title;
+	});
+	function move(i: number, by: -1 | 1) {
+		const j = i + by;
+		if (j < 0 || j >= navOrder.length) return;
+		[navOrder[i], navOrder[j]] = [navOrder[j], navOrder[i]];
+	}
 	const idealMin = $derived(data.site.ideal[0]);
 	const idealMax = $derived(data.site.ideal[1]);
 
@@ -93,6 +110,49 @@
 				</label>
 			{/each}
 			<button type="submit" class="btn-primary">Save homepage text</button>
+		</form>
+	{/if}
+</section>
+
+<section>
+	<h2>Site name and menu</h2>
+	{#if data.nav.error || !data.nav.menu}
+		<p class="msg err">Cannot edit these: {data.nav.error}</p>
+	{:else}
+		{#if form?.navSaved}
+			<p class="msg ok">Saved {form.navSaved.join(', ')}. The site shows it in a minute or two, once it has rebuilt.</p>
+		{/if}
+		{#if form?.navError}<p class="msg err">{form.navError}</p>{/if}
+		<form method="POST" action="?/saveNav" use:enhance={() => ({ update }) => update({ reset: false })} class="navform">
+			<label>Site name
+				<input name="title" bind:value={siteTitle} maxlength={data.nav.titleMax + 20} autocomplete="off" />
+				<span class="count" class:over={siteTitle.length > data.nav.titleMax}>{siteTitle.length} characters · in every page title and the footer</span>
+			</label>
+
+			<div class="menu" role="group" aria-label="Menu">
+				<div class="menu-head"><span>Order</span>{#each Object.keys(LANG_NAMES) as l}<span>{LANG_NAMES[l as keyof typeof LANG_NAMES]}</span>{/each}</div>
+				{#each navOrder as ref, i (ref)}
+					<div class="menu-row">
+						<input type="hidden" name="order" value={ref} />
+						<span class="arrows">
+							<button type="button" class="arrow" aria-label="Move {NAV_LABEL[ref] ?? ref} earlier" disabled={i === 0} onclick={() => move(i, -1)}>↑</button>
+							<button type="button" class="arrow" aria-label="Move {NAV_LABEL[ref] ?? ref} later" disabled={i === navOrder.length - 1} onclick={() => move(i, 1)}>↓</button>
+						</span>
+						{#each Object.keys(LANG_NAMES) as l}
+							<input name="name:{l}:{ref}" bind:value={navNames[l][ref]} maxlength={data.nav.labelMax + 10} aria-label="{NAV_LABEL[ref] ?? ref} in {LANG_NAMES[l as keyof typeof LANG_NAMES]}" autocomplete="off" />
+						{/each}
+					</div>
+				{/each}
+			</div>
+
+			<!-- What it will look like, in each language, as you type. -->
+			<div class="menu-preview" aria-label="Preview">
+				{#each Object.keys(LANG_NAMES) as l}
+					<div><span class="lg">{l.toUpperCase()}</span>{#each navOrder as ref}<span class="navpill">{navNames[l]?.[ref] ?? ''}</span>{/each}</div>
+				{/each}
+			</div>
+			<p class="lede">The menu keeps the same pages; here you rename them and choose the order, which is the same in all three languages.</p>
+			<button type="submit" class="btn-primary">Save site name and menu</button>
 		</form>
 	{/if}
 </section>
@@ -263,6 +323,20 @@
 </section>
 
 <style>
+	.navform { display: grid; gap: 1rem; max-width: 46rem; }
+	.navform > button[type='submit'] { justify-self: start; }
+	.menu { display: grid; gap: 0.45rem; }
+	.menu-head, .menu-row { display: grid; grid-template-columns: 4.2rem repeat(3, minmax(0, 1fr)); gap: 0.6rem; align-items: center; }
+	.menu-head span { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); }
+	.arrows { display: inline-flex; gap: 0.25rem; }
+	.arrow { width: 1.9rem; height: 1.9rem; padding: 0; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--card); color: var(--foreground); font-size: 0.95rem; cursor: pointer; }
+	.arrow:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+	.arrow:disabled { opacity: 0.35; cursor: default; }
+	.menu-preview { display: grid; gap: 0.35rem; padding: 0.7rem 0.9rem; border: 1px dashed var(--border); border-radius: 0.75rem; }
+	.menu-preview > div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+	.menu-preview .lg { width: 1.6rem; font-size: 0.7rem; font-weight: 700; color: var(--muted-foreground); }
+	.navpill { padding: 0.2rem 0.75rem; border: 2px solid var(--border); border-radius: 2rem; font-size: 0.82rem; font-weight: 500; }
+	@media (max-width: 640px) { .menu-head { display: none; } .menu-row { grid-template-columns: 1fr; } }
 	h2 .all { font-size: 0.78rem; font-weight: 400; text-decoration: none; color: var(--primary); margin-left: 0.5rem; }
 	h1 { font-size: 1.5rem; margin: 0 0 1.5rem; letter-spacing: -0.015em; }
 	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }

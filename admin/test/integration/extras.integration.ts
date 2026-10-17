@@ -15,7 +15,7 @@ import zlib from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { startPortal, startFakeDeepL, type Portal, type FakeDeepL } from './harness.ts';
 import { FrontMatter } from '../../src/lib/server/content/frontmatter.ts';
-import { readSiteText } from '../../src/lib/server/content/site-params.ts';
+import { readSiteText, readMenu, readTitle } from '../../src/lib/server/content/site-params.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 const AUDIENCE = 'aud-test-0000';
@@ -375,6 +375,79 @@ describe('subscribers', () => {
 		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
 		assert.match(log, /subscriber-removed/);
 		assert.doesNotMatch(log, /reader@example\.com/);
+	});
+});
+
+describe('site name and menu', () => {
+	const nav = (over: Record<string, string> = {}): Record<string, string> => {
+		const f: Record<string, string> = { title: 'Lorenzo Loconsole' };
+		for (const l of ['en', 'fr', 'it']) {
+			const m = readMenu(portal.read('hugo.toml')!);
+			for (const ref of m.order) f[`name:${l}:${ref}`] = m.names[l as 'en'][ref];
+		}
+		return { ...f, ...over };
+	};
+	// FormData would carry `order` several times; the helper takes one value, so send the list as repeated pairs.
+	const post = (fields: Record<string, string>, order: string[]) => {
+		const body = new URLSearchParams(fields);
+		for (const o of order) body.append('order', o);
+		return fetch(`${portal.url}/settings?/saveNav`, {
+			method: 'POST', body, redirect: 'manual',
+			headers: { 'x-sveltekit-action': 'true', Origin: portal.url, Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded' }
+		});
+	};
+	const ORDER = ['/about', '/now', '/blog', '/contact'];
+	/** An action's own status: SvelteKit answers 200 and puts the outcome in the body. */
+	const outcome = async (r: Response) => (JSON.parse(await r.text()) as { status?: number }).status ?? r.status;
+
+	test('the settings page shows the menu and the name', async () => {
+		const html = await (await portal.get('/settings', { cookie })).text();
+		assert.match(html, /Site name and menu/);
+		assert.match(html, /À propos/);
+	});
+
+	test('nothing changed is said so, and writes nothing', async () => {
+		const before = portal.read('hugo.toml');
+		const r = await post(nav(), ORDER);
+		assert.match(await r.text(), /Nothing changed/);
+		assert.equal(portal.read('hugo.toml'), before);
+	});
+
+	test('a new name and one renamed entry are one commit touching two lines', async () => {
+		const before = portal.read('hugo.toml')!.split('\n');
+		const r = await post(nav({ title: 'Lorenzo L.', 'name:fr:/now': 'En ce moment' }), ORDER);
+		assert.match(await r.text(), /navSaved|"type":"success"/);
+		const after = portal.read('hugo.toml')!.split('\n');
+		const changed = after.flatMap((l, i) => (l !== before[i] ? [l.trim()] : []));
+		assert.deepEqual(changed, ['title = "Lorenzo L."', 'name = "En ce moment"']);
+	});
+
+	test('the order is rewritten as weights, the same in every language', async () => {
+		await post(nav({ title: 'Lorenzo L.' }), ['/contact', '/about', '/now', '/blog']);
+		const m = readMenu(portal.read('hugo.toml')!);
+		assert.deepEqual(m.order, ['/contact', '/about', '/now', '/blog']);
+		const weights = [...portal.read('hugo.toml')!.matchAll(/pageRef = "(\/[a-z]+)"\n\s+weight = (\d)/g)].map((x) => `${x[1]}:${x[2]}`);
+		assert.equal(new Set(weights).size, 4, 'three languages, one order');
+	});
+
+	test('a page added to, or dropped from, the menu is refused', async () => {
+		const before = portal.read('hugo.toml');
+		const r = await post(nav({ title: 'Lorenzo L.' }), ['/contact', '/about', '/now']);
+		assert.equal(await outcome(r), 400);
+		assert.equal(portal.read('hugo.toml'), before);
+	});
+
+	test('an empty name, in any language, is refused', async () => {
+		const before = portal.read('hugo.toml');
+		const r = await post(nav({ 'name:it:/blog': ' ' }), ['/contact', '/about', '/now', '/blog']);
+		assert.equal(await outcome(r), 400);
+		assert.equal(portal.read('hugo.toml'), before);
+	});
+
+	test('an empty site name is refused', async () => {
+		const r = await post(nav({ title: '  ' }), ['/contact', '/about', '/now', '/blog']);
+		assert.equal(await outcome(r), 400);
+		assert.match(readTitle(portal.read('hugo.toml')!), /Lorenzo L\./);
 	});
 });
 

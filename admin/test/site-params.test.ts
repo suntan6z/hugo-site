@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
 	SOCIALS, SiteParamsError, readSocials, writeSocials, whyNotUrl,
-	readSiteText, writeSiteText, whyNotSiteText, writeStrings, oneLine
+	readSiteText, writeSiteText, whyNotSiteText, writeStrings, oneLine,
+	readTitle, writeTitle, whyNotTitle, readMenu, writeMenu, whyNotMenu, type Menu
 } from '../src/lib/server/content/site-params.ts';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..');
@@ -142,5 +143,100 @@ describe('homepage quote and site descriptions', () => {
 		assert.match(whyNotSiteText({ ...t, quote: '' }, [t.quoteArticle])!, /quote/);
 		assert.match(whyNotSiteText(t, ['something-else'])!, /article/);
 		assert.match(whyNotSiteText({ ...t, description: { ...t.description, fr: '' } }, [t.quoteArticle])!, /FR/);
+	});
+});
+
+describe('the site title', () => {
+	test('it is read from above the first table, not from a look-alike inside one', () => {
+		assert.equal(readTitle(real()), 'Lorenzo Loconsole');
+		const raw = 'title = "Top"\n[params]\n  title = "Inner"\n';
+		assert.equal(readTitle(raw), 'Top');
+	});
+
+	test('changing it rewrites that line only, and the same name changes nothing', () => {
+		const raw = real();
+		const same = writeTitle(raw, readTitle(raw));
+		assert.equal(same.changed, false);
+		assert.equal(same.raw, raw);
+		const r = writeTitle(raw, 'Lorenzo L. "Loconsole"');
+		assert.equal(r.changed, true);
+		assert.equal(r.raw.split('\n').filter((l, i) => l !== raw.split('\n')[i]).length, 1);
+		assert.equal(readTitle(r.raw), 'Lorenzo L. "Loconsole"');
+	});
+
+	test('what it must be', () => {
+		assert.equal(whyNotTitle('A site'), null);
+		assert.match(whyNotTitle('')!, /needs a name/);
+		assert.match(whyNotTitle('x'.repeat(61))!, /60/);
+	});
+});
+
+describe('the navigation menu', () => {
+	const menu = (): Menu => readMenu(real());
+
+	test('the real menu reads: four pages in order, named in three languages', () => {
+		const m = menu();
+		assert.deepEqual(m.order, ['/about', '/now', '/blog', '/contact']);
+		assert.equal(m.names.en['/about'], 'About');
+		assert.equal(m.names.fr['/about'], 'À propos');
+		assert.equal(m.names.it['/contact'], 'Contatti');
+	});
+
+	test('saving what is there changes nothing, byte for byte', () => {
+		const raw = real();
+		const r = writeMenu(raw, readMenu(raw));
+		assert.deepEqual(r.changed, []);
+		assert.equal(r.raw, raw);
+	});
+
+	test('renaming one entry in one language rewrites exactly one line', () => {
+		const raw = real();
+		const m = menu();
+		m.names.fr['/now'] = 'En ce moment';
+		const r = writeMenu(raw, m);
+		assert.deepEqual(r.changed, ['menu names (fr)']);
+		const diff = r.raw.split('\n').flatMap((l, i) => (l !== raw.split('\n')[i] ? [l.trim()] : []));
+		assert.deepEqual(diff, ['name = "En ce moment"']);
+		assert.equal(readMenu(r.raw).names.fr['/now'], 'En ce moment');
+	});
+
+	test('a name with a quote or backslash is escaped, and survives the trip', () => {
+		const m = menu();
+		m.names.en['/blog'] = 'The "Blog" \\ more';
+		assert.equal(readMenu(writeMenu(real(), m).raw).names.en['/blog'], 'The "Blog" \\ more');
+	});
+
+	test('reordering moves the same entries in all three languages together', () => {
+		const m = menu();
+		m.order = ['/blog', '/about', '/now', '/contact'];
+		const r = writeMenu(real(), m);
+		assert.deepEqual(r.changed, ['menu order']);
+		const back = readMenu(r.raw);
+		assert.deepEqual(back.order, m.order);
+		// Every language agrees: the same weights, so the menus never differ in shape.
+		const weights = [...r.raw.matchAll(/pageRef = "(\/[a-z]+)"\n\s+weight = (\d)/g)].map((x) => `${x[1]}:${x[2]}`);
+		assert.equal(new Set(weights).size, 4);
+		assert.deepEqual([...new Set(weights)].sort(), ['/about:2', '/blog:1', '/contact:4', '/now:3']);
+	});
+
+	test('the pages are fixed: a menu cannot gain or lose one here', () => {
+		const m = menu();
+		assert.equal(whyNotMenu(m, m), null);
+		assert.match(whyNotMenu({ ...m, order: m.order.slice(1) }, m)!, /same pages/);
+		assert.match(whyNotMenu({ ...m, order: [...m.order, '/secret'] }, m)!, /same pages/);
+	});
+
+	test('names must be there, one line, and short enough for a menu', () => {
+		const m = menu();
+		const named = (name: string): Menu => ({ ...m, names: { ...m.names, it: { ...m.names.it, '/now': name } } });
+		assert.match(whyNotMenu(named(''), m)!, /every entry needs a name in IT/i);
+		assert.match(whyNotMenu(named('two\nlines'), m)!, /line breaks/);
+		assert.match(whyNotMenu(named('x'.repeat(25)), m)!, /too long/);
+		assert.equal(whyNotMenu(named('Ora'), m), null);
+	});
+
+	test('a language whose menu lists other pages is an error, not a guess', () => {
+		const raw = real().replace('[[languages.it.menus.main]]\n        name = "Chi sono"\n        pageRef = "/about"', '[[languages.it.menus.main]]\n        name = "Chi sono"\n        pageRef = "/chi"');
+		assert.throws(() => readMenu(raw), /different pages/);
 	});
 });

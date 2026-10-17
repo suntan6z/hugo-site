@@ -8,7 +8,7 @@ By hand: add the key to all three files. Keys are case-sensitive.
 
 ## `hugo.toml`
 
-In the portal, **Settings** edits the homepage quote (and the article it links to), each language's description, the social links, the homepage photo and the CV file — rewriting only the lines that change. Everything else below is edited by hand.
+In the portal, **Settings** edits the site name, the navigation menu (what each entry is called in each language, and their order, which is shared), the homepage quote (and the article it links to), each language's description, the social links, the homepage photo and the CV file — rewriting only the lines that change. Everything else below is edited by hand.
 
 Site-wide settings live under `[params]` and `[menu]`:
 

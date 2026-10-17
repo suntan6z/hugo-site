@@ -13,7 +13,8 @@ import { fromForm, listPosts } from '$lib/server/content/post.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import {
 	SOCIALS, readSocials, writeSocials, whyNotUrl, type Socials,
-	readSiteText, writeSiteText, whyNotSiteText, oneLine, readString, DESCRIPTION_IDEAL, type SiteText
+	readSiteText, writeSiteText, whyNotSiteText, oneLine, readString, DESCRIPTION_IDEAL, type SiteText,
+	readTitle, writeTitle, whyNotTitle, readMenu, writeMenu, whyNotMenu, TITLE_MAX, MENU_LABEL_MAX, type Menu
 } from '$lib/server/content/site-params.ts';
 import {
 	HERO_JPEG, HERO_WEBP, MAX_HERO_BYTES, MAX_RESUME_BYTES, isJpeg, isWebp, isPdf, resumePath
@@ -45,6 +46,14 @@ export const load: PageServerLoad = async () => {
 			return { text: readSiteText(raw), resumeUrl: readString(raw, 'params', 'resumeUrl'), error: null };
 		})
 		.catch((e: unknown) => ({ text: null, resumeUrl: '', error: e instanceof Error ? e.message : String(e) }));
+	// The site's name and navigation, from the same file; a file the editor cannot read does not take the page down.
+	const nav = await repo
+		.readText('hugo.toml')
+		.then((raw) => {
+			if (raw === null) throw new Error('hugo.toml is missing.');
+			return { title: readTitle(raw), menu: readMenu(raw), error: null };
+		})
+		.catch((e: unknown) => ({ title: '', menu: null, error: e instanceof Error ? e.message : String(e) }));
 	const articles = (await listPosts()).filter((p) => !p.draft).map((p) => ({ slug: p.slug, title: p.title }));
 	const redirects = (await repo.listTree('content/redirects')).filter((p) => p.endsWith('.md') && !p.endsWith('/_index.md')).length;
 	const auditKeys = await store.list('audit');
@@ -63,6 +72,7 @@ export const load: PageServerLoad = async () => {
 		origin: auth.origin,
 		siteUrl: integrations.siteUrl,
 		socials: { fields: SOCIALS, ...socials },
+		nav: { ...nav, titleMax: TITLE_MAX, labelMax: MENU_LABEL_MAX },
 		site: { ...site, articles, ideal: DESCRIPTION_IDEAL, canReplaceResume: !!resumePath(site.resumeUrl) },
 		redirects,
 		integrations: {
@@ -151,6 +161,41 @@ export const actions: Actions = {
 			});
 		}
 		return { siteSaved: changed };
+	},
+
+	/** The site's name and its navigation (names in three languages, and their order), in hugo.toml. One commit. */
+	saveNav: async ({ request }) => {
+		const f = await request.formData();
+		const title = oneLine(fromForm(f.get('title')));
+		const raw = await repo.readText('hugo.toml');
+		if (raw === null) return fail(500, { navError: 'hugo.toml is missing.', navTitle: title, navValues: undefined as Menu | undefined });
+
+		const current = readMenu(raw);
+		const next: Menu = {
+			order: f.getAll('order').map((v) => fromForm(v).trim()),
+			names: Object.fromEntries(
+				LANGS.map((l) => [l, Object.fromEntries(current.order.map((ref) => [ref, oneLine(fromForm(f.get(`name:${l}:${ref}`)))]))])
+			) as Menu['names']
+		};
+		const bad = whyNotTitle(title) ?? whyNotMenu(next, current);
+		if (bad) return fail(400, { navError: bad, navTitle: title, navValues: next });
+
+		const t = writeTitle(raw, title);
+		const m = writeMenu(t.raw, next);
+		const changed = [...(t.changed ? ['site name'] : []), ...m.changed];
+		if (changed.length === 0) return fail(400, { navError: 'Nothing changed.', navTitle: title, navValues: next });
+		try {
+			const { sha } = await repo.commit(`Update ${changed.join(', ')}`, [{ path: 'hugo.toml', content: m.raw }]);
+			await recordPublish({ sha, at: new Date().toISOString(), slug: 'navigation' });
+			await audit('nav-save', { sha, changed });
+		} catch (e) {
+			return fail(e instanceof ConcurrentWriteError ? 409 : 500, {
+				navError: e instanceof Error ? e.message : String(e),
+				navTitle: title,
+				navValues: next
+			});
+		}
+		return { navSaved: changed };
 	},
 
 	/**

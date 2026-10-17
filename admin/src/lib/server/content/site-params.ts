@@ -33,8 +33,8 @@ export type Socials = Record<SocialKey, string>;
 
 export class SiteParamsError extends Error {}
 
-/** `params` is the shared table; each language has its own. */
-export type Table = 'params' | `languages.${Lang}.params`;
+/** `root` is what sits above the first table (the site title); `params` is the shared table; each language has its own. */
+export type Table = 'root' | 'params' | `languages.${Lang}.params`;
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const lineFor = (key: string) => new RegExp(`^(\\s*${escapeRe(key)}\\s*=\\s*)"((?:[^"\\\\]|\\\\.)*)"(\\s*(?:#.*)?)$`);
@@ -44,6 +44,10 @@ const escape = (s: string) => s.replace(/[\\"]/g, '\\$&');
 
 /** The line range of one table: [first line after its header, end). */
 function tableRange(lines: string[], table: Table): [number, number] {
+	if (table === 'root') {
+		const first = lines.findIndex((l) => l.trim().startsWith('['));
+		return [0, first === -1 ? lines.length : first];
+	}
 	const header = lines.findIndex((l) => l.trim() === `[${table}]`);
 	if (header === -1) throw new SiteParamsError(`hugo.toml has no [${table}] table`);
 	let end = header + 1;
@@ -193,4 +197,132 @@ export function writeSiteText(raw: string, next: SiteText): { raw: string; chang
 		changed.push(...out.changed.map((k) => `${k} (${l})`));
 	}
 	return { raw: out.raw, changed };
+}
+
+/* ------------------------------------------------------ title and navigation */
+
+export const TITLE_MAX = 60;
+export const MENU_LABEL_MAX = 24;
+
+export const readTitle = (raw: string) => readString(raw, 'root', 'title');
+
+export function whyNotTitle(title: string): string | null {
+	if (!title) return 'The site needs a name: it is in every page title and the footer.';
+	if (title.length > TITLE_MAX) return `The name is ${title.length} characters; search results cut a page title at about 60, and this goes in it.`;
+	return null;
+}
+
+export function writeTitle(raw: string, title: string): { raw: string; changed: boolean } {
+	const r = writeStrings(raw, 'root', { title });
+	return { raw: r.raw, changed: r.changed.length > 0 };
+}
+
+/**
+ * The navigation, as the portal edits it: which pages are in the menu and in
+ * what order (shared by the three languages, so the menu never changes shape
+ * between them) and what each is called in each language. Pages are not added
+ * or removed here: a menu entry needs a page that exists, and that is a change
+ * to the site, not a setting.
+ */
+export interface Menu {
+	/** Page references in menu order, e.g. "/about". */
+	order: string[];
+	names: Record<Lang, Record<string, string>>;
+}
+
+interface MenuBlock {
+	pageRef: string;
+	name: string;
+	weight: number;
+	nameLine: number;
+	weightLine: number;
+}
+
+const WEIGHT_LINE = /^(\s*weight\s*=\s*)(\d+)(\s*(?:#.*)?)$/;
+
+/** The `[[languages.<l>.menus.main]]` entries of one language, in file order. */
+function menuBlocks(lines: string[], lang: Lang): MenuBlock[] {
+	const header = `[[languages.${lang}.menus.main]]`;
+	const out: MenuBlock[] = [];
+	for (let i = 0; i < lines.length; i++) {
+		if (lines[i].trim() !== header) continue;
+		let end = i + 1;
+		while (end < lines.length && !lines[end].trim().startsWith('[')) end++;
+		let name: [number, string] | null = null;
+		let pageRef: string | null = null;
+		let weight: [number, number] | null = null;
+		for (let j = i + 1; j < end; j++) {
+			const n = lineFor('name').exec(lines[j]);
+			const p = lineFor('pageRef').exec(lines[j]);
+			const w = WEIGHT_LINE.exec(lines[j]);
+			if (n) name = [j, unescape(n[2])];
+			if (p) pageRef = unescape(p[2]);
+			if (w) weight = [j, Number(w[2])];
+		}
+		if (!name || !pageRef || !weight) throw new SiteParamsError(`${header} needs name, pageRef and weight lines`);
+		out.push({ pageRef, name: name[1], weight: weight[1], nameLine: name[0], weightLine: weight[0] });
+	}
+	if (out.length === 0) throw new SiteParamsError(`hugo.toml has no ${header} entries`);
+	return out;
+}
+
+export function readMenu(raw: string): Menu {
+	const lines = split(raw);
+	const per = Object.fromEntries(LANGS.map((l) => [l, menuBlocks(lines, l)])) as Record<Lang, MenuBlock[]>;
+	const refs = (l: Lang) => per[l].map((b) => b.pageRef).sort().join(' ');
+	for (const l of LANGS) {
+		if (refs(l) !== refs('en')) throw new SiteParamsError(`The ${l.toUpperCase()} menu lists different pages from the English one.`);
+	}
+	const order = per.en
+		.map((b, i) => ({ b, i }))
+		.sort((a, b) => a.b.weight - b.b.weight || a.i - b.i)
+		.map((x) => x.b.pageRef);
+	return {
+		order,
+		names: Object.fromEntries(LANGS.map((l) => [l, Object.fromEntries(per[l].map((b) => [b.pageRef, b.name]))])) as Menu['names']
+	};
+}
+
+/** Why this menu cannot be saved, or null. `current` is what the file has now. */
+export function whyNotMenu(next: Menu, current: Menu): string | null {
+	if ([...next.order].sort().join(' ') !== [...current.order].sort().join(' ')) {
+		return 'The menu has to keep the same pages; only their names and order can change.';
+	}
+	for (const l of LANGS) {
+		for (const ref of current.order) {
+			const name = next.names[l]?.[ref] ?? '';
+			if (!name) return `Every entry needs a name in ${l.toUpperCase()}.`;
+			if (/[\u0000-\u001f\u007f]/.test(name)) return 'A name cannot contain line breaks.';
+			if (name.length > MENU_LABEL_MAX) return `“${name}” is too long for a menu (${MENU_LABEL_MAX} characters at most).`;
+		}
+	}
+	return null;
+}
+
+/**
+ * Applies names and order. Order is written as weights 1…n in every language,
+ * so the three menus always agree; the blocks stay where they are in the file.
+ * Only a line that changes is touched, and an unchanged menu is byte-for-byte
+ * the same file.
+ */
+export function writeMenu(raw: string, next: Menu): { raw: string; changed: string[] } {
+	const lines = split(raw);
+	const changed = new Set<string>();
+	for (const l of LANGS) {
+		for (const b of menuBlocks(lines, l)) {
+			const name = next.names[l][b.pageRef];
+			const nameMatch = lineFor('name').exec(lines[b.nameLine])!;
+			if (name !== undefined && name !== b.name) {
+				lines[b.nameLine] = `${nameMatch[1]}"${escape(name)}"${nameMatch[3]}`;
+				changed.add(`menu names (${l})`);
+			}
+			const weight = next.order.indexOf(b.pageRef) + 1;
+			if (weight > 0 && weight !== b.weight) {
+				const m = WEIGHT_LINE.exec(lines[b.weightLine])!;
+				lines[b.weightLine] = `${m[1]}${weight}${m[3]}`;
+				changed.add('menu order');
+			}
+		}
+	}
+	return { raw: lines.join('\n'), changed: [...changed] };
 }
