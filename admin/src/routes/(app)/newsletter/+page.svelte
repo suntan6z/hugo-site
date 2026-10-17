@@ -465,9 +465,12 @@
 		{:else if data.subscribers.length === 0}
 			<p class="note">Nobody has subscribed yet.</p>
 		{:else}
-			{#if data.subscribers.length > 8}
-				<input class="who" type="search" bind:value={who} placeholder="Find an address…" autocomplete="off" />
-			{/if}
+			<div class="list-head">
+				{#if data.subscribers.length > 8}
+					<input class="who" type="search" bind:value={who} placeholder="Find an address…" autocomplete="off" />
+				{:else}<span></span>{/if}
+				<a class="btn-outline btn-sm" href="/newsletter/subscribers.csv" download title="Everyone on the list, with who has unsubscribed, as a spreadsheet">Download as CSV</a>
+			</div>
 			<ul class="people">
 				{#each shownSubscribers as s (s.id)}
 					<li class:gone={s.unsubscribed}>
@@ -491,7 +494,7 @@
 				{/each}
 			</ul>
 			<p class="note">
-				Removing deletes the address from Resend, for someone who asks to be forgotten. People who only
+				The CSV is the one copy of this list that lives nowhere else. Removing deletes the address from Resend, for someone who asks to be forgotten. People who only
 				want to stop receiving it can use the unsubscribe link in any email.
 			</p>
 		{/if}
@@ -668,7 +671,8 @@
 	.day { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; padding: 0.3rem 0 0 1.55rem; }
 	.day input { width: auto; }
 	.day .hint { margin: 0; }
-	.who { width: 100%; margin-bottom: 0.8rem; }
+	.list-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.8rem; }
+	.who { flex: 1; margin: 0; }
 	.people, .sent { list-style: none; padding: 0; margin: 0 0 0.8rem; font-size: 0.9rem; }
 	.people li, .sent li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.9rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.people .email, .sent .subj { flex: 1; min-width: 12rem; overflow-wrap: anywhere; }

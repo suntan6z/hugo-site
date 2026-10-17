@@ -1,6 +1,7 @@
 import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
 import { memo, invalidate } from '../cache.ts';
+import { readAll } from './paginate.ts';
 import {
 	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient,
 	type BroadcastInput
@@ -61,11 +62,16 @@ export interface Subscriber {
 /** Everyone the signup form has enrolled, newest first. Cached like the count it feeds. */
 export async function listSubscribers(): Promise<Subscriber[]> {
 	return memo('resend:contacts', 5 * 60_000, async () => {
-		const r = await call<{ data?: { id?: string; email?: string; created_at?: string; unsubscribed?: boolean }[] }>(
-			'GET',
-			`/audiences/${integrations.resendAudienceId}/contacts`
-		);
-		return (r.data ?? [])
+		type Row = { id?: string; email?: string; created_at?: string; unsubscribed?: boolean };
+		// Every page: Resend returns 20 rows unless told otherwise, and a list that stops there is wrong without saying so.
+		const rows = await readAll<Row>(async (after) => {
+			const r = await call<{ data?: Row[]; has_more?: boolean }>(
+				'GET',
+				`/audiences/${integrations.resendAudienceId}/contacts?limit=100${after ? `&after=${encodeURIComponent(after)}` : ''}`
+			);
+			return { data: r.data ?? [], has_more: r.has_more };
+		});
+		return rows
 			.filter((c): c is { id: string; email: string; created_at?: string; unsubscribed?: boolean } =>
 				typeof c.id === 'string' && typeof c.email === 'string'
 			)

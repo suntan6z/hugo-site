@@ -21,7 +21,7 @@ const LANGS = ['en', 'fr', 'it'] as const;
 const AUDIENCE = 'aud-test-0000';
 const SHARE = 'test-share-link';
 
-type Seen = { method: string; path: string; headers: http.IncomingHttpHeaders; body?: string };
+type Seen = { method: string; path: string; query?: string; headers: http.IncomingHttpHeaders; body?: string };
 
 /** Resend, Litlyx and two outside websites (one alive, one gone) on one port. */
 async function startFakes() {
@@ -46,7 +46,7 @@ async function startFakes() {
 		const url = new URL(req.url ?? '/', 'http://x');
 		let body = '';
 		for await (const chunk of req) body += chunk;
-		seen.push({ method: req.method ?? '', path: url.pathname, headers: req.headers, body: body || undefined });
+		seen.push({ method: req.method ?? '', path: url.pathname, query: url.search, headers: req.headers, body: body || undefined });
 		res.setHeader('Content-Type', 'application/json');
 		if (url.pathname === '/emails' && req.method === 'POST') return res.end(JSON.stringify({ id: 'email-test-1' }));
 		if (url.pathname === '/broadcasts' && req.method === 'POST') return res.end(JSON.stringify({ id: 'bc-test-1' }));
@@ -58,7 +58,12 @@ async function startFakes() {
 			return res.end('{}');
 		}
 		if (url.pathname === `/audiences/${AUDIENCE}/contacts` && req.method === 'GET') {
-			return res.end(JSON.stringify({ object: 'list', data: contacts }));
+			// Like Resend: 20 rows unless asked for more, a cursor, and a flag saying whether there are further pages.
+			const limit = Number(url.searchParams.get('limit') ?? 20);
+			const after = url.searchParams.get('after');
+			const start = after ? contacts.findIndex((c) => c.id === after) + 1 : 0;
+			const data = contacts.slice(start, start + limit);
+			return res.end(JSON.stringify({ object: 'list', data, has_more: start + data.length < contacts.length }));
 		}
 		if (url.pathname.startsWith(`/audiences/${AUDIENCE}/contacts/`) && req.method === 'DELETE') {
 			return res.end(JSON.stringify({ object: 'contact', deleted: true }));
@@ -375,6 +380,36 @@ describe('subscribers', () => {
 		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
 		assert.match(log, /subscriber-removed/);
 		assert.doesNotMatch(log, /reader@example\.com/);
+	});
+});
+
+describe('the subscriber export', () => {
+	test('it downloads as a spreadsheet file, with everyone on the list and who has left', async () => {
+		const r = await portal.get('/newsletter/subscribers.csv', { cookie });
+		assert.equal(r.status, 200);
+		assert.match(r.headers.get('content-type') ?? '', /text\/csv/);
+		assert.match(r.headers.get('content-disposition') ?? '', /attachment; filename="subscribers-\d{4}-\d{2}-\d{2}\.csv"/);
+		assert.match(r.headers.get('cache-control') ?? '', /no-store/);
+		const text = await r.text();
+		assert.match(text, /email,status,joined \(UTC\)/);
+		assert.match(text, /reader@example\.com,subscribed,2026-09-01 10:00/);
+		assert.match(text, /gone@example\.com,unsubscribed,2026-08-01 10:00/);
+	});
+
+	test('it asks Resend for a full page and follows the cursor, rather than taking the first twenty', async () => {
+		const asked = fakes.seen.filter((s) => s.method === 'GET' && s.path === `/audiences/${AUDIENCE}/contacts`);
+		assert.ok(asked.length > 0);
+		assert.ok(asked.every((s) => /[?&]limit=100\b/.test(s.query ?? '')), 'always asks for the largest page');
+	});
+
+	test('it is for a signed-in visitor only', async () => {
+		assert.notEqual((await portal.get('/newsletter/subscribers.csv')).status, 200);
+	});
+
+	test('the log records that it was done and how many, never an address', async () => {
+		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
+		assert.match(log, /subscribers-exported/);
+		assert.doesNotMatch(log, /reader@example\.com|gone@example\.com/);
 	});
 });
 
