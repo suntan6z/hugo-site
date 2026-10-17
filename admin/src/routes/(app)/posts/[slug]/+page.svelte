@@ -46,6 +46,14 @@
 
 	/* ------------------------------------------------------------- scheduling */
 	let showSchedule = $state(false);
+	let copied = $state(false);
+	async function copyLink(url: string) {
+		try {
+			await navigator.clipboard.writeText(url);
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {}
+	}
 	let scheduleDay = $state('');
 	let alsoNewsletter = $state(false);
 	// Always shown in Paris time, which is when it actually goes live.
@@ -782,6 +790,28 @@
 	{/if}
 </form>
 
+<section class="share" aria-label="Share a draft">
+	<h3>Show this draft to someone</h3>
+	{#if data.share}
+		<div class="share-row">
+			<input readonly value={data.share.url} aria-label="Preview link" onfocus={(e) => e.currentTarget.select()} />
+			<button type="button" class="btn-outline btn-sm" onclick={() => copyLink(data.share!.url)}>{copied ? 'Copied' : 'Copy'}</button>
+			<a class="btn-outline btn-sm" href={data.share.url} target="_blank" rel="noopener">Open</a>
+		</div>
+		<p class="hint">
+			Anyone with this link can read the article until {new Date(data.share.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}, with no account.
+			It shows {data.share.autosave ? 'your latest autosaved text' : 'the saved article'}, and nothing is published.
+		</p>
+		<div class="share-row">
+			<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-ghost btn-sm" title="Replaces this link with a new one, so the old one stops working">New link</button></form>
+			<form method="POST" action="?/unshare" use:enhance><button type="submit" class="btn-danger-quiet btn-sm">Stop sharing</button></form>
+		</div>
+	{:else}
+		<p class="hint">Get a private link to read this article as it looks now, including what you have not saved yet. Nothing is published, and the link stops working after 7 days.</p>
+		<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-outline">Create a preview link</button></form>
+	{/if}
+</section>
+
 <section class="schedule">
 	{#if data.scheduled?.state === 'pending'}
 		<p class="scheduled-now">
@@ -913,7 +943,13 @@
 	fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.75rem; }
 	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); padding: 0 0.35rem; }
 	.danger-check { color: var(--danger); }
-	.schedule { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+	.share { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: grid; gap: 0.6rem; max-width: 40rem; }
+	.share h3 { margin: 0; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
+	.share .hint { margin: 0; font-size: 0.84rem; color: var(--muted-foreground); }
+	.share-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+	.share-row input { flex: 1; min-width: 14rem; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+	.share-row form { margin: 0; }
+	.schedule { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 	.schedule form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; margin-top: 0.6rem; }
 	.schedule .hint { margin: 0; font-size: 0.84rem; color: var(--muted-foreground); }
 	.scheduled-now { margin: 0 0 0.3rem; font-size: 0.9rem; }

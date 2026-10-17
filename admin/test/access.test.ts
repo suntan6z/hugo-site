@@ -34,7 +34,10 @@ const INTENDED_PUBLIC = new Set([
 	'/api/auth/dev-login',
 	// Not session-gated but token-gated: a scheduler cannot hold a passkey.
 	// It takes no parameters and only performs work scheduled from inside.
-	'/api/cron'
+	'/api/cron',
+	// A draft shared by link: token-gated, read-only.
+	'/preview/x-token',
+	'/preview/x-token/img/x-name'
 ]);
 
 describe('every route is protected unless deliberately public', () => {
@@ -51,7 +54,8 @@ describe('every route is protected unless deliberately public', () => {
 		test(`${r} is ${expected ? 'public' : 'PROTECTED'}`, () => {
 			assert.equal(isPublicPath(r), expected);
 			// Its data endpoint must follow the page, never be looser than it.
-			if (!r.startsWith('/api/')) {
+			// (A shared draft and its pictures are endpoints, not pages: no data load to widen.)
+			if (!r.startsWith('/api/') && !r.startsWith('/preview/')) {
 				assert.equal(isPublicPath(`${r === '/' ? '' : r}/__data.json`), expected);
 			}
 		});
@@ -85,7 +89,10 @@ describe('path tricks do not slip through', () => {
 	for (const p of [
 		'/login/../posts', '/enroll/../settings', '//posts', '/login/extra', '/loginx',
 		'/api/auth/../../posts', '/api/auth/anything-else', '/_appx/', '/brandx/logo.svg',
-		'/%2e%2e/posts', '/posts?/login', '/login%2f..%2fposts'
+		'/%2e%2e/posts', '/posts?/login', '/login%2f..%2fposts',
+		// A shared draft is one token deep, and its pictures one name deeper: nothing wider.
+		'/preview', '/preview/', '/previews/abc', '/preview/abc/def', '/preview/abc/img', '/preview/abc/img/a/b',
+		'/preview/abc/__data.json', '/preview/abc/img/a.png/extra', '/preview/abc/../../posts', '/preview/abc/img/../../../posts', '/preview/%2e%2e/posts'
 	]) {
 		test(`${p} is not treated as public`, () => {
 			assert.equal(isPublicPath(p), false);

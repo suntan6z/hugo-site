@@ -17,6 +17,8 @@ export interface PreviewContext {
 	siteUrl: string;
 	/** Images staged in the browser but not yet committed: filename -> blob URL. */
 	pending?: Record<string, string>;
+	/** Where a bundle image is served from when not the signed-in preview API (a shared link's own path). */
+	imageBase?: string;
 }
 
 const isAbsolute = (u: string) => /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(u);
@@ -32,7 +34,7 @@ export function resolveImage(src: string, ctx: PreviewContext): string {
 	if (src.startsWith('/')) return `${ctx.siteUrl}${src}`;
 	const file = src.split(/[?#]/)[0];
 	if (ctx.pending?.[file]) return ctx.pending[file];
-	return `/api/image/${encodeURIComponent(ctx.slug)}/${encodeURIComponent(file)}`;
+	return `${ctx.imageBase ?? `/api/image/${encodeURIComponent(ctx.slug)}/`}${encodeURIComponent(file)}`;
 }
 
 /** Root-relative links point at the live site; the preview has no pages of its own. */
@@ -63,7 +65,7 @@ export function renderMarkdown(markdown: string, ctx: PreviewContext): string {
 	// The site allows raw HTML in articles (goldmark unsafe: true), so images
 	// written as <img src="…"> need resolving too.
 	html = html.replace(/(<img\b[^>]*?\ssrc=")([^"]+)(")/gi, (m, a, src, b) =>
-		m.includes('data-missing-alt') || isAbsolute(src) || src.startsWith('blob:') || src.startsWith('/api/image/')
+		m.includes('data-missing-alt') || isAbsolute(src) || src.startsWith('blob:') || src.startsWith('/api/image/') || (!!ctx.imageBase && src.startsWith(ctx.imageBase))
 			? m
 			: `${a}${esc(resolveImage(src, ctx))}${b}`
 	);
@@ -78,6 +80,10 @@ export interface PreviewDocInput {
 	siteCss: string;
 	theme: 'light' | 'dark';
 	lang: string;
+	/** Extra <head> markup (a viewport, robots), for a document opened on its own rather than in the editor's frame. */
+	head?: string;
+	/** Markup before the article: the shared preview's banner. */
+	banner?: string;
 }
 
 /**
@@ -96,7 +102,7 @@ export function buildPreviewDoc(d: PreviewDocInput): string {
 		: '';
 	return `<!doctype html>
 <html lang="${esc(d.lang)}" data-theme="${d.theme}">
-<head><meta charset="utf-8" />
+<head><meta charset="utf-8" />${d.head ?? ''}
 <style>${d.siteCss}</style>
 <style>
   body { margin: 0; }
@@ -107,6 +113,7 @@ export function buildPreviewDoc(d: PreviewDocInput): string {
 </style>
 </head>
 <body>
+  ${d.banner ?? ''}
   <header class="pv-head">
     <div class="pv-meta">${d.category ? `<span class="category-badge">${esc(d.category)}</span>` : ''}${date ? `<span>${esc(date)}</span>` : ''}</div>
     <h1 class="post-title">${esc(d.title || 'Untitled')}</h1>

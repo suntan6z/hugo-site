@@ -378,6 +378,108 @@ describe('subscribers', () => {
 	});
 });
 
+describe('a draft shared by link', () => {
+	const SLUG = 'out-the-shadow';
+	const share = async () => {
+		const r = await portal.action(`/posts/${SLUG}?/share`, {}, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const html = await (await portal.get(`/posts/${SLUG}`, { cookie })).text();
+		const m = /\/preview\/([A-Za-z0-9_-]{32})/.exec(html);
+		assert.ok(m, 'the editor shows the link');
+		return m![1];
+	};
+	const open = (token: string, q = '') => portal.get(`/preview/${token}${q}`); // no cookie: a stranger
+
+	test('a stranger with the link reads the article, as a draft, with no account', async () => {
+		const token = await share();
+		const r = await open(token);
+		assert.equal(r.status, 200);
+		assert.match(r.headers.get('content-type') ?? '', /text\/html/);
+		const html = await r.text();
+		assert.match(html, /Draft<\/b> — not published/);
+		assert.match(html, /post-title/);
+	});
+
+	test('it is kept out of search and out of caches, and runs no script', async () => {
+		const token = await share();
+		const r = await open(token);
+		assert.match(r.headers.get('x-robots-tag') ?? '', /noindex/);
+		assert.match(r.headers.get('cache-control') ?? '', /no-store/);
+		const csp = r.headers.get('content-security-policy') ?? '';
+		assert.match(csp, /default-src 'none'/);
+		assert.doesNotMatch(csp, /script-src/);
+		assert.equal(r.headers.get('referrer-policy'), 'no-referrer');
+	});
+
+	test('a wrong, malformed or empty token is a plain 404, the same for all', async () => {
+		for (const t of ['A'.repeat(32), 'short', 'A'.repeat(100)]) {
+			const r = await open(t);
+			assert.equal(r.status, 404, t);
+		}
+		// A path trick is not a token at all: it falls out of the public set and is sent to sign in.
+		for (const t of ['..%2f..%2fposts', 'a.b']) assert.notEqual((await open(t)).status, 200, t);
+	});
+
+	test('its pictures come only from the shared article\'s folder, and only with the token', async () => {
+		const token = await share();
+		const ok = await open(token, '').then(() => portal.get(`/preview/${token}/img/fundacjalogo.png`));
+		assert.equal(ok.status, 200);
+		assert.equal(ok.headers.get('content-type'), 'image/png');
+		assert.equal((await portal.get(`/preview/${token}/img/index.md`)).status, 404, 'not a picture');
+		assert.equal((await portal.get(`/preview/${token}/img/logo.svg`)).status, 404, 'no svg');
+		assert.equal((await portal.get(`/preview/${'B'.repeat(32)}/img/fundacjalogo.png`)).status, 404, 'no token, no picture');
+	});
+
+	test('it shows the autosave when there is one, and the saved article when there is not', async () => {
+		const token = await share();
+		const before = await (await open(token)).text();
+		assert.doesNotMatch(before, /Words only the autosave has/);
+		const saved = JSON.parse(JSON.stringify({
+			date: '2026-01-01', category: 'Personal', draft: true,
+			translations: { en: { title: 'Autosaved heading', description: '', body: 'Words only the autosave has.', untranslated: false }, fr: { title: '', description: '', body: '', untranslated: false }, it: { title: '', description: '', body: '', untranslated: false } }
+		}));
+		const put = await portal.send('PUT', `/api/drafts/${SLUG}`, { cookie, json: { baseHash: 'x', post: saved } });
+		assert.equal(put.status, 200);
+		const during = await (await open(token)).text();
+		assert.match(during, /Words only the autosave has/);
+		assert.match(during, /Autosaved heading/);
+		await portal.send('DELETE', `/api/drafts/${SLUG}`, { cookie });
+		assert.doesNotMatch(await (await open(token)).text(), /Words only the autosave has/);
+	});
+
+	test('a new link replaces the old one, which stops working', async () => {
+		const first = await share();
+		const second = await share();
+		assert.notEqual(first, second);
+		assert.equal((await open(first)).status, 404);
+		assert.equal((await open(second)).status, 200);
+	});
+
+	test('stopping sharing ends it at once', async () => {
+		const token = await share();
+		const r = await portal.action(`/posts/${SLUG}?/unshare`, {}, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.equal((await open(token)).status, 404);
+		assert.doesNotMatch(await (await portal.get(`/posts/${SLUG}`, { cookie })).text(), new RegExp(`/preview/${token}`));
+	});
+
+	test('after a week it is gone, and cleared from the store when found out', async () => {
+		const token = await share();
+		const file = path.join(portal.state, 'previews', 't', `${token}.json`);
+		const link = JSON.parse(fs.readFileSync(file, 'utf8'));
+		fs.writeFileSync(file, JSON.stringify({ ...link, expiresAt: new Date(Date.now() - 1000).toISOString() }));
+		assert.equal((await open(token)).status, 404);
+		assert.equal(fs.existsSync(file), false);
+	});
+
+	test('the log records that a link was made, never the link', async () => {
+		const token = await share();
+		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
+		assert.match(log, /preview-shared/);
+		assert.ok(!log.includes(token));
+	});
+});
+
 describe('the search palette\'s index', () => {
 	type Index = { items: { kind: string; title: string; hint?: string; href?: string }[] };
 	const index = async () => (await (await portal.get('/api/search', { cookie })).json()) as Index;

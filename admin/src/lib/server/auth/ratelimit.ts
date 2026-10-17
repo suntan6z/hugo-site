@@ -46,4 +46,6 @@ export const isRateLimitedPath = (pathname: string) =>
 	/^\/api\/auth\/(options|verify|enroll-options|enroll-verify)\/?$/.test(pathname) ||
 	/^\/enroll\/?$/.test(pathname) ||
 	// Token-gated, but it is the other door that opens without a session.
-	/^\/api\/cron\/?$/.test(pathname);
+	/^\/api\/cron\/?$/.test(pathname) ||
+	// A shared draft: the page, not its pictures (a page loads several at once).
+	/^\/preview\/[A-Za-z0-9_-]+\/?$/.test(pathname);

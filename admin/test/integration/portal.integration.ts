@@ -72,6 +72,8 @@ describe('access control on the running app', () => {
 		['/newsletter?/test', { slug: 'first-home-nas', to: 'x@example.com' }],
 		['/newsletter?/schedule', { slug: 'first-home-nas', day: '2099-01-01', confirm: 'send' }],
 		['/settings?/saveNav', { title: 'x' }],
+		['/posts/first-home-nas?/share', {}],
+		['/posts/first-home-nas?/unshare', {}],
 		['/media?/delete', { path: 'content/blog/first-home-nas/x.png', confirm: 'delete' }],
 		['/api/media', { path: 'static/img/logo.svg' }],
 		['/i18n?/save', {}],

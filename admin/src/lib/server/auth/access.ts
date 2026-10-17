@@ -33,6 +33,11 @@ const PUBLIC: RegExp[] = [
 	// because it cannot hold a passkey. It takes no parameters and only carries
 	// out work already scheduled from inside the portal; a wrong token gets 404.
 	/^\/api\/cron\/?$/,
+	// A draft shared by link. Read-only; the handler checks the token itself and a
+	// wrong, expired or revoked one is a bare 404. Any token shape gets that far
+	// so nothing about the real ones is learned from the answer.
+	/^\/preview\/[A-Za-z0-9_-]+\/?$/,
+	/^\/preview\/[A-Za-z0-9_-]+\/img\/[A-Za-z0-9._-]+$/,
 	// Static assets: SvelteKit's client bundle and the brand files.
 	/^\/_app\//,
 	/^\/brand\//,

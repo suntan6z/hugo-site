@@ -17,6 +17,8 @@ import { readScheduled, schedule as addSchedule, cancel as cancelSchedule } from
 import { whyNotDay, morningOf, forSlug, todayIn } from '$lib/server/schedule/plan.ts';
 import { isConfigured as canSendNewsletter } from '$lib/server/integrations/resend.ts';
 import { auth } from '$lib/server/env.ts';
+import { createPreview, activePreview, revokePreview } from '$lib/server/content/previews.ts';
+import { readDraft } from '$lib/server/content/drafts.ts';
 
 export const load: PageServerLoad = async ({ params, url }) => {
 	const post = await loadPost(params.slug);
@@ -32,6 +34,10 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		canSendNewsletter: canSendNewsletter(),
 		// Without a token there is no trigger, so scheduled work waits for you to open the portal.
 		canRunOnSchedule: !!auth.cronToken,
+		// The link that shows this draft to someone without an account, if one is live.
+		share: await activePreview(params.slug).then(async (l) =>
+			l ? { url: `${auth.origin}/preview/${l.token}`, expiresAt: l.expiresAt, autosave: !!(await readDraft(params.slug)) } : null
+		),
 		// Set by the rename action's redirect, so the new page says what happened.
 		renamedFrom: url.searchParams.get('renamed'),
 		renamedRedirect: url.searchParams.get('kept') !== '0'
@@ -154,6 +160,20 @@ async function parseEditorForm(f: FormData, slug: string): Promise<Parsed> {
 }
 
 export const actions: Actions = {
+	/** A private link to read this draft: autosave included, nothing published, gone in a week or on demand. */
+	share: async ({ params }) => {
+		if (!(await loadPost(params.slug))) return fail(404, { message: 'No such article.' });
+		const link = await createPreview(params.slug);
+		await audit('preview-shared', { slug: params.slug });
+		return { shared: true, expiresAt: link.expiresAt };
+	},
+
+	unshare: async ({ params }) => {
+		const done = await revokePreview(params.slug);
+		if (done) await audit('preview-revoked', { slug: params.slug });
+		return { unshared: done };
+	},
+
 	save: async ({ request, params }) => {
 		const parsed = await parseEditorForm(await request.formData(), params.slug);
 		if (!parsed.ok) return fail(parsed.status, { message: parsed.message });
@@ -285,6 +305,8 @@ export const actions: Actions = {
 
 		try {
 			const r = await renamePost(params.slug, next, { redirect: keepOld });
+			// A shared link names the old folder, which is gone; it must not outlive the move.
+			await revokePreview(params.slug);
 			// The old URLs are dead and the new ones are not built yet, so the
 			// queue is rebuilt around the new slug rather than pinged now.
 			await dequeueSlug(params.slug);
@@ -317,6 +339,7 @@ export const actions: Actions = {
 		}
 		try {
 			const { sha, files } = await deletePost(params.slug);
+			await revokePreview(params.slug);
 			await dequeueSlug(params.slug);
 			await clearDraft(params.slug).catch(() => {});
 			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });

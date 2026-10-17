@@ -61,7 +61,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// a shared proxy, and HTTPS-only once seen.
 	response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 	response.headers.set('X-Content-Type-Options', 'nosniff');
-	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	// A shared draft asks for none at all, so a link in it does not tell where the reader came from.
+	if (!response.headers.has('Referrer-Policy')) response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('X-Frame-Options', 'DENY');
 	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
 	if (event.url.protocol === 'https:') {

@@ -14,6 +14,8 @@ Then, in the editor:
 - **Publish** runs the pre-publish checks (see [SEO](seo.md)). Problems that would damage the published page block it; suggestions never do. Save keeps it as a draft.
 - **Schedule** picks a day, not a time: the article goes live at 9:00 Paris time that morning, and the newsletter follows at 9:30. The day must be after today; to go live now, use Publish. Why only one moment: [`admin/DEPLOY.md`](../admin/DEPLOY.md).
 
+**Show it to someone first.** Under the editor, *Create a preview link* gives a private address that shows the article as it looks now, including text you have not saved yet, with no account needed. Nothing is published; the link works for 7 days, or until you press *Stop sharing* or make a new one (which replaces it). It is approximate in the same way the editor's Preview is: the live site is the reference.
+
 The dashboard then tracks the rebuild: *Publishing… → Live*.
 
 **Changing the address** of an article — the editor's *Change the web address* — moves the whole bundle, updates every language, repoints links from other articles, and leaves a redirect at the old address so existing links and newsletters keep working. Leave that redirect on unless you know the old URL was never shared.
