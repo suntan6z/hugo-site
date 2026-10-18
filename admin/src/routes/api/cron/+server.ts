@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import crypto from 'node:crypto';
 import { runDue } from '$lib/server/schedule/runner.ts';
 import { runLinkCheck } from '$lib/server/integrations/linkcheck.ts';
+import { runHealth } from '$lib/server/integrations/uptime.ts';
 import { auth, IS_LOCAL } from '$lib/server/env.ts';
 
 /**
@@ -30,5 +31,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	// The same trigger also checks outside links, once a week. Not in local mode:
 	// there is no trigger there, and a test run must never knock on real websites.
 	const links = IS_LOCAL ? null : await runLinkCheck().catch(() => null);
-	return json({ ...report, links }, { headers: { 'Cache-Control': 'no-store' } });
+	// And looks at the site's health once a day, inside the run that is waking the container anyway.
+	const health = IS_LOCAL ? null : await runHealth().then((h) => ({ skipped: h.skipped ?? null, problems: h.report?.checks.filter((c) => !c.ok).length ?? null, alerted: h.alerted })).catch(() => null);
+	return json({ ...report, links, health }, { headers: { 'Cache-Control': 'no-store' } });
 };

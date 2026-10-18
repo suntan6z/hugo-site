@@ -10,11 +10,12 @@ import { openTasks } from '$lib/server/tasks/corpus.ts';
 import { readSession } from '$lib/server/tasks/session.ts';
 import { readLinkState, runLinkCheck } from '$lib/server/integrations/linkcheck.ts';
 import { readScheduled } from '$lib/server/schedule/runner.ts';
+import { readHealth, runHealth, certNotices } from '$lib/server/integrations/uptime.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
 
 export const load: PageServerLoad = async ({ url }) => {
-	const [info, last, posts, indexNowQueue, tasks, session, links, scheduled] = await Promise.all([
+	const [info, last, posts, indexNowQueue, tasks, session, links, scheduled, health] = await Promise.all([
 		fetchBuildInfo(url.searchParams.has('refresh')),
 		readLastPublish(),
 		listPosts(),
@@ -22,7 +23,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		openTasks(),
 		readSession(),
 		readLinkState(),
-		readScheduled()
+		readScheduled(),
+		readHealth()
 	]);
 
 	const status = deployStatus(info, last);
@@ -75,6 +77,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		},
 		fromManifest: !!info,
 		links: { lastRun: links.lastRun, count: Object.keys(links.links).length },
+		// The daily health check: what was seen at the last look, and what is worth a mention.
+		health: {
+			at: health.last?.at ?? null,
+			total: health.last?.checks.length ?? 0,
+			problems: (health.last?.checks ?? []).filter((c) => !c.ok).map((c) => ({ name: c.name, detail: c.detail })),
+			notices: health.last ? certNotices(health.last).map((c) => ({ name: c.name, detail: c.detail })) : [],
+			alerts: !!integrations.alertEmail
+		},
 		stats: {
 			total: posts.length,
 			drafts: posts.filter((p) => p.draft).length,
@@ -93,6 +103,14 @@ export const actions: Actions = {
 				? `Checked ${r.checked} links. None is confirmed dead.`
 				: `Checked ${r.checked} links. ${r.dead} no longer work — they are in Worth doing.`
 		};
+	},
+
+	/** Looks at the site's health now rather than at the next morning's run. */
+	checkhealth: async () => {
+		const { report, alerted } = await runHealth({ force: true });
+		const bad = report?.checks.filter((c) => !c.ok).length ?? 0;
+		await audit('health-check', { problems: bad, alerted });
+		return { healthChecked: bad === 0 ? 'Everything answered, and no certificate is close to its end.' : `${bad} thing${bad === 1 ? '' : 's'} to look at.` };
 	},
 
 	indexnow: async () => {

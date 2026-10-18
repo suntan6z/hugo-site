@@ -314,6 +314,9 @@
 		</li>
 		<li><i class:on={data.integrations.resend}></i> Resend {#if !data.integrations.resend}<span>— not configured</span>{/if}</li>
 		<li><i class:on={data.integrations.litlyx}></i> Litlyx visitor numbers {#if !data.integrations.litlyx}<span>— set LITLYX_TOKEN</span>{/if}</li>
+		<li><i class:on={data.integrations.google}></i> Google Search Console {#if !data.integrations.google}<span>— set GSC_SERVICE_ACCOUNT_B64 and GSC_SITE_URL</span>{/if}</li>
+		<li><i class:on={data.integrations.pagespeedKey}></i> PageSpeed Insights <span>{data.integrations.pagespeedKey ? '— with a key' : '— works without a key at a low quota; PAGESPEED_API_KEY lifts it'}</span></li>
+		<li><i class:on={data.integrations.alerts}></i> Health check emails {#if !data.integrations.alerts}<span>— set ALERT_EMAIL; until then the home screen is the only place it shows</span>{/if}</li>
 		<li>
 			<i class:on={data.integrations.deepl}></i> DeepL translation
 			{#if !data.integrations.deepl}<span>— set DEEPL_API_KEY</span>

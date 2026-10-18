@@ -42,6 +42,7 @@
 			configured: boolean;
 			error: string | null;
 			summary: null | { days: number; visits: number; views: number; trend: number | null; pages: { key: string; count: number }[]; series: number[] };
+			live?: number | null;
 		};
 		subscribers?: null | { total: number; newThisMonth: number; series: number[] };
 	};
@@ -73,6 +74,8 @@
 		const out: Item[] = [];
 		if (status.state === 'stale') out.push({ level: 'bad', text: 'The site has not rebuilt since your last change. Check StaticHost.', href: '/?refresh', cta: 'Check again' });
 		for (const f of fns ?? []) if (!f.ok) out.push({ level: 'bad', text: `The ${f.name} form is not answering${f.error ? `: ${f.error}` : '.'}` });
+		for (const p of data.health.problems) out.push({ level: 'bad', text: `${p.name}: ${p.detail}` });
+		for (const n of data.health.notices) out.push({ level: 'warn', text: `${n.name}: ${n.detail}` });
 		for (const f of data.schedule.failed) out.push({ level: 'bad', text: `Scheduled publishing failed for “${f.slug}”${f.error ? `: ${f.error}` : '.'}`, href: `/posts/${f.slug}`, cta: 'Open it' });
 		const dead = tasks.byKind.find(([k]) => k === 'dead-link')?.[1] ?? 0;
 		if (dead > 0) out.push({ level: 'warn', text: `${dead} outside link${dead === 1 ? '' : 's'} no longer work.`, href: '/focus', cta: 'Fix them' });
@@ -88,6 +91,7 @@
 	const pct = (n: number) => (data.coverage.total ? Math.round((n / data.coverage.total) * 100) : 0);
 
 	let checkingLinks = $state(false);
+	let checkingHealth = $state(false);
 	const daysAgo = (iso: string) => {
 		const d = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
 		return d === 0 ? 'today' : d === 1 ? 'yesterday' : `${d} days ago`;
@@ -152,6 +156,7 @@
 			<span class="num">{s.visits}</span>
 			<span class="sub">{s.views} pages read
 				{#if s.trend !== null}<b class="trend" class:up={s.trend > 0} class:down={s.trend < 0}>{s.trend > 0 ? '↑' : s.trend < 0 ? '↓' : '→'} {Math.abs(s.trend)}%</b>{/if}
+				{#if insights.visitors.live}<span class="livenow" title="Different people on the site in the last five minutes">· {insights.visitors.live} here now</span>{/if}
 			</span>
 			<div class="spark"><Sparkline values={s.series} /></div>
 		{:else}
@@ -219,6 +224,10 @@
 			<form method="POST" action="?/checklinks" use:enhance={() => { checkingLinks = true; return async ({ update }) => { await update(); checkingLinks = false; }; }}>
 				<span>{data.links.lastRun ? `${data.links.count} outside links checked ${daysAgo(data.links.lastRun)}` : 'Outside links not checked yet'}</span>
 				<button class="btn-ghost btn-sm" type="submit" disabled={checkingLinks}>{checkingLinks ? 'Checking…' : 'Check now'}</button>
+			</form>
+			<form method="POST" action="?/checkhealth" use:enhance={() => { checkingHealth = true; return async ({ update }) => { await update(); checkingHealth = false; }; }}>
+				<span title={data.health.alerts ? 'You are emailed when something new goes wrong' : 'Set ALERT_EMAIL to be emailed when something goes wrong'}>{data.health.at ? `${data.health.total} health checks ${daysAgo(data.health.at)}` : 'Site health not checked yet'}</span>
+				<button class="btn-ghost btn-sm" type="submit" disabled={checkingHealth}>{checkingHealth ? 'Checking…' : 'Check now'}</button>
 			</form>
 			{#if data.indexNow.configured && data.indexNow.queued.length > 0}
 				<form method="POST" action="?/indexnow" use:enhance>
@@ -347,6 +356,7 @@
 	.trend { margin-left: 0.3rem; font-weight: 700; color: var(--muted-foreground); }
 	.trend.up { color: var(--ok); }
 	.trend.down { color: var(--danger); }
+	.livenow { color: var(--ok); font-weight: 600; }
 	.spark { margin-top: auto; padding-top: 0.5rem; }
 	.visitors .spark { color: var(--primary); }
 	.search .spark { color: var(--info); }

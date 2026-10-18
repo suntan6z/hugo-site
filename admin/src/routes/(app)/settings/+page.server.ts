@@ -21,6 +21,7 @@ import {
 	HERO_JPEG, HERO_WEBP, MAX_HERO_BYTES, MAX_RESUME_BYTES, isJpeg, isWebp, isPdf, resumePath
 } from '$lib/server/content/site-files.ts';
 import { isConfigured as litlyxConfigured } from '$lib/server/integrations/litlyx.ts';
+import { isConfigured as googleConfigured } from '$lib/server/integrations/gsc.ts';
 import { LANGS } from '$lib/server/langs.ts';
 
 /**
@@ -104,7 +105,10 @@ export const load: PageServerLoad = async () => {
 			resend: !!integrations.resendApiKey,
 			deepl: deeplConfigured(),
 			deeplUsage: deepl,
-			litlyx: litlyxConfigured()
+			litlyx: litlyxConfigured(),
+			google: googleConfigured(),
+			pagespeedKey: !!integrations.pagespeedApiKey,
+			alerts: !!integrations.alertEmail
 		},
 		audit: recent.filter((e): e is Record<string, unknown> => !!e)
 	};
