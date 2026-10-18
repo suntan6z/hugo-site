@@ -540,11 +540,35 @@
 							{:else}<span class="chip">Sent</span>{/if}
 						{/await}
 						<span class="meta">{new Date(s.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · {s.recipients} {s.recipients === 1 ? 'recipient' : 'recipients'}</span>
-						<a class="btn-ghost btn-sm" href="https://resend.com/broadcasts/{s.id}" target="_blank" rel="noreferrer" title="Opens, clicks and bounces are in Resend">Opens and clicks ↗</a>
+						<a class="btn-ghost btn-sm" href="https://resend.com/broadcasts/{s.id}" target="_blank" rel="noreferrer" title="Everything Resend recorded about this broadcast">Open in Resend ↗</a>
+						<!-- What happened to it, once Resend answers; nothing is shown until then. -->
+						{#await data.stats then stats}
+							{@const r = stats[s.id]}
+							{#if r}
+								<div class="results">
+									<span title="Reached an inbox, of the {r.sentTo} it was sent to">{r.delivered} delivered{#if r.deliveredPct !== null} · {r.deliveredPct}%{/if}</span>
+									<span class:bad={r.bounced > 0} title="Never arrived{r.hardBounced > 0 ? `, ${r.hardBounced} of them for good (the address does not work)` : ''}">{r.bounced} bounced</span>
+									<span class:bad={r.complained > 0} title="Reported as spam: worth looking at, as it hurts delivery of everything else">{r.complained} marked as spam</span>
+									<span>{r.unsubscribed} unsubscribed</span>
+									{#if r.tracked}<span>{r.opened} opened</span><span>{r.clicked} clicked</span>{/if}
+								</div>
+								{#if r.links.length > 0}
+									<details class="links">
+										<summary>Links clicked</summary>
+										<ul>
+											{#each r.links as l}<li><span class="url">{l.url}</span><span class="n">{l.clicks} {l.clicks === 1 ? 'click' : 'clicks'}, {l.people} {l.people === 1 ? 'person' : 'people'}</span></li>{/each}
+										</ul>
+									</details>
+								{/if}
+							{/if}
+						{/await}
 					</li>
 				{/each}
 			</ul>
-			<p class="note">Resend does not share opens and clicks with other tools, so they are one click away in its own dashboard.</p>
+			<p class="note">
+				Delivery figures are Resend’s own, for the latest five. Opens and clicks appear only if Resend recorded any, which needs tracking switched on for the sending domain;
+				the privacy policy says they are not tracked, so leave it off unless you change the policy too.
+			</p>
 		{/if}
 	</section>
 {/if}
@@ -677,6 +701,13 @@
 	.people li, .sent li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.9rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.people .email, .sent .subj { flex: 1; min-width: 12rem; overflow-wrap: anywhere; }
 	.sent .subj { font-weight: 600; }
+	.sent .results { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0.15rem 1rem; font-size: 0.8rem; color: var(--muted-foreground); }
+	.sent .results .bad { color: var(--danger); font-weight: 600; }
+	.sent .links { flex-basis: 100%; font-size: 0.8rem; color: var(--muted-foreground); }
+	.sent .links summary { cursor: pointer; }
+	.sent .links ul { list-style: none; margin: 0.3rem 0 0; padding: 0; }
+	.sent .links li { display: flex; gap: 0.9rem; padding: 0.2rem 0; border: 0; }
+	.sent .links .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.meta { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--muted-foreground); font-size: 0.8rem; white-space: nowrap; }
 	.people li.gone .email { color: var(--muted-foreground); text-decoration: line-through; }
 	.people li.none { color: var(--muted-foreground); }

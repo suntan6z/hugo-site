@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import {
 	isConfigured, listSubscribers, removeSubscriber, sentBroadcasts, sendBroadcast, sendTest, looksLikeEmail,
-	broadcastStates, buildBroadcastHtml, validateBroadcast, SITE_NAME, FROM_NAME, type Subscriber
+	broadcastStates, broadcastStats, buildBroadcastHtml, validateBroadcast, SITE_NAME, FROM_NAME, type Subscriber
 } from '$lib/server/integrations/resend.ts';
 import { readScheduled, scheduleNewsletter, cancelNewsletter } from '$lib/server/schedule/runner.ts';
 import { whyNotDay, announceTimeOf, morningOf, tomorrowIn, isHeldNewsletter } from '$lib/server/schedule/plan.ts';
@@ -64,7 +64,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		// ?tab=sent opens on what is scheduled and sent, as a link from the dashboard does.
 		tab: (['sent', 'subscribers'] as const).find((t) => t === url.searchParams.get('tab')) ?? ('compose' as const),
 		// Streamed: the tabs show at once and Resend's answer fills in.
-		states: (configured ? broadcastStates(sent.slice(0, 10).map((s) => s.id)) : Promise.resolve({})) as ReturnType<typeof broadcastStates>
+		states: (configured ? broadcastStates(sent.slice(0, 10).map((s) => s.id)) : Promise.resolve({})) as ReturnType<typeof broadcastStates>,
+		// What happened to the latest few; older ones have long since settled and are one click away at Resend.
+		stats: (configured ? broadcastStats(sent.slice(0, 5)) : Promise.resolve({})) as ReturnType<typeof broadcastStats>
 	};
 };
 

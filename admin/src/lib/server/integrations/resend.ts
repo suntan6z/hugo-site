@@ -1,13 +1,15 @@
 import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
-import { memo, invalidate } from '../cache.ts';
+import { memo, invalidate, mapLimit } from '../cache.ts';
 import { readAll } from './paginate.ts';
+import { STAT_TYPES, summarise, type BroadcastStats, type RecipientRow, type StatType } from './resend-stats.ts';
 import {
 	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient,
 	type BroadcastInput
 } from '../../newsletter-email.ts';
 
 export * from '../../newsletter-email.ts';
+export type { BroadcastStats, LinkStat } from './resend-stats.ts';
 
 /**
  * Resend, for the subscriber list and broadcasts.
@@ -122,11 +124,9 @@ export interface BroadcastState {
 }
 
 /**
- * Where each broadcast stands at Resend. That is all its API says about one:
- * there are no open, click or bounce counts to read back (see the broadcast
- * object in their reference), and a webhook would wake this scale-to-zero
- * container for every event. Counts live in Resend's own dashboard, which the
- * page links to. A broadcast that cannot be read is null, never an error.
+ * Where each broadcast stands at Resend (draft, queued, sent). What happened to it
+ * afterwards is `broadcastStats`. A broadcast that cannot be read is null, never
+ * an error.
  */
 export async function broadcastStates(ids: string[]): Promise<Record<string, BroadcastState | null>> {
 	const one = (id: string) =>
@@ -140,6 +140,48 @@ export async function broadcastStates(ids: string[]): Promise<Record<string, Bro
 			}
 		});
 	return Object.fromEntries(await Promise.all(ids.map(async (id) => [id, await one(id)] as const)));
+}
+
+/** A person's worth of an event is one row; a page holds at most 100 of them. */
+const RECIPIENT_PAGES = 5;
+
+async function recipients(id: string, type: StatType): Promise<RecipientRow[]> {
+	return readAll<RecipientRow>(async (after) => {
+		const r = await call<{ data?: RecipientRow[]; has_more?: boolean }>(
+			'GET',
+			`/broadcasts/${id}/recipients?type=${type}&limit=100${after ? `&after=${encodeURIComponent(after)}` : ''}`
+		);
+		return { data: r.data ?? [], has_more: r.has_more };
+	}, RECIPIENT_PAGES);
+}
+
+/**
+ * What happened to each broadcast: delivered, bounced, complained about, unsubscribed
+ * from and, if Resend tracks them, opened and clicked. Pulled when the Sent tab is
+ * opened rather than pushed by webhooks, which would wake this scale-to-zero
+ * container for every event. One list per event type, one broadcast at a time per
+ * lane, two lanes: Resend allows about five requests a second. A broadcast Resend
+ * cannot answer for is null, never an error.
+ */
+export async function broadcastStats(sent: SentBroadcast[]): Promise<Record<string, BroadcastStats | null>> {
+	const one = (b: SentBroadcast) =>
+		memo(`resend:stats:${b.id}`, 30 * 60_000, async (): Promise<BroadcastStats | null> => {
+			if (!/^[A-Za-z0-9-]{8,64}$/.test(b.id)) return null;
+			try {
+				const lists = {} as Record<StatType, RecipientRow[]>;
+				for (const type of STAT_TYPES) lists[type] = await recipients(b.id, type);
+				return summarise(lists, b.recipients);
+			} catch {
+				return null;
+			}
+		});
+	const pairs = await mapLimit(sent, 2, async (b) => [b.id, await one(b)] as const);
+	return Object.fromEntries(pairs);
+}
+
+/** A short plain message to the owner, for the health check. Not a broadcast: no audience, nothing recorded. */
+export async function sendAlert(to: string, subject: string, text: string): Promise<void> {
+	await call('POST', '/emails', { from: FROM, to: [to], subject, text });
 }
 
 export interface SendInput extends BroadcastInput {
