@@ -6,7 +6,7 @@ process.env.ALTCHA_SECRET = SECRET;
 process.env.CONFIRM_SECRET = 'confirm-secret';
 process.env.RESEND_API_KEY = 'test-key';
 const { handle } = await import('../newsletter.js');
-const { signToken } = await import('../lib/confirm.js');
+const { signToken, verifyToken } = await import('../lib/confirm.js');
 
 const post = (body, headers) => sitePost(handle, body, headers);
 
@@ -202,4 +202,86 @@ test('the list is looked up through the global contacts, never the deprecated au
   await withFetch(r.stub, () => post({ email: 'a@example.com', altcha: freshPayload() }));
   await withFetch(r.stub, () => post({ confirm: signToken('a@example.com', { secret: 'confirm-secret' }) }));
   assert.ok(r.calls.every((c) => !c.url.includes('/audiences')));
+});
+
+/** Runs `fn` with the French and Italian lists configured, then puts the environment back. */
+async function withLists(fn) {
+  process.env.RESEND_SEGMENT_FR = 'seg-fr';
+  process.env.RESEND_SEGMENT_IT = 'seg-it';
+  try {
+    await fn();
+  } finally {
+    delete process.env.RESEND_SEGMENT_FR;
+    delete process.env.RESEND_SEGMENT_IT;
+  }
+}
+
+test('someone who asked in French joins the French list, and is welcomed in French', async () => {
+  await withLists(async () => {
+    const r = resend();
+    await withFetch(r.stub, () => post({ confirm: signToken('f@example.com', { secret: 'confirm-secret', lang: 'fr' }) }));
+    assert.deepEqual(added(r.calls).map((c) => c.body.segments), [[{ id: 'seg-fr' }]]);
+    assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome-fr');
+  });
+});
+
+test('Italian likewise', async () => {
+  await withLists(async () => {
+    const r = resend();
+    await withFetch(r.stub, () => post({ confirm: signToken('i@example.com', { secret: 'confirm-secret', lang: 'it' }) }));
+    assert.deepEqual(added(r.calls).map((c) => c.body.segments), [[{ id: 'seg-it' }]]);
+    assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome-it');
+  });
+});
+
+test('a link from before languages existed joins the English list', async () => {
+  await withLists(async () => {
+    const r = resend();
+    const body = Buffer.from(JSON.stringify({ e: 'old@example.com', x: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+    const { createHmac } = await import('node:crypto');
+    const token = `${body}.${createHmac('sha256', 'confirm-secret').update(body).digest('base64url')}`;
+    await withFetch(r.stub, () => post({ confirm: token }));
+    assert.deepEqual(added(r.calls).map((c) => c.body.segments), [[{ id: EN_SEGMENT }]]);
+  });
+});
+
+test('a language whose list is not set up yet joins the English one, never a wrong list', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ confirm: signToken('f@example.com', { secret: 'confirm-secret', lang: 'fr' }) }));
+  assert.deepEqual(added(r.calls).map((c) => c.body.segments), [[{ id: EN_SEGMENT }]]);
+  assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome-fr', 'still welcomed in their language');
+});
+
+test('a welcome template that does not exist for a language falls back to the English one', async () => {
+  const r = resend();
+  const base = r.stub;
+  const stub = async (url, init = {}) => {
+    const body = init.body ? JSON.parse(init.body) : undefined;
+    if (String(url).endsWith('/emails') && body?.template?.id === 'newsletter-welcome-it') {
+      r.calls.push({ url: String(url), method: 'POST', body });
+      return new Response('{}', { status: 404 });
+    }
+    return base(url, init);
+  };
+  await withFetch(stub, () => post({ confirm: signToken('i@example.com', { secret: 'confirm-secret', lang: 'it' }) }));
+  assert.deepEqual(emails(r.calls).map((c) => c.body.template.id), ['newsletter-welcome-it', 'newsletter-welcome']);
+});
+
+test('coming back in another language moves a known contact to that list and off the others', async () => {
+  await withLists(async () => {
+    const r = resend({ contacts: { 'move@example.com': true } });
+    await withFetch(r.stub, () => post({ confirm: signToken('move@example.com', { secret: 'confirm-secret', lang: 'fr' }) }));
+    const to = 'https://api.resend.com/contacts/move%40example.com/segments/';
+    assert.ok(r.calls.some((c) => c.method === 'POST' && c.url === `${to}seg-fr`));
+    const removed = r.calls.filter((c) => c.method === 'DELETE').map((c) => c.url.replace(to, '')).sort();
+    assert.deepEqual(removed, [EN_SEGMENT, 'seg-it'].sort());
+    assert.equal(added(r.calls).length, 0);
+  });
+});
+
+test('the language travels from the form into the signed link', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ email: 'fr@example.com', lang: 'fr', altcha: freshPayload() }));
+  const token = emails(r.calls)[0].body.text.match(/#([\w.-]+)/)[1];
+  assert.equal(verifyToken(token, { secret: 'confirm-secret' }).lang, 'fr');
 });

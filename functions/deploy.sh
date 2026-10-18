@@ -15,6 +15,20 @@ cd "$(dirname "$0")"
 : "${ALTCHA_SECRET:?Set ALTCHA_SECRET (openssl rand -hex 32)}"
 : "${CONFIRM_SECRET:?Set CONFIRM_SECRET (openssl rand -hex 32)}"
 
+# The newsletter's mailing lists, one Resend segment per language. Not secrets, so
+# they go in as plain environment variables, and only the ones that are set:
+# English defaults to the list that existed before there were languages, and a
+# language with no segment joins English (see newsletter.js).
+ENV_ARGS=()
+i=0
+for name in RESEND_SEGMENT_EN RESEND_SEGMENT_FR RESEND_SEGMENT_IT; do
+  value="${!name:-}"
+  if [ -n "$value" ]; then
+    ENV_ARGS+=("environment-variables.$i.key=$name" "environment-variables.$i.value=$value")
+    i=$((i + 1))
+  fi
+done
+
 NAMESPACE_NAME="loconsole-api"
 
 echo "==> Looking up namespace '$NAMESPACE_NAME'..."
@@ -29,6 +43,7 @@ if [ -z "$NS_ID" ]; then
     secret-environment-variables.1.value="$ALTCHA_SECRET" \
     secret-environment-variables.2.key=CONFIRM_SECRET \
     secret-environment-variables.2.value="$CONFIRM_SECRET" \
+    ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
     -o json | jq -r '.id')
 else
   echo "==> Updating namespace secrets (namespace $NS_ID)..."
@@ -39,6 +54,7 @@ else
     secret-environment-variables.1.value="$ALTCHA_SECRET" \
     secret-environment-variables.2.key=CONFIRM_SECRET \
     secret-environment-variables.2.value="$CONFIRM_SECRET" \
+    ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
     -o json > /dev/null
 fi
 

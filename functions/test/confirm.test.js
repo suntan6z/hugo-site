@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { signToken, verifyToken, CONFIRM_TTL_SECONDS } from '../lib/confirm.js';
 import { confirmationEmail } from '../lib/confirm-email.js';
 import { normalizeLang, queryParam } from '../lib/request.js';
@@ -8,7 +9,7 @@ const secret = 'confirm-secret';
 
 test('a signed link gives the address back', () => {
   const token = signToken('li@example.com', { secret });
-  assert.deepEqual(verifyToken(token, { secret }), { email: 'li@example.com' });
+  assert.deepEqual(verifyToken(token, { secret }), { email: 'li@example.com', lang: 'en' });
 });
 
 test('the link is safe to put after a # in a URL', () => {
@@ -19,7 +20,7 @@ test('it works for 48 hours and not longer', () => {
   const now = Date.UTC(2026, 9, 18);
   const token = signToken('li@example.com', { secret, now });
   assert.equal(CONFIRM_TTL_SECONDS, 172800);
-  assert.deepEqual(verifyToken(token, { secret, now: now + 47 * 3600_000 }), { email: 'li@example.com' });
+  assert.deepEqual(verifyToken(token, { secret, now: now + 47 * 3600_000 }), { email: 'li@example.com', lang: 'en' });
   assert.deepEqual(verifyToken(token, { secret, now: now + 49 * 3600_000 }), { error: 'expired' });
 });
 
@@ -65,4 +66,22 @@ test('the query string is read from either place the platform may put it', () =>
   assert.equal(queryParam({ path: '/x?challenge=1&a=b' }, 'challenge'), '1');
   assert.equal(queryParam({ path: '/x' }, 'challenge'), undefined);
   assert.equal(queryParam({}, 'challenge'), undefined);
+});
+
+test('the language is signed with the link, and a link without one means English', () => {
+  assert.equal(verifyToken(signToken('a@b.co', { secret, lang: 'fr' }), { secret }).lang, 'fr');
+  assert.equal(verifyToken(signToken('a@b.co', { secret, lang: 'it' }), { secret }).lang, 'it');
+  assert.equal(verifyToken(signToken('a@b.co', { secret, lang: '../x' }), { secret }).lang, 'en', 'anything else is English');
+
+  // A link sent before languages existed has no l claim.
+  const body = Buffer.from(JSON.stringify({ e: 'old@b.co', x: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url');
+  const sig = createHmac('sha256', secret).update(body).digest('base64url');
+  assert.deepEqual(verifyToken(`${body}.${sig}`, { secret }), { email: 'old@b.co', lang: 'en' });
+});
+
+test('the language cannot be edited into another list', () => {
+  const token = signToken('a@b.co', { secret, lang: 'en' });
+  const [body, signature] = token.split('.');
+  const edited = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(body, 'base64url')), l: 'fr' })).toString('base64url');
+  assert.deepEqual(verifyToken(`${edited}.${signature}`, { secret }), { error: 'invalid' });
 });

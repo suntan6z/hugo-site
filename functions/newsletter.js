@@ -11,7 +11,21 @@ import { normalizeLang } from './lib/request.js';
 // were languages ("General"), so its id is the default.
 const RESEND_ENGLISH_SEGMENT_ID = '276f21cc-de35-468d-8b30-06fc08ad1016';
 const API = 'https://api.resend.com';
-const segmentFor = () => process.env.RESEND_SEGMENT_EN || RESEND_ENGLISH_SEGMENT_ID;
+
+/**
+ * The mailing list for a language: one segment each. French and Italian exist
+ * only once their ids are set; until then those readers join the English list
+ * (what the site did before languages), never a wrong one.
+ */
+const segments = () => ({
+  en: process.env.RESEND_SEGMENT_EN || RESEND_ENGLISH_SEGMENT_ID,
+  fr: process.env.RESEND_SEGMENT_FR || '',
+  it: process.env.RESEND_SEGMENT_IT || '',
+});
+const segmentFor = (lang) => segments()[lang] || segments().en;
+
+// Dashboard templates, one per language; a language without its own falls back to English.
+const WELCOME = { en: 'newsletter-welcome', fr: 'newsletter-welcome-fr', it: 'newsletter-welcome-it' };
 const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
 
 const authHeaders = () => ({
@@ -52,7 +66,14 @@ async function enrol(email, known, segmentId) {
     body: JSON.stringify({ unsubscribed: false }),
   });
   if (!back.ok) return back;
-  return fetch(`${API}/contacts/${encodeURIComponent(email)}/segments/${segmentId}`, { method: 'POST', headers: authHeaders() });
+  const joined = await fetch(`${API}/contacts/${encodeURIComponent(email)}/segments/${segmentId}`, { method: 'POST', headers: authHeaders() });
+  if (!joined.ok) return joined;
+  // One list each: someone coming back in another language is taken off the others,
+  // or every issue would reach them twice. Not being on one is not an error.
+  for (const other of new Set(Object.values(segments()).filter((s) => s && s !== segmentId))) {
+    await fetch(`${API}/contacts/${encodeURIComponent(email)}/segments/${other}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {});
+  }
+  return joined;
 }
 
 /**
@@ -82,8 +103,9 @@ async function subscribe(event, body) {
     return json(event, { error: 'Subscribe failed' }, 502);
   }
 
-  const link = `${resolveOrigin(event)}/${normalizeLang(body.lang)}/newsletter-confirm/#${signToken(email, { secret })}`;
-  const mail = confirmationEmail(normalizeLang(body.lang), link);
+  const lang = normalizeLang(body.lang);
+  const link = `${resolveOrigin(event)}/${lang}/newsletter-confirm/#${signToken(email, { secret, lang })}`;
+  const mail = confirmationEmail(lang, link);
   const sent = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: authHeaders(),
@@ -119,22 +141,27 @@ async function confirm(event, token) {
     return json(event, { error: 'Subscribe failed' }, 502);
   }
 
-  const added = await enrol(checked.email, seen.known, segmentFor());
+  const added = await enrol(checked.email, seen.known, segmentFor(checked.lang));
   if (!added.ok) {
     console.error(`newsletter: Resend could not add the contact (${added.status})`);
     return json(event, { error: 'Subscribe failed' }, 502);
   }
 
-  // Best-effort: don't fail the request if only the welcome email errors.
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ from: FROM, to: [checked.email], template: { id: 'newsletter-welcome' } }),
-  })
-    .then((r) => {
-      if (!r.ok) console.error(`newsletter: welcome email failed (${r.status})`);
-    })
-    .catch((e) => console.error('newsletter: welcome email failed', e?.message));
+  // Best-effort: don't fail the request if only the welcome email errors. In the
+  // reader's language when that template exists, else the English one.
+  const welcome = (template) =>
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ from: FROM, to: [checked.email], template: { id: template } }),
+    });
+  try {
+    let r = await welcome(WELCOME[checked.lang]);
+    if (!r.ok && checked.lang !== 'en') r = await welcome(WELCOME.en);
+    if (!r.ok) console.error(`newsletter: welcome email failed (${r.status})`);
+  } catch (e) {
+    console.error('newsletter: welcome email failed', e?.message);
+  }
 
   return json(event, { ok: true }, 200);
 }

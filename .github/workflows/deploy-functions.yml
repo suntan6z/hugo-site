@@ -21,6 +21,11 @@ jobs:
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ALTCHA_SECRET: ${{ secrets.ALTCHA_SECRET }}
       CONFIRM_SECRET: ${{ secrets.CONFIRM_SECRET }}
+      # The newsletter's lists, one Resend segment per language: repository *variables*,
+      # not secrets (an id is not a credential). Unset ones are left out; see newsletter.js.
+      RESEND_SEGMENT_EN: ${{ vars.RESEND_SEGMENT_EN }}
+      RESEND_SEGMENT_FR: ${{ vars.RESEND_SEGMENT_FR }}
+      RESEND_SEGMENT_IT: ${{ vars.RESEND_SEGMENT_IT }}
     steps:
       - uses: actions/checkout@v4
 
