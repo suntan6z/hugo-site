@@ -1,6 +1,8 @@
 /**
  * The site's standalone pages — About, Now, Contact, Privacy policy — as the
- * portal edits them.
+ * portal edits them. Now is the exception: its words live in a data file and it
+ * has an editor of its own (lib/now.ts); only its title and description are
+ * read through here.
  *
  * Unlike articles these are hand-built HTML (goldmark passes it through), with
  * the site's own classes and, on Contact, the form static/js/main.js drives.
@@ -18,7 +20,7 @@ export type Lang = (typeof LANGS)[number];
 
 export const PAGES = [
 	{ name: 'about', label: 'About', blurb: 'Who you are, and the timeline beside it' },
-	{ name: 'now', label: 'Now', blurb: 'What you are working on, reading and using' },
+	{ name: 'now', label: 'Now', blurb: 'What is going on now, with logos, and the years before' },
 	{ name: 'contact', label: 'Contact', blurb: 'The words around the contact form' },
 	{ name: 'privacy-policy', label: 'Privacy policy', blurb: 'What the site collects, and why' }
 ] as const;
@@ -28,9 +30,14 @@ export type PageName = (typeof PAGES)[number]['name'];
 export const isPageName = (s: string): s is PageName => PAGES.some((p) => p.name === s);
 export const pageLabel = (name: PageName) => PAGES.find((p) => p.name === name)!.label;
 
-/** English keeps the plain name, as for every translated file on the site. */
+/**
+ * English keeps the plain name, as for every translated file on the site. Now
+ * is a bundle (content/now/), because its cover and logos sit beside it.
+ */
 export const pageFile = (name: PageName, lang: Lang) =>
-	lang === 'en' ? `content/${name}.md` : `content/${name}.${lang}.md`;
+	name === 'now'
+		? lang === 'en' ? 'content/now/index.md' : `content/now/index.${lang}.md`
+		: lang === 'en' ? `content/${name}.md` : `content/${name}.${lang}.md`;
 
 /** Same thresholds as the articles' pre-publish checks (seo/rules.ts). */
 export const DESCRIPTION_MIN = 120;
@@ -136,16 +143,10 @@ export function checkPage(
 type Stamp = { re: RegExp; format: (d: Date) => string };
 
 const month = (lang: string, d: Date) => new Intl.DateTimeFormat(lang, { month: 'long', timeZone: 'UTC' }).format(d);
-const monthYear = (lang: string) => (d: Date) => `${month(lang, d)} ${d.getUTCFullYear()}`;
 const dayMonthYear = (lang: string) => (d: Date) => `${d.getUTCDate()} ${month(lang, d)} ${d.getUTCFullYear()}`;
 
 /** How each page says when it last changed, in the words each language already uses. */
 const STAMPS: Partial<Record<PageName, Record<Lang, Stamp>>> = {
-	now: {
-		en: { re: /(Last updated )(\p{L}+ \d{4})/u, format: monthYear('en') },
-		fr: { re: /(Mis à jour en )(\p{L}+ \d{4})/u, format: monthYear('fr') },
-		it: { re: /(Aggiornato a )(\p{L}+ \d{4})/u, format: monthYear('it') }
-	},
 	'privacy-policy': {
 		en: { re: /(Last updated: )(\p{L}+ \d{1,2}, \d{4})/u, format: (d) => `${month('en', d)} ${d.getUTCDate()}, ${d.getUTCFullYear()}` },
 		fr: { re: /(Dernière mise à jour : )(\d{1,2} \p{L}+ \d{4})/u, format: dayMonthYear('fr') },

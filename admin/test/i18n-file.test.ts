@@ -19,9 +19,9 @@ describe('round-trip against the real files', () => {
 		});
 	}
 
-	test('all three carry the same 112 keys', () => {
+	test('all three carry the same 127 keys', () => {
 		const f = files();
-		assert.equal(f.en.keys().length, 112);
+		assert.equal(f.en.keys().length, 127);
 		for (const l of LANGS) assert.deepEqual(f[l].keys().sort(), f.en.keys().sort());
 	});
 

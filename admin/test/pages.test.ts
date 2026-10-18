@@ -35,12 +35,19 @@ describe('the real pages', () => {
 		for (const id of CONTACT_IDS) assert.ok(js.includes(`'${id}'`), id);
 	});
 
-	test('the Now and privacy pages have a "last updated" line in every language', () => {
+	test('the privacy page has a "last updated" line in every language', () => {
 		for (const lang of LANGS) {
-			assert.ok(stampOf('now', lang, read(pageFile('now', lang)).body), `now ${lang}`);
 			assert.ok(stampOf('privacy-policy', lang, read(pageFile('privacy-policy', lang)).body), `privacy ${lang}`);
 		}
 		assert.equal(stampOf('about', 'en', read(pageFile('about', 'en')).body), null);
+		// Now keeps its date in now.json (lib/now.ts), not in its body.
+		assert.equal(stampOf('now', 'en', read(pageFile('now', 'en')).body), null);
+	});
+
+	test('Now is a bundle; the other pages are single files', () => {
+		assert.equal(pageFile('now', 'en'), 'content/now/index.md');
+		assert.equal(pageFile('now', 'it'), 'content/now/index.it.md');
+		assert.equal(pageFile('about', 'fr'), 'content/about.fr.md');
 	});
 });
 
@@ -74,12 +81,6 @@ describe('checks', () => {
 
 describe('"last updated"', () => {
 	const sept = new Date('2026-09-16T10:00:00Z');
-
-	test('the Now page is restamped in each language’s own words', () => {
-		assert.equal(restamp('now', 'en', '<p class="page-eyebrow">Last updated July 2026</p>', sept), '<p class="page-eyebrow">Last updated September 2026</p>');
-		assert.equal(restamp('now', 'fr', 'Mis à jour en juillet 2026', sept), 'Mis à jour en septembre 2026');
-		assert.equal(restamp('now', 'it', 'Aggiornato a luglio 2026', sept), 'Aggiornato a settembre 2026');
-	});
 
 	test('the privacy policy carries the day too', () => {
 		assert.equal(restamp('privacy-policy', 'en', 'Last updated: June 23, 2026', sept), 'Last updated: September 16, 2026');

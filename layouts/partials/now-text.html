@@ -1,0 +1,12 @@
+{{- /*
+  One piece of text from content/now/now.json in the current language: the
+  field is a { en, fr, it } map, and a language left empty falls back to the
+  English. Takes (dict "f" <field> "lang" <code>), returns a string.
+*/ -}}
+{{- $s := "" -}}
+{{- if reflect.IsMap .f -}}
+  {{- $s = index .f .lang | default (index .f "en") | default "" -}}
+{{- else if .f -}}
+  {{- $s = .f -}}
+{{- end -}}
+{{- return (trim $s " \n") -}}

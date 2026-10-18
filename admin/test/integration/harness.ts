@@ -38,6 +38,11 @@ function seedSite(root: string) {
 		if (f.endsWith('.md')) copy(path.join('content', f));
 	}
 	copy('content/redirects');
+	// The Now page is a bundle: its language files and the data it is built from
+	// (not its cover, so the Library's counts stay those of the pictures below).
+	for (const f of fs.readdirSync(path.join(REPO, 'content', 'now'))) {
+		if (/\.(md|json)$/.test(f)) copy(path.join('content', 'now', f));
+	}
 	// One picture a page uses (contact.md shows it), for the library.
 	copy('static/img/contact-chill.gif');
 	copy('content/gallery/bari');

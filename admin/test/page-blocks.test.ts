@@ -130,7 +130,8 @@ describe('copying and removing a block', () => {
 });
 
 describe('on the real pages', () => {
-	const files = PAGES.flatMap((p) => LANGS.map((l) => pageFile(p.name, l)));
+	// Now has its own editor (lib/now.ts): its body is a comment, with nothing to click.
+	const files = PAGES.filter((p) => p.name !== 'now').flatMap((p) => LANGS.map((l) => pageFile(p.name, l)));
 
 	for (const file of files) {
 		test(`${file}: blocks are well-formed, never nest, carry no id, and survive a no-op edit`, () => {

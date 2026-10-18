@@ -260,3 +260,13 @@ other = "Fermer"
 other = "fr_FR"
 [job_title]
 other = "Défenseur de la tech & développeur"
+
+# ── Now page (layouts/now/single.html) ───────────────────────────
+[now_heading]
+other = "Ce que je fais en ce moment"
+[now_updated]
+other = "Mis à jour en"
+[now_archive]
+other = "Les années d’avant"
+[now_about]
+other = "Ceci est une [now page](https://nownownow.com/about), une idée de [Derek Sivers](https://sive.rs/now). Mise à jour dès que quelque chose change — donc, de temps en temps."

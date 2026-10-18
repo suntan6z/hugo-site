@@ -4,6 +4,8 @@ import { mapLimit, invalidate } from '../cache.ts';
 import { listPosts, loadPost } from '../content/post.ts';
 import { loadPage } from '../content/page.ts';
 import { PAGES } from '../../pages.ts';
+import { NOW_JSON, readNow, nowText } from '../../now.ts';
+import { repo } from '../content/repo.ts';
 import { LANGS } from '../langs.ts';
 import { externalLinks, classify, nextRecord, isDue, isDead, type LinkRecord } from '../seo/links.ts';
 
@@ -48,6 +50,9 @@ export async function gatherLinks(): Promise<string[]> {
 		const page = await loadPage(name);
 		for (const l of LANGS) externalLinks(page[l].body).forEach((u) => found.add(u));
 	}
+	// The Now page's words are in its data file.
+	const now = readNow(await repo.readText(NOW_JSON));
+	for (const l of LANGS) externalLinks(nowText(now, l)).forEach((u) => found.add(u));
 	return [...found];
 }
 

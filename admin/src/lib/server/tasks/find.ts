@@ -68,7 +68,7 @@ export interface CorpusPhoto {
 export interface Corpus {
 	posts: CorpusPost[];
 	photos: CorpusPhoto[];
-	/** When content/now.md was last changed, ISO date, or null if unknown. */
+	/** When content/now/now.json was last changed, ISO date, or null if unknown. */
 	nowUpdated: string | null;
 	/** The standalone pages, for the links in them. */
 	pages?: CorpusPage[];

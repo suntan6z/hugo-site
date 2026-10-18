@@ -10,7 +10,7 @@ import { buildLibrary, groupOf, sameKind, type MediaEntry, type TextFile } from 
  */
 
 /** Where pictures live. Anything else in the repo is not the Library's business. */
-const IMAGE_ROOTS = ['content/blog', 'content/gallery', 'static/img', 'assets/img'];
+const IMAGE_ROOTS = ['content/blog', 'content/gallery', 'content/now', 'static/img', 'assets/img'];
 
 /** Where a picture can be named, so that nothing used is called unused. */
 async function corpus(): Promise<TextFile[]> {
@@ -18,6 +18,7 @@ async function corpus(): Promise<TextFile[]> {
 	const paths = new Set<string>([
 		...content.filter((p) => /^content\/[^/]+\.md$/.test(p)),
 		...blog.filter((p) => /\.md$/.test(p)),
+		'content/now/now.json',
 		...layouts.filter((p) => /\.(html|xml|json)$/.test(p)),
 		'static/css/main.css',
 		'static/js/main.js',

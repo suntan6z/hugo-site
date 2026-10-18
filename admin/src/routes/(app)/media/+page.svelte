@@ -20,14 +20,14 @@
 	const counts = $derived({
 		articles: data.entries.filter((e) => e.group === 'articles').length,
 		gallery: data.entries.filter((e) => e.group === 'gallery').length,
-		site: data.entries.filter((e) => e.group === 'site' || e.group === 'hero').length
+		site: data.entries.filter((e) => e.group === 'site' || e.group === 'hero' || e.group === 'now').length
 	});
 
 	const shown = $derived(
 		data.entries.filter(
 			(e) =>
 				(filter === 'all' ||
-					(filter === 'unused' ? e.unused && e.group !== 'gallery' : filter === 'site' ? e.group === 'site' || e.group === 'hero' : e.group === filter)) &&
+					(filter === 'unused' ? e.unused && e.group !== 'gallery' : filter === 'site' ? e.group === 'site' || e.group === 'hero' || e.group === 'now' : e.group === filter)) &&
 				(q === '' || e.name.toLowerCase().includes(q.toLowerCase()) || e.owner.toLowerCase().includes(q.toLowerCase()) || e.usedBy.some((u) => u.label.toLowerCase().includes(q.toLowerCase())))
 		)
 	);

@@ -858,26 +858,103 @@ footer {
 .timeline-item h3 { font-weight: 600; color: var(--foreground); margin-bottom: 0.4rem; }
 .timeline-item p { font-size: 0.9rem; color: var(--muted-foreground); line-height: 1.7; }
 
-/* Now page — dense label/value rows, no entrance animation.
-   This is a reference page: it should read at a glance, not unfold. */
-.now-list { display: flex; flex-direction: column; }
-.now-row { display: grid; grid-template-columns: 1fr; gap: 0.35rem; padding: 1.15rem 0; border-top: 1px solid var(--border); }
-.now-row:last-child { border-bottom: 1px solid var(--border); }
-.now-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  font-weight: 600;
-  color: var(--primary);
-  padding-top: 0.2rem;
+/* Now page (layouts/now/single.html, from content/now/now.json): a wide cover,
+   one logo row per thing going on, then the years before. No entrance
+   animation — it is a reference page: it should read at a glance, not unfold. */
+.now-page { padding-bottom: 5rem; }
+.now-cover {
+  margin: 7.5rem 0 0; /* clears the fixed header, which is 105px tall below desktop widths */
+  aspect-ratio: 5 / 2;
+  border-radius: calc(var(--radius) * 1.5);
+  overflow: hidden;
+  background: var(--muted);
+  box-shadow: var(--card-shadow);
 }
-.now-value { color: var(--foreground); line-height: 1.65; }
-.now-value a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
-.now-value .muted { color: var(--muted-foreground); }
-.now-value ul { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
-.now-title { font-family: 'Fraunces', Georgia, serif; font-weight: 600; }
+.now-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.now-cover + .page-header { padding-top: 2.25rem; }
+.now-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+}
+.now-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px var(--accent); }
+
+.now-items { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.85rem; }
+.now-item {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 1.1rem;
+  align-items: center;
+  padding: 1.1rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+}
+/* Logos sit on white in both themes: most brand marks are drawn for it. */
+.now-logo {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0.55rem;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+.now-logo img { width: 100%; height: 100%; object-fit: contain; }
+.now-logo.is-icon { padding: 0; color: var(--primary); background: var(--accent); border-color: transparent; }
+.now-logo.is-icon svg { width: 1.6rem; height: 1.6rem; }
+.now-logo.is-letter { font-family: 'Fraunces', Georgia, serif; font-size: 1.5rem; font-weight: 600; }
+a.now-logo:hover { transform: scale(1.05); }
+.now-label {
+  margin-bottom: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.now-text { line-height: 1.6; color: var(--foreground); }
+.now-text a, .now-year a, .now-about a, .now-header .page-lede a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+
+.now-archive { margin-top: 4.5rem; }
+.now-archive h2 { margin-bottom: 0.75rem; font-size: 1.5rem; }
+.now-years { list-style: none; padding: 0; margin: 0; }
+.now-year { display: grid; gap: 0.6rem; padding: 1.75rem 0; border-top: 1px solid var(--border); }
+.now-year-label { font-size: 1.75rem; line-height: 1.1; font-variant-numeric: lining-nums; color: var(--primary); }
+.now-year-body p { line-height: 1.75; color: var(--foreground); }
+.now-year-body .now-year-note {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: calc(var(--radius) * 0.75);
+}
+.now-year-note svg { flex-shrink: 0; width: 1.1rem; height: 1.1rem; margin-top: 0.3rem; color: var(--primary); }
+.now-about { margin-top: 2.5rem; font-size: 0.875rem; line-height: 1.7; color: var(--muted-foreground); }
 @media (min-width: 640px) {
-  .now-row { grid-template-columns: 7.5rem 1fr; gap: 1.5rem; }
+  .now-year { grid-template-columns: 7.5rem minmax(0, 1fr); gap: 1.5rem; }
+}
+@media (max-width: 639px) {
+  .now-cover { aspect-ratio: 2 / 1; }
+  .now-item { grid-template-columns: 3rem minmax(0, 1fr); gap: 0.9rem; padding: 1rem; }
+  .now-logo { width: 3rem; height: 3rem; }
 }
 
 

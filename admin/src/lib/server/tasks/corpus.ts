@@ -6,6 +6,7 @@ import { LANGS } from '../langs.ts';
 import { findTasks, type Corpus, type CorpusPage, type Task } from './find.ts';
 import { loadPage } from '../content/page.ts';
 import { PAGES } from '../../pages.ts';
+import { NOW_JSON, readNow, nowText } from '../../now.ts';
 import { deadLinks } from '../integrations/linkcheck.ts';
 import { readSnoozed, readSession } from './session.ts';
 
@@ -17,7 +18,7 @@ import { readSnoozed, readSession } from './session.ts';
  * page you land on most.
  */
 const TTL_MS = 3 * 60_000;
-const NOW_PAGE = 'content/now.md';
+
 
 async function gather(): Promise<Corpus> {
 	const summaries = await listPosts();
@@ -60,18 +61,22 @@ async function gather(): Promise<Corpus> {
 		})
 	).flat();
 
+	// The Now page's words are in its data file, not its body.
+	const now = readNow(await repo.readText(NOW_JSON));
 	const pages = await Promise.all(
 		PAGES.map(async (p) => {
 			const page = await loadPage(p.name);
 			return {
 				name: p.name,
 				label: p.label,
-				translations: Object.fromEntries(LANGS.map((l) => [l, { exists: page[l].exists, body: page[l].body }])) as CorpusPage['translations']
+				translations: Object.fromEntries(
+					LANGS.map((l) => [l, { exists: page[l].exists, body: p.name === 'now' ? nowText(now, l) : page[l].body }])
+				) as CorpusPage['translations']
 			};
 		})
 	);
 
-	return { posts, photos, pages, deadLinks: await deadLinks(), nowUpdated: await repo.lastModified(NOW_PAGE) };
+	return { posts, photos, pages, deadLinks: await deadLinks(), nowUpdated: await repo.lastModified(NOW_JSON) };
 }
 
 export const readCorpus = () => memo('tasks:corpus', TTL_MS, gather);

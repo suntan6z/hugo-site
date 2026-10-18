@@ -137,6 +137,28 @@ export async function translateFields(
 }
 
 /**
+ * Short pieces of inline Markdown, each translated on its own but all in one
+ * pass: the Now page's labels, lines and archive entries. Same handling as an
+ * article's body, so links and emphasis survive.
+ */
+export async function translateTexts(
+	texts: string[],
+	target: Target
+): Promise<{ texts: string[]; characters: number; warnings: string[] }> {
+	const prepared = texts.map((t) => prepareMarkdown(t));
+	const all = prepared.flatMap((p) => p.texts);
+	const translated = all.length ? await translateXml(all, target) : [];
+	const warnings: string[] = [];
+	let at = 0;
+	const out = prepared.map((p) => {
+		const r = p.rebuild(translated.slice(at, (at += p.texts.length)));
+		warnings.push(...r.warnings);
+		return r.markdown;
+	});
+	return { texts: out, characters: all.reduce((n, t) => n + t.length, 0), warnings };
+}
+
+/**
  * A standalone page: hand-written HTML rather than Markdown, so its body goes
  * through DeepL's own HTML handling, which translates text and leaves markup,
  * attributes and ids alone. Title and description are plain text.

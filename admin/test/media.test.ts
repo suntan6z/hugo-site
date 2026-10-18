@@ -105,3 +105,23 @@ describe('replacing keeps the name working', () => {
 		assert.equal(sameKind('static/img/contact-chill.gif', 'still.png'), false);
 	});
 });
+
+describe('the Now page’s pictures', () => {
+	const json: TextFile = { path: 'content/now/now.json', text: '{"cover":{"image":"cover.jpg"},"items":[{"logo":"/img/logo.svg"}]}' };
+
+	test('live in its bundle, and are used when now.json names them', () => {
+		assert.equal(groupOf('content/now/cover.jpg'), 'now');
+		assert.equal(groupOf('content/now/now.json'), null);
+		assert.equal(groupOf('content/now/index.md'), null);
+		const lib = buildLibrary(['content/now/cover.jpg', 'content/now/old-cover.webp', 'static/img/logo.svg'], [json], names);
+		const by = (p: string) => lib.find((e) => e.path === p)!;
+		assert.deepEqual(by('content/now/cover.jpg').usedBy, [{ label: 'Now page', href: '/pages/now' }]);
+		assert.equal(by('content/now/old-cover.webp').canDelete, true, 'an unused one can go');
+		assert.equal(by('content/now/cover.jpg').canDelete, false);
+		assert.deepEqual(by('static/img/logo.svg').usedBy, [{ label: 'Now page', href: '/pages/now' }], 'a site logo it shows');
+	});
+
+	test('the data file is described as the page', () => {
+		assert.deepEqual(describeFile('content/now/now.json'), { label: 'Now page', href: '/pages/now' });
+	});
+});

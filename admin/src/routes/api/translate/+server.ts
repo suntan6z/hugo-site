@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { translateFields, translatePage, isConfigured, DeepLError, type Fields, type Target } from '$lib/server/integrations/deepl.ts';
+import { translateFields, translatePage, translateTexts, isConfigured, DeepLError, type Fields, type Target } from '$lib/server/integrations/deepl.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { validSlug } from '$lib/server/content/drafts.ts';
 
@@ -14,7 +14,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!isConfigured()) error(503, 'Machine translation is not set up: add DEEPL_API_KEY.');
 	if (!request.headers.get('content-type')?.startsWith('application/json')) error(415, 'Send JSON.');
 
-	let body: { slug?: unknown; to?: unknown; format?: unknown; fields?: Record<string, unknown> };
+	let body: { slug?: unknown; to?: unknown; format?: unknown; fields?: Record<string, unknown>; texts?: unknown };
 	try {
 		body = await request.json();
 	} catch {
@@ -23,6 +23,22 @@ export const POST: RequestHandler = async ({ request }) => {
 	const to = body.to;
 	if (to !== 'fr' && to !== 'it') error(400, 'Target must be fr or it.');
 	const slug = typeof body.slug === 'string' && validSlug(body.slug) ? body.slug : null;
+
+	// A list of short Markdown texts (the Now page's fields), translated one by one.
+	if (body.format === 'list') {
+		const texts = Array.isArray(body.texts) ? body.texts.map((t) => (typeof t === 'string' ? t.replace(/\r\n/g, '\n') : '')) : [];
+		const chars = texts.reduce((n, t) => n + t.length, 0);
+		if (chars === 0) error(400, 'Nothing to translate.');
+		if (chars > MAX_CHARS) error(413, `That is ${chars} characters; the limit is ${MAX_CHARS}.`);
+		try {
+			const r = await translateTexts(texts, to as Target);
+			await audit('translate', { slug, to, characters: r.characters, format: 'list' });
+			return json(r, { headers: { 'Cache-Control': 'no-store' } });
+		} catch (e) {
+			if (e instanceof DeepLError) error(e.status === 403 || e.status === 456 ? 502 : e.status, e.message);
+			error(502, 'DeepL could not be reached.');
+		}
+	}
 
 	const f = body.fields ?? {};
 	const str = (v: unknown) => (typeof v === 'string' ? v.replace(/\r\n/g, '\n') : '');

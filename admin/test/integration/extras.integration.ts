@@ -118,7 +118,24 @@ after(async () => {
 	await deepl?.close();
 });
 
-const pageFile = (name: string, l: string) => (l === 'en' ? `content/${name}.md` : `content/${name}.${l}.md`);
+const pageFile = (name: string, l: string) =>
+	name === 'now'
+		? l === 'en' ? 'content/now/index.md' : `content/now/index.${l}.md`
+		: l === 'en' ? `content/${name}.md` : `content/${name}.${l}.md`;
+const NOW_JSON = 'content/now/now.json';
+
+/** What the Now editor submits, from what is on disk now, with `edit` applied to the data. */
+function nowForm(edit: (d: Record<string, any>) => void = () => {}) {
+	const data = JSON.parse(portal.read(NOW_JSON)!);
+	edit(data);
+	const meta = Object.fromEntries(
+		LANGS.map((l) => {
+			const fm = FrontMatter.parse(portal.read(pageFile('now', l))!);
+			return [l, { title: String(fm.get('title') ?? ''), description: String(fm.get('description') ?? '') }];
+		})
+	);
+	return { state: JSON.stringify({ data, meta }) };
+}
 
 /** The fields the page editor submits, from what is on disk now. */
 function pageForm(name: string, overrides: Record<string, string> = {}) {
@@ -134,7 +151,8 @@ function pageForm(name: string, overrides: Record<string, string> = {}) {
 
 describe('the new surfaces are signed-in only', () => {
 	const writes: [string, Record<string, string>][] = [
-		['/pages/now?/save', { title_en: 'x' }],
+		['/pages/now?/save', { state: '{}' }],
+		['/pages/about?/save', { title_en: 'x' }],
 		['/redirects?/add', { from: 'x', to: 'first-home-nas' }],
 		['/redirects?/remove', { paths: 'content/redirects/x.md' }],
 		['/settings?/saveSiteText', { quote: 'x' }],
@@ -169,18 +187,42 @@ describe('pages', () => {
 		assert.equal((await portal.get('/pages/not-a-page', { cookie })).status, 404);
 	});
 
-	test('editing the English Now page changes that file and nothing else', async () => {
+	test('the Now editor opens on its own form, not the HTML editor', async () => {
+		const html = await (await portal.get('/pages/now', { cookie })).text();
+		assert.match(html, /Right now/);
+		assert.match(html, /The years before/);
+		assert.doesNotMatch(html, /HTML \(advanced\)/);
+	});
+
+	test('editing a line of the Now page changes now.json and nothing else', async () => {
 		const before = Object.fromEntries(LANGS.map((l) => [l, portal.read(pageFile('now', l))]));
-		const en = FrontMatter.parse(before.en!);
-		const body = en.body.replace('Last updated July 2026', 'Last updated September 2026');
-		const r = await portal.action('/pages/now?/save', pageForm('now', { body_en: body }), { cookie });
+		const json = portal.read(NOW_JSON)!;
+		const r = await portal.action('/pages/now?/save', nowForm((d) => (d.items[0].text.en = 'Back in class, every evening.')), { cookie });
 		assert.equal(r.type, 'success', r.raw);
-		assert.equal(portal.read(pageFile('now', 'fr')), before.fr);
-		assert.equal(portal.read(pageFile('now', 'it')), before.it);
-		const after = portal.read(pageFile('now', 'en'))!;
-		assert.ok(after.startsWith('---\n'), 'front matter still starts at byte 0');
-		const a = before.en!.split('\n');
-		assert.deepEqual(after.split('\n').filter((l, i) => l !== a[i]), ['      <p class="page-eyebrow">Last updated September 2026</p>']);
+		for (const l of LANGS) assert.equal(portal.read(pageFile('now', l)), before[l], l);
+		const a = json.split('\n');
+		assert.deepEqual(portal.read(NOW_JSON)!.split('\n').filter((l, i) => l !== a[i]), ['        "en": "Back in class, every evening.",']);
+	});
+
+	test('the Now page refuses a row with no English, and saving nothing is nothing', async () => {
+		const empty = await portal.action('/pages/now?/save', nowForm((d) => d.items.push({ logo: 'icon:code', url: '', label: {}, text: {} })), { cookie });
+		assert.equal(empty.type, 'failure');
+		assert.match(String(empty.data?.message), /problem/);
+		const same = await portal.action('/pages/now?/save', nowForm(), { cookie });
+		assert.equal(same.type, 'failure');
+		assert.match(String(same.data?.message), /Nothing changed/);
+	});
+
+	test('a Now title is edited in its language file, front matter only', async () => {
+		const before = portal.read(pageFile('now', 'it'))!;
+		const form = nowForm();
+		const state = JSON.parse(form.state);
+		state.meta.it.title = 'Adesso';
+		const r = await portal.action('/pages/now?/save', { state: JSON.stringify(state) }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const after = portal.read(pageFile('now', 'it'))!;
+		assert.ok(after.startsWith('---\n'));
+		assert.equal(after, before.replace('title: "Ora"', 'title: "Adesso"'));
 	});
 
 	test('saving without a change is refused as nothing to do', async () => {
@@ -237,23 +279,26 @@ describe('history', () => {
 		git('init', '-q');
 		git('add', '-A');
 		git('commit', '-qm', 'Start');
-		const original = portal.read(pageFile('now', 'en'))!;
-		const edited = FrontMatter.parse(original).body.replace('<h1>Now</h1>', '<h1>Right now</h1>');
-		const saved = await portal.action('/pages/now?/save', pageForm('now', { body_en: edited }), { cookie });
+		const original = JSON.parse(portal.read(NOW_JSON)!);
+		const saved = await portal.action('/pages/now?/save', nowForm((d) => (d.intro.en = 'Right now, this.')), { cookie });
 		assert.equal(saved.type, 'success', saved.raw);
 		git('commit', '-qam', 'Retitle Now');
 
 		const list = (await (await portal.get('/api/history/pages/now', { cookie })).json()) as { revisions: { sha: string; message: string }[] };
 		assert.deepEqual(list.revisions.map((r) => r.message), ['Retitle Now', 'Start']);
 
-		const now = portal.read(pageFile('now', 'en'));
+		const now = portal.read(NOW_JSON);
 		const detail = (await (await portal.get(`/api/history/pages/now/${list.revisions[1].sha}`, { cookie })).json()) as {
-			version: Record<string, { body: string }>;
+			version: { data: { intro: { en: string } }; meta: Record<string, { title: string }> };
 			changes: { path: string }[];
 		};
-		assert.equal(detail.version.en.body, FrontMatter.parse(original).body);
-		assert.deepEqual(detail.changes.map((c) => c.path), ['content/now.md']);
-		assert.equal(portal.read(pageFile('now', 'en')), now, 'comparing wrote nothing');
+		assert.equal(detail.version.data.intro.en, original.intro.en);
+		assert.equal(detail.version.meta.en.title, 'Now');
+		assert.deepEqual(detail.changes.map((c) => c.path), [NOW_JSON]);
+		assert.equal(portal.read(NOW_JSON), now, 'comparing wrote nothing');
+
+		const about = (await (await portal.get('/api/history/pages/about', { cookie })).json()) as { revisions: unknown[] };
+		assert.equal(about.revisions.length, 1, 'the other pages keep their own history');
 
 		const post = (await (await portal.get('/api/history/posts/first-home-nas', { cookie })).json()) as { revisions: unknown[] };
 		assert.equal(post.revisions.length, 1);
@@ -855,8 +900,9 @@ describe('outside links', () => {
 		const file = 'content/blog/first-home-nas/index.md';
 		const fm = FrontMatter.parse(portal.read(file)!);
 		fs.writeFileSync(path.join(portal.root, file), fm.setBody(`${fm.body}\n\nSee [the old guide](${gone()}) and [this one](${fakes.url}/alive).\n`).serialize());
-		const nowFr = FrontMatter.parse(portal.read('content/now.fr.md')!);
-		fs.writeFileSync(path.join(portal.root, 'content/now.fr.md'), nowFr.setBody(`${nowFr.body}\n<p><a href="${gone()}">ancien lien</a></p>\n`).serialize());
+		const nowData = JSON.parse(portal.read(NOW_JSON)!);
+		nowData.archive[0].note.fr = `Voir l’[ancien lien](${gone()}).`;
+		fs.writeFileSync(path.join(portal.root, NOW_JSON), `${JSON.stringify(nowData, null, 2)}\n`);
 
 		// It failed once already, two days ago.
 		const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
@@ -893,7 +939,9 @@ describe('outside links', () => {
 		const finish = await portal.action('/focus?/finish', {}, { cookie });
 		assert.equal(finish.type, 'redirect', finish.raw);
 		assert.match(portal.read(file)!, /\[the old guide\]\(https:\/\/example\.com\/new-guide\)/);
-		assert.match(portal.read('content/now.fr.md')!, /<p>ancien lien<\/p>/);
+		const fixed = JSON.parse(portal.read(NOW_JSON)!);
+		assert.equal(fixed.archive[0].note.fr, 'Voir l’ancien lien.', 'the words stay, the link goes');
+		assert.equal(fixed.archive[0].note.en, nowData.archive[0].note.en, 'other languages untouched');
 	});
 
 	test('an answer that is not a web address is refused', async () => {

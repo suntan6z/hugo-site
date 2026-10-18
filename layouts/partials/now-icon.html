@@ -1,0 +1,10 @@
+{{- /*
+  A line icon from data/now_icons.json (24×24, stroked in currentColor), by
+  name. The portal reads the same file for its icon picker, so an icon added
+  there shows up in both places.
+*/ -}}
+{{- with index hugo.Data.now_icons . -}}
+<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {{- range . }}<path d="{{ . }}"/>{{ end -}}
+</svg>
+{{- end -}}

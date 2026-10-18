@@ -6,6 +6,7 @@ import { LANGS, type Lang } from '../langs.ts';
 import { parsePhotos, writePhotos, photoKey, type GalleryPhoto } from '../content/gallery-data.ts';
 import { setAltText, replaceLink, type Edit } from './edits.ts';
 import { pageFile, isPageName } from '../../pages.ts';
+import { NOW_JSON, parseNow, serializeNow, fixLink } from '../../now.ts';
 
 export type { Edit };
 
@@ -114,6 +115,14 @@ export async function planSession(edits: Edit[]): Promise<FileOp[]> {
 				continue;
 			}
 			if (!e.lang) continue;
+			if (e.target.type === 'page' && e.target.name === 'now') {
+				// Its words are in now.json, every language side by side.
+				const raw = await read(NOW_JSON);
+				if (raw === null) continue;
+				const { url, next } = e;
+				files.set(NOW_JSON, serializeNow(fixLink(parseNow(raw), e.lang, url, next, (s) => replaceLink(s, url, next))));
+				continue;
+			}
 			const path =
 				e.target.type === 'post'
 					? `${bundleDir(e.target.slug)}/${fileFor(e.lang)}`

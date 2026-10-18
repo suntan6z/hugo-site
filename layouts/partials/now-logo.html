@@ -1,0 +1,36 @@
+{{- /*
+  The tile beside a Now item. `logo` is one of:
+    icon:<name>  a line icon from data/now_icons.json
+    /img/…       a file the site already serves from static/
+    <file>       a picture in the content/now/ bundle (SVG as is, others resized)
+  and with none of those, the label's first letter.
+  Takes (dict "logo" … "page" … "label" … "url" …).
+*/ -}}
+{{- $page := .page -}}
+{{- $logo := .logo | default "" -}}
+{{- $class := "now-logo" -}}
+{{- $inner := "" -}}
+{{- if hasPrefix $logo "icon:" -}}
+  {{- $class = "now-logo is-icon" -}}
+  {{- $inner = partial "now-icon.html" (strings.TrimPrefix "icon:" $logo) -}}
+{{- else if hasPrefix $logo "/" -}}
+  {{- $inner = printf `<img src="%s" alt="" loading="lazy" decoding="async">` $logo -}}
+{{- else if and $logo ($page.Resources.Get $logo) -}}
+  {{- with $page.Resources.Get $logo -}}
+    {{- if in (slice "jpeg" "png" "webp") .MediaType.SubType -}}
+      {{- $img := .Fit "160x160 webp q85" -}}
+      {{- $inner = printf `<img src="%s" width="%d" height="%d" alt="" loading="lazy" decoding="async">` $img.RelPermalink $img.Width $img.Height -}}
+    {{- else -}}
+      {{- $inner = printf `<img src="%s" alt="" loading="lazy" decoding="async">` .RelPermalink -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $inner -}}
+  {{- $class = "now-logo is-icon is-letter" -}}
+  {{- $inner = substr (.label | default "•") 0 1 -}}
+{{- end -}}
+{{- if .url -}}
+<a class="{{ $class }}" href="{{ .url }}" tabindex="-1" aria-hidden="true"{{ if hasPrefix .url "http" }} target="_blank" rel="noopener noreferrer"{{ end }}>{{ $inner | safeHTML }}</a>
+{{- else -}}
+<span class="{{ $class }}" aria-hidden="true">{{ $inner | safeHTML }}</span>
+{{- end -}}

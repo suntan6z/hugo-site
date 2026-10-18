@@ -16,7 +16,7 @@ export const IMAGE_RE = /\.(jpe?g|png|webp|gif|svg|ico|avif)$/i;
 /** Formats a canvas can re-encode without losing something (animation, alpha, vectors). */
 export const BITMAP_RE = /\.(jpe?g|png|webp)$/i;
 
-export type Group = 'articles' | 'gallery' | 'site' | 'hero';
+export type Group = 'articles' | 'gallery' | 'site' | 'hero' | 'now';
 
 export interface UsedBy {
 	/** What to show: "Article · Colors of solidarity", "Contact page", "Footer". */
@@ -35,7 +35,7 @@ export interface MediaEntry {
 	unused: boolean;
 	/** A new file can take its place under the same name. */
 	canReplace: boolean;
-	/** It can be deleted from here: only an article picture nothing refers to. */
+	/** It can be deleted from here: only an article or Now picture nothing refers to. */
 	canDelete: boolean;
 }
 
@@ -57,6 +57,7 @@ export function groupOf(path: string): Group | null {
 	if (!IMAGE_RE.test(path)) return null;
 	if (/^content\/blog\/[^/]+\/[^/]+$/.test(path)) return 'articles';
 	if (/^content\/gallery\/[^/]+\/[^/]+$/.test(path)) return 'gallery';
+	if (/^content\/now\/[^/]+$/.test(path)) return 'now';
 	if (/^assets\/img\/[^/]+$/.test(path)) return 'hero';
 	if (/^static\/img\/[^/]+$/.test(path)) return 'site';
 	return null;
@@ -65,6 +66,7 @@ export function groupOf(path: string): Group | null {
 /** A readable name for a file that refers to images: "Contact page", "Footer", "Stylesheet". */
 export function describeFile(path: string): UsedBy {
 	let m: RegExpExecArray | null;
+	if (path.startsWith('content/now/')) return { label: 'Now page', href: '/pages/now' };
 	if ((m = /^content\/([a-z-]+)(?:\.(?:fr|it))?\.md$/.exec(path))) {
 		const name = m[1];
 		return { label: `${name === 'privacy-policy' ? 'Privacy policy' : name[0].toUpperCase() + name.slice(1)} page`, href: `/pages/${name}` };
@@ -113,6 +115,11 @@ export function buildLibrary(images: string[], texts: TextFile[], names: Names):
 			const city = /^content\/gallery\/([^/]+)\//.exec(path)![1];
 			owner = city;
 			usedBy = [{ label: `Gallery · ${names.cities[city] ?? city}`, href: `/gallery/${city}` }];
+		} else if (group === 'now') {
+			// The Now page names its cover and logos in now.json, by file name.
+			owner = 'now';
+			const hit = texts.some((t) => t.path === 'content/now/now.json' && mentions(t.text, path, group));
+			if (hit) usedBy = [{ label: 'Now page', href: '/pages/now' }];
 		} else if (group === 'hero') {
 			usedBy = [{ label: 'Homepage photo', href: '/settings' }];
 		} else {
@@ -136,8 +143,8 @@ export function buildLibrary(images: string[], texts: TextFile[], names: Names):
 			unused: usedBy.length === 0,
 			// The homepage photo is a pair of files replaced together, from Settings;
 			// gallery photos are ordered and captioned with their city.
-			canReplace: group === 'articles' || group === 'site',
-			canDelete: group === 'articles' && usedBy.length === 0
+			canReplace: group === 'articles' || group === 'site' || group === 'now',
+			canDelete: (group === 'articles' || group === 'now') && usedBy.length === 0
 		});
 	}
 	return out.sort((a, b) => a.group.localeCompare(b.group) || a.owner.localeCompare(b.owner) || a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -147,7 +154,8 @@ export const GROUP_LABEL: Record<Group, string> = {
 	articles: 'Articles',
 	gallery: 'Gallery',
 	site: 'Site',
-	hero: 'Homepage photo'
+	hero: 'Homepage photo',
+	now: 'Now page'
 };
 
 /**

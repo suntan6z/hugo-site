@@ -1,0 +1,98 @@
+{{ define "main" }}
+{{- /*
+  The Now page. Everything it shows lives in content/now/now.json — all three
+  languages side by side, so a logo, link or year is set once — and is edited
+  from the portal (Pages → Now; admin/src/lib/now.ts is the file's shape).
+  index.md / index.fr.md / index.it.md only carry the title and description.
+
+    updated   YYYY-MM-DD, shown as "Last updated <month year>"
+    cover     { image, position: top|center|bottom, alt: {lang} }
+    intro     {lang}, the line under the heading
+    items[]   { logo, url, label: {lang}, text: {lang} }   what is going on now
+    archive[] { year, text: {lang}, note: {lang} }         the years before
+
+  Text fields take inline Markdown (links, bold, italics). A {lang} left empty
+  falls back to the English.
+*/ -}}
+{{- $lang := .Language.Lang -}}
+{{- $now := dict -}}
+{{- with .Resources.Get "now.json" }}{{ $now = . | transform.Unmarshal }}{{ end -}}
+<article class="container now-page">
+  <div class="content-col is-left">
+
+    {{- /* The cover: a wide crop, in up to three widths. */ -}}
+    {{- with $now.cover }}{{ $c := . }}
+    {{- with and .image ($.Resources.Get .image) }}
+    {{- if in (slice "jpeg" "png" "webp") .MediaType.SubType }}
+      {{- $orig := . -}}
+      {{- $anchor := index (dict "top" "Top" "bottom" "Bottom") (lower ($c.position | default "")) | default "Center" -}}
+      {{- $widths := slice -}}
+      {{- range slice 800 1200 1600 }}{{ if le . $orig.Width }}{{ $widths = $widths | append . }}{{ end }}{{ end -}}
+      {{- if not $widths }}{{ $widths = slice $orig.Width }}{{ else if and (gt $orig.Width (index (last 1 $widths) 0)) (lt $orig.Width 1600) }}{{ $widths = $widths | append $orig.Width }}{{ end -}}
+      {{- $srcset := slice -}}
+      {{- $img := false -}}
+      {{- range $widths -}}
+        {{- $img = $orig.Fill (printf "%dx%d webp q80 %s" . (div (mul . 2) 5) $anchor) -}}
+        {{- $srcset = $srcset | append (printf "%s %dw" $img.RelPermalink $img.Width) -}}
+      {{- end }}
+    <figure class="now-cover">
+      <img src="{{ $img.RelPermalink }}" srcset="{{ delimit $srcset ", " }}" sizes="(min-width: 960px) 52rem, calc(100vw - 4rem)"
+           width="{{ $img.Width }}" height="{{ $img.Height }}" alt="{{ partial "now-text.html" (dict "f" $c.alt "lang" $lang) }}" fetchpriority="high" decoding="async">
+    </figure>
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+    <div class="page-header now-header">
+      {{- with $now.updated }}
+      <p class="now-updated"><span class="now-dot" aria-hidden="true"></span><span>{{ i18n "now_updated" }} <time datetime="{{ . }}">{{ time.Format "January 2006" (time.AsTime .) }}</time></span></p>
+      {{- end }}
+      <h1>{{ i18n "now_heading" }}</h1>
+      {{- with partial "now-text.html" (dict "f" $now.intro "lang" $lang) }}
+      <p class="page-lede">{{ $.RenderString . }}</p>
+      {{- end }}
+    </div>
+
+    {{- with $now.items }}
+    <ul class="now-items">
+      {{- range . }}
+      {{- $label := partial "now-text.html" (dict "f" .label "lang" $lang) -}}
+      {{- $url := .url | default "" -}}
+      {{- /* A site path ("/contact/") goes to this language's copy; files and already-prefixed paths stay as written. */ -}}
+      {{- if and (hasPrefix $url "/") (not (findRE `^/(en|fr|it)/|\.[a-zA-Z0-9]+$` $url)) }}{{ $url = $url | relLangURL }}{{ end }}
+      <li class="now-item">
+        {{ partial "now-logo.html" (dict "logo" .logo "page" $ "label" $label "url" $url) }}
+        <div class="now-body">
+          {{- with $label }}<p class="now-label">{{ . }}</p>{{ end }}
+          <p class="now-text">{{ $.RenderString (partial "now-text.html" (dict "f" .text "lang" $lang)) }}</p>
+        </div>
+      </li>
+      {{- end }}
+    </ul>
+    {{- end }}
+
+    {{- with $now.archive }}
+    <section class="now-archive" aria-labelledby="now-archive-title">
+      <h2 id="now-archive-title">{{ i18n "now_archive" }}</h2>
+      <ol class="now-years">
+        {{- range . }}
+        <li class="now-year">
+          <h3 class="now-year-label">{{ .year }}</h3>
+          <div class="now-year-body">
+            {{- with partial "now-text.html" (dict "f" .text "lang" $lang) }}
+            <p>{{ $.RenderString . }}</p>
+            {{- end }}
+            {{- with partial "now-text.html" (dict "f" .note "lang" $lang) }}
+            <p class="now-year-note">{{ partial "now-icon.html" "lightbulb" }}<span>{{ $.RenderString . }}</span></p>
+            {{- end }}
+          </div>
+        </li>
+        {{- end }}
+      </ol>
+    </section>
+    {{- end }}
+
+    <p class="now-about">{{ i18n "now_about" | markdownify }}</p>
+  </div>
+</article>
+{{ end }}

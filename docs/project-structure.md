@@ -17,7 +17,8 @@ hugo.toml                  → site config: params, languages, menus, output for
 statichost.yml             → the exact Hugo image production builds with
 
 content/
-  about.md, now.md, contact.md, privacy-policy.md   → static pages (+ .fr/.it siblings)
+  about.md, contact.md, privacy-policy.md          → static pages (+ .fr/.it siblings)
+  now/                                              → Now page bundle: index(.fr/.it).md + now.json + cover/logos
   blog/<slug>/index.md     → one page bundle per article, images co-located
   gallery/<city>/index.md  → headless bundle per city, photos co-located
   redirects/               → meta-refresh stubs pinned to exact old URLs (written by the

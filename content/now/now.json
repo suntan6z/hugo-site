@@ -1,0 +1,76 @@
+{
+  "updated": "2026-10-18",
+  "cover": {
+    "image": "cover.jpg",
+    "position": "center",
+    "alt": {
+      "en": "Sunset over the Champs-Élysées, with the Arc de Triomphe at the end of the avenue",
+      "fr": "Coucher de soleil sur les Champs-Élysées, avec l'Arc de Triomphe au bout de l'avenue",
+      "it": "Tramonto sugli Champs-Élysées, con l'Arco di Trionfo in fondo al viale"
+    }
+  },
+  "intro": {
+    "en": "A snapshot of what I'm focused on at the moment. When something changes, the old version moves down to the archive.",
+    "fr": "Un instantané de ce qui m'occupe en ce moment. Quand quelque chose change, l'ancienne version descend dans les archives.",
+    "it": "Un'istantanea di ciò che mi tiene occupato in questo momento. Quando qualcosa cambia, la versione precedente scende nell'archivio."
+  },
+  "items": [
+    {
+      "logo": "icon:graduation-cap",
+      "url": "https://www.cnam.fr",
+      "label": {
+        "en": "Studying",
+        "fr": "J'étudie",
+        "it": "Studio"
+      },
+      "text": {
+        "en": "Back in class: I'm following a **DevOps** course at the [CNAM](https://www.cnam.fr) in Paris.",
+        "fr": "C'est la rentrée : je suis un cursus **DevOps** au [CNAM](https://www.cnam.fr) à Paris.",
+        "it": "Si torna in aula: seguo un corso di **DevOps** al [CNAM](https://www.cnam.fr) di Parigi."
+      }
+    },
+    {
+      "logo": "/img/logo.svg",
+      "url": "",
+      "label": {
+        "en": "Building",
+        "fr": "Je construis",
+        "it": "Sto costruendo"
+      },
+      "text": {
+        "en": "This website — defining the last details, from the publishing portal behind it to the pages you're reading.",
+        "fr": "Ce site — je peaufine les derniers détails, du portail de publication qui le fait tourner aux pages que vous lisez.",
+        "it": "Questo sito — sto definendo gli ultimi dettagli, dal portale di pubblicazione dietro le quinte alle pagine che stai leggendo."
+      }
+    },
+    {
+      "logo": "icon:briefcase",
+      "url": "/contact/",
+      "label": {
+        "en": "Looking for",
+        "fr": "Je cherche",
+        "it": "Cerco"
+      },
+      "text": {
+        "en": "An internship in DevOps (a *stage*, as we say in France) from **March 2027**, for at least two months — ideally three. [See my CV](/cv-fr.pdf) or [get in touch](/en/contact/).",
+        "fr": "Un stage en DevOps à partir de **mars 2027**, pour au moins deux mois — idéalement trois. [Voir mon CV](/cv-fr.pdf) ou [me contacter](/fr/contact/).",
+        "it": "Uno stage in ambito DevOps a partire da **marzo 2027**, per almeno due mesi — idealmente tre. [Guarda il mio CV](/cv-fr.pdf) o [scrivimi](/it/contact/)."
+      }
+    }
+  ],
+  "archive": [
+    {
+      "year": "2026",
+      "text": {
+        "en": "Worked in customer service at **Konecta**, near Paris — disputes, escalations and a lot of listening. Spent a month inside the European Parliament in Strasbourg for **#UpdateEurope** with MeetEU, a citizen action project, and started rebuilding this site in Hugo.",
+        "fr": "Conseiller du service client chez **Konecta**, en région parisienne — litiges, escalades et beaucoup d'écoute. Un mois au cœur du Parlement européen à Strasbourg pour **#UpdateEurope** avec MeetEU, un projet d'action citoyenne, et le début de la reconstruction de ce site avec Hugo.",
+        "it": "Ho lavorato nel servizio clienti da **Konecta**, vicino a Parigi — reclami, escalation e tanto ascolto. Ho passato un mese dentro il Parlamento europeo a Strasburgo per **#UpdateEurope** con MeetEU, un progetto di azione civica, e ho iniziato a ricostruire questo sito con Hugo."
+      },
+      "note": {
+        "en": "A month that put a lot of my Erasmus+ years into perspective.",
+        "fr": "Un mois qui a remis en perspective mes années Erasmus+.",
+        "it": "Un mese che ha rimesso in prospettiva i miei anni Erasmus+."
+      }
+    }
+  ]
+}
