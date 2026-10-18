@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { fetchBing } from '$lib/server/integrations/bing.ts';
-import { fetchVisitors } from '$lib/server/integrations/litlyx.ts';
+import { fetchVisitors, fetchLive } from '$lib/server/integrations/litlyx.ts';
 import { isConfigured as resendConfigured, listSubscribers } from '$lib/server/integrations/resend.ts';
 
 /**
@@ -10,7 +10,7 @@ import { isConfigured as resendConfigured, listSubscribers } from '$lib/server/i
  * delays the screen you land on.
  */
 export const GET: RequestHandler = async () => {
-	const [r, v, subscribers] = await Promise.all([fetchBing(), fetchVisitors(), audience()]);
+	const [r, v, subscribers, live] = await Promise.all([fetchBing(), fetchVisitors(), audience(), fetchLive()]);
 	const visitors = {
 		configured: v.configured,
 		error: v.error,
@@ -21,7 +21,8 @@ export const GET: RequestHandler = async () => {
 			trend: v.data.trend,
 			pages: v.data.pages.slice(0, 3),
 			series: v.data.daily.map((d) => d.visits)
-		}
+		},
+		live
 	};
 	if (!r.data) return json({ configured: r.configured, error: r.error, summary: null, visitors, subscribers });
 

@@ -26,10 +26,51 @@
 	};
 	const pagesPerVisit = $derived(v && v.visits > 0 ? (v.views / v.visits).toFixed(1) : '–');
 	const otherPages = $derived((v?.pages ?? []).filter((p) => !/\/blog\/[a-z0-9-]+\/?$/.test(p.key)).slice(0, 10));
+	const tagged = $derived(
+		!!data.campaigns && (data.campaigns.sources.length > 0 || data.campaigns.mediums.length > 0 || data.campaigns.campaigns.length > 0)
+	);
 </script>
+
+{#snippet shareTable(title: string, head: string, rows: { key: string; count: number; share: number }[])}
+	<section>
+		<h2>{title}</h2>
+		<table>
+			<thead><tr><th>{head}</th><th>Visits</th></tr></thead>
+			<tbody>
+				{#each rows as r}
+					<tr>
+						<td class="q share"><span class="fill" style:width="{r.share}%"></span><span class="lab">{r.key}</span></td>
+						<td class="n">{fmt(r.count)} <span class="pct">{r.share}%</span></td>
+					</tr>
+				{:else}
+					<tr><td colspan="2" class="empty">Nothing yet.</td></tr>
+				{/each}
+			</tbody>
+		</table>
+	</section>
+{/snippet}
+
+{#snippet pageTable(title: string, rows: { key: string; count: number }[])}
+	<section>
+		<h2>{title}</h2>
+		<table>
+			<thead><tr><th>Page</th><th>Visits</th></tr></thead>
+			<tbody>
+				{#each rows as p}
+					<tr><td class="q"><a href="{data.siteUrl}{p.key}" target="_blank" rel="noreferrer">{p.key}</a></td><td class="n">{fmt(p.count)}</td></tr>
+				{:else}
+					<tr><td colspan="2" class="empty">Nothing yet.</td></tr>
+				{/each}
+			</tbody>
+		</table>
+	</section>
+{/snippet}
 
 <div class="head">
 	<h1>Visitors</h1>
+	{#if data.live !== null}
+		<span class="live" title="Different people on the site in the last five minutes"><span class="dot" class:on={data.live > 0}></span>{data.live} on the site now</span>
+	{/if}
 	{#if data.visitors.configured}
 		<form method="POST" action="?/refresh" use:enhance>
 			<button type="submit" class="btn-outline btn-sm">Refresh</button>
@@ -68,6 +109,12 @@
 		</div>
 		<div class="tile"><span class="n">{fmt(v.views)}</span><span class="l">pages read</span></div>
 		<div class="tile"><span class="n">{pagesPerVisit}</span><span class="l">pages per visit</span></div>
+		{#if data.engagement?.visitLength}
+			<div class="tile"><span class="n">{data.engagement.visitLength}</span><span class="l">an average visit</span></div>
+		{/if}
+		{#if data.engagement?.bounceRate !== null && data.engagement?.bounceRate !== undefined}
+			<div class="tile" title="Visits that read a single page and left"><span class="n">{data.engagement.bounceRate}%</span><span class="l">read one page only</span></div>
+		{/if}
 		<div class="tile"><span class="n">{v.days}</span><span class="l">days</span></div>
 	</section>
 
@@ -154,6 +201,52 @@
 		</section>
 	</div>
 
+	{#if data.who}
+		<div class="cols">
+			{#if !v.unavailable.includes('devices')}{@render shareTable('Devices', 'Device', data.who.devices)}{/if}
+			{#if !v.unavailable.includes('browsers')}{@render shareTable('Browsers', 'Browser', data.who.browsers)}{/if}
+			{#if !v.unavailable.includes('systems')}{@render shareTable('Systems', 'System', data.who.systems)}{/if}
+		</div>
+	{/if}
+
+	<div class="cols">
+		{#if !v.unavailable.includes('entry pages')}{@render pageTable('Where visits began', data.entryPages)}{/if}
+		{#if !v.unavailable.includes('exit pages')}{@render pageTable('Where visits ended', data.exitPages)}{/if}
+		{#if !v.unavailable.includes('time on page')}
+		<section>
+			<h2>Time on page</h2>
+			<table>
+				<thead><tr><th>Page</th><th>Stay</th></tr></thead>
+				<tbody>
+					{#each data.stays as d}
+						<tr><td class="q"><a href="{data.siteUrl}{d.key}" target="_blank" rel="noreferrer">{d.key}</a></td><td class="n" title="{d.measured} measured">{d.stay}</td></tr>
+					{:else}
+						<tr><td colspan="2" class="empty">Nothing yet.</td></tr>
+					{/each}
+				</tbody>
+			</table>
+			<p class="note">How long a reader stays before opening another page, so the last page of a visit is not counted.</p>
+		</section>
+		{/if}
+	</div>
+
+	<h2 class="sub">Campaigns</h2>
+	{#if tagged && data.campaigns}
+		<div class="cols">
+			{#if data.campaigns.sources.length > 0}{@render shareTable('Source', 'utm_source', data.campaigns.sources)}{/if}
+			{#if data.campaigns.mediums.length > 0}{@render shareTable('Medium', 'utm_medium', data.campaigns.mediums)}{/if}
+			{#if data.campaigns.campaigns.length > 0}{@render shareTable('Campaign', 'utm_campaign', data.campaigns.campaigns)}{/if}
+		</div>
+	{:else}
+		<p class="note">No visit came through a link tagged with <code>utm_source</code>, <code>utm_medium</code> or <code>utm_campaign</code>. Add them to a link you share (for instance in a newsletter) and they appear here.</p>
+	{/if}
+
+	{#if v.unavailable.length > 0}
+		<p class="note missing">
+			Litlyx did not answer for: {v.unavailable.join(', ')}. That part is left out; the rest of the page is unaffected. A different Litlyx version may not offer it, or it timed out.
+		</p>
+	{/if}
+
 	<p class="fetched">
 		From Litlyx, {new Date(v.fetchedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.
 		<a href={data.litlyxHost} target="_blank" rel="noreferrer">Open the full dashboard →</a>
@@ -207,5 +300,14 @@
 	.empty { font-size: 0.85rem; color: var(--muted-foreground); }
 	.unread { margin-top: 0.7rem; }
 	.fetched { font-size: 0.75rem; color: var(--muted-foreground); }
+	h2.sub { margin: 0.25rem 0 0.6rem; }
+	.live { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted-foreground); margin-right: auto; margin-left: 1rem; }
+	.dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--border); }
+	.dot.on { background: var(--ok); }
+	td.share { position: relative; }
+	td.share .fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--primary) 14%, transparent); border-radius: 3px; }
+	td.share .lab { position: relative; padding-left: 0.2rem; }
+	.pct { font-size: 0.7rem; color: var(--muted-foreground); margin-left: 0.25rem; }
+	.missing { margin: 0 0 1rem; }
 	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 </style>
