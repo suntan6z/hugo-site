@@ -7,7 +7,7 @@
 
 # Base pinned by digest, not just tag: the image is the deployable artifact, and
 # a floating tag would silently change what gets shipped between deploys.
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS builder
+FROM node:26-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS builder
 
 WORKDIR /repo
 # npm ci (never npm install) so the lockfile is authoritative.
@@ -20,7 +20,7 @@ COPY static/fonts/ static/fonts/
 COPY static/img/logo.svg static/img/favicon.svg static/img/favicon.png static/img/favicon.ico static/img/
 RUN cd admin && npm run build
 
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS runtime
+FROM node:26-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
