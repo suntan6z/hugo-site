@@ -76,6 +76,23 @@ test('the notification carries the readable subject', async () => {
   );
 });
 
+test('the confirmation uses the template of the form\'s language, English when unknown', async () => {
+  for (const [lang, id] of [['fr', 'contact-form-confirmation-fr'], ['it', 'contact-form-confirmation-it'], ['en', 'contact-form-confirmation-en'], ['de', 'contact-form-confirmation-en'], [undefined, 'contact-form-confirmation-en']]) {
+    const sent = [];
+    await withFetch(
+      async (url, init) => {
+        sent.push(JSON.parse(init.body));
+        return new Response('{}', { status: 200 });
+      },
+      async () => {
+        assert.equal((await post({ ...valid(), lang })).statusCode, 200);
+        assert.equal(sent[0].template.id, 'contact-form-notification');
+        assert.equal(sent[1].template.id, id, String(lang));
+      },
+    );
+  }
+});
+
 test('a submission without a solved challenge sends nothing', async () => {
   await withFetch(
     () => assert.fail('nothing may be sent without proof of work'),

@@ -1,6 +1,7 @@
 import { isValidEmail } from './lib/validate.js';
 import { optionsResponse, json, isAllowedOrigin } from './lib/cors.js';
 import { isRateLimited, clientIp } from './lib/rateLimit.js';
+import { normalizeLang } from './lib/request.js';
 import { wantsChallenge, serveChallenge, isHuman } from './lib/guard.js';
 
 // What the form's <select> values mean, as the email should say them. An
@@ -129,10 +130,12 @@ export async function handle(event) {
   // Best-effort: the submitter's confirmation email is a nice-to-have —
   // don't fail the whole request if only this part errors.
   //
-  // Values here are passed RAW (not esc()'d): the `contact-form-confirmation`
-  // template uses double-brace `{{ }}`, which auto-escapes. Pre-escaping would
+  // Values here are passed RAW (not esc()'d): the `contact-form-confirmation-<lang>`
+  // templates uses double-brace `{{ }}`, which auto-escapes. Pre-escaping would
   // double-escape. This is the opposite of the notification send above — each
   // path is matched to its template's brace style.
+  // One template per language, chosen by the page the form was sent from.
+  const lang = normalizeLang(body.lang);
   const name = `${firstName} ${lastName}`;
   const messagePreview = message.slice(0, 150) + (message.length > 150 ? '...' : '');
   await fetch('https://api.resend.com/emails', {
@@ -144,7 +147,7 @@ export async function handle(event) {
     body: JSON.stringify({
       from: 'Lorenzo Loconsole (Form submission) <contact@loconsole.eu>',
       to: [email],
-      template: { id: 'contact-form-confirmation', variables: { name, subject, message_preview: messagePreview } },
+      template: { id: `contact-form-confirmation-${lang}`, variables: { name, subject, message_preview: messagePreview } },
     }),
   })
     .then((r) => {

@@ -234,6 +234,8 @@ if (document.getElementById('contact-form')) {
         signal: AbortSignal.timeout(60000),
         body: JSON.stringify({
           altcha,
+          // Picks the language of the confirmation email.
+          lang: document.documentElement.lang.slice(0, 2),
           firstName: document.getElementById('firstName').value,
           lastName: document.getElementById('lastName').value,
           email: document.getElementById('email').value,
