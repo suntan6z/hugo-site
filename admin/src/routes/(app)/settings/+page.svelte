@@ -4,13 +4,15 @@
 	import { enroll } from '$lib/client/passkey';
 	import { invalidateAll } from '$app/navigation';
 	import { prepareHero, ImageError } from '$lib/client/image';
+	import { onMount, untrack } from 'svelte';
 
 	let { data, form } = $props();
 
 	const LANG_NAMES = { en: 'English', fr: 'Français', it: 'Italiano' } as const;
 	// What the form shows: a refused save comes back with what was typed, so nothing is lost.
 	const text = $derived(form?.siteValues ?? data.site.text);
-	let descriptions = $state<Record<string, string>>({});
+	// Seeded at once, so the boxes are not empty for a moment before the page wakes up.
+	let descriptions = $state<Record<string, string>>(untrack(() => ({ ...(text?.description ?? {}) })));
 	$effect(() => {
 		descriptions = { ...(text?.description ?? {}) };
 	});
@@ -70,6 +72,36 @@
 		}
 	}
 
+	/* One section at a time, like the settings on a phone: a list on the left, the chosen one on the right. */
+	const GROUPS = [
+		{ name: 'Your site', items: [['homepage', 'Homepage'], ['menu', 'Name and menu'], ['photo', 'Photo and CV'], ['social', 'Social links'], ['addresses', 'Old addresses']] },
+		{ name: 'Safety', items: [['backup', 'Backup'], ['security', 'Sign-in']] },
+		{ name: 'Behind the scenes', items: [['connections', 'Connections'], ['activity', 'Activity']] }
+	] as const;
+	const IDS: string[] = GROUPS.flatMap((g) => g.items.map(([id]) => id));
+	let current = $state<string>('homepage');
+	function show(id: string, push = true) {
+		if (!IDS.includes(id)) return;
+		current = id;
+		if (push) history.replaceState(history.state, '', `#${id}`);
+	}
+	// A link such as /settings#connections opens that section.
+	onMount(() => {
+		const fromHash = () => show(location.hash.slice(1), false);
+		fromHash();
+		addEventListener('hashchange', fromHash);
+		return () => removeEventListener('hashchange', fromHash);
+	});
+	// On a phone the list is a row that scrolls sideways: keep the chosen one in view.
+	$effect(() => {
+		current;
+		// Only the row moves, never the page (scrollIntoView would scroll both).
+		const row = document.querySelector<HTMLElement>('.side');
+		const on = row?.querySelector<HTMLElement>('.item.on');
+		if (row && on) row.scrollLeft = on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2;
+	});
+	const needsAttention = $derived<Record<string, boolean>>({ security: data.credentials.length === 1 });
+
 	const when = (s: unknown) =>
 		typeof s === 'string' ? new Date(s).toLocaleString('en-GB') : '';
 
@@ -96,11 +128,24 @@
 
 <h1>Settings</h1>
 
+<div class="settings">
+	<nav class="side" aria-label="Settings sections">
+		{#each GROUPS as g}
+			<p class="group">{g.name}</p>
+			{#each g.items as [id, label]}
+				<button type="button" class="item" class:on={current === id} aria-current={current === id ? 'page' : undefined} onclick={() => show(id)}>
+					{label}{#if needsAttention[id]}<i class="attn" title="Needs a look"></i>{/if}
+				</button>
+			{/each}
+		{/each}
+	</nav>
+
+	<div class="content">
 {#if form?.message}<p class="msg ok">{form.message}</p>{/if}
 {#if addError}<p class="msg err">{addError}</p>{/if}
 
-<section>
-	<h2>Homepage and search results</h2>
+<section hidden={current !== 'homepage'}>
+	<h2>Homepage</h2>
 	{#if data.site.error}
 		<p class="msg err">Cannot edit these: {data.site.error}</p>
 	{:else if text}
@@ -135,7 +180,7 @@
 	{/if}
 </section>
 
-<section>
+<section hidden={current !== 'menu'}>
 	<h2>Site name and menu</h2>
 	{#if data.nav.error || !data.nav.menu}
 		<p class="msg err">Cannot edit these: {data.nav.error}</p>
@@ -178,7 +223,7 @@
 	{/if}
 </section>
 
-<section>
+<section hidden={current !== 'photo'}>
 	<h2>Photo and CV</h2>
 	<div class="files">
 		<div class="hero">
@@ -236,7 +281,7 @@
 	</div>
 </section>
 
-<section class="backup">
+<section class="backup" hidden={current !== 'backup'}>
 	<h2>Backup</h2>
 	<p class="lede">
 		Everything the site is made of, its articles, pictures, pages and settings, is kept in GitHub together with every earlier version of each. Download a copy of all of it:
@@ -257,7 +302,7 @@
 	</div>
 </section>
 
-<section>
+<section hidden={current !== 'addresses'}>
 	<h2>Old addresses</h2>
 	<p class="lede">
 		{data.redirects === 0 ? 'No redirects.' : `${data.redirects} redirect file${data.redirects === 1 ? '' : 's'} keep old article addresses working.`}
@@ -265,7 +310,7 @@
 	</p>
 </section>
 
-<section>
+<section hidden={current !== 'social'}>
 	<h2>Social links</h2>
 	<p class="lede">The icons in the site's footer. Leave a field empty to hide that icon.</p>
 	{#if data.socials.error}
@@ -293,7 +338,7 @@
 	{/if}
 </section>
 
-<section>
+<section hidden={current !== 'security'}>
 	<h2>Passkeys</h2>
 	{#if data.credentials.length === 1}
 		<p class="warn">
@@ -316,7 +361,7 @@
 	<p class="note">A passkey only works on this address: <code>{data.rpId}</code>.</p>
 </section>
 
-<section>
+<section hidden={current !== 'security'}>
 	<h2>Sessions</h2>
 	<form method="POST" action="?/signOutEverywhere" use:enhance>
 		<button type="submit" class="btn-danger-quiet">Sign out everywhere</button>
@@ -324,7 +369,7 @@
 	<p class="note">Invalidates every signed-in session on every device. You stay signed in here.</p>
 </section>
 
-<section id="connections">
+<section hidden={current !== 'connections'}>
 	<h2>Connections</h2>
 	<p class="note">The outside services the portal talks to. Green means working.</p>
 	<ul class="status">
@@ -344,7 +389,7 @@
 	<p class="note">Site: <code>{data.siteUrl}</code> · Portal: <code>{data.origin}</code></p>
 </section>
 
-<section>
+<section hidden={current !== 'activity'}>
 	<h2>Recent activity <a class="all" href="/audit">see all →</a></h2>
 	{#if data.audit.length === 0}
 		<p class="note">Nothing recorded yet.</p>
@@ -359,6 +404,8 @@
 		</ul>
 	{/if}
 </section>
+	</div>
+</div>
 
 <style>
 	.backup { display: grid; gap: 0.8rem; max-width: 46rem; }
@@ -380,9 +427,27 @@
 	.navpill { padding: 0.2rem 0.75rem; border: 2px solid var(--border); border-radius: 2rem; font-size: 0.82rem; font-weight: 500; }
 	@media (max-width: 640px) { .menu-head { display: none; } .menu-row { grid-template-columns: 1fr; } }
 	h2 .all { font-size: 0.78rem; font-weight: 400; text-decoration: none; color: var(--primary); margin-left: 0.5rem; }
-	h1 { font-size: 1.5rem; margin: 0 0 1.5rem; letter-spacing: -0.015em; }
-	h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted-foreground); margin: 0 0 0.6rem; }
+	h1 { font-size: 1.5rem; margin: 0 0 1.25rem; letter-spacing: -0.015em; }
+	h2 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; color: var(--foreground); margin: 0 0 0.9rem; }
 	section { margin-bottom: 2.25rem; }
+	section[hidden] { display: none; }
+	.settings { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+	.side { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 0.1rem; }
+	.group { margin: 1.1rem 0 0.3rem; padding: 0 0.75rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
+	.group:first-child { margin-top: 0; }
+	.item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; text-align: left; padding: 0.5rem 0.75rem; border: 0; border-radius: 0.6rem; background: none; color: var(--foreground); font-size: 0.9rem; cursor: pointer; }
+	.item:hover:not(.on) { background: var(--accent); color: var(--accent-foreground); }
+	.item.on { background: var(--primary); color: var(--primary-foreground); font-weight: 600; }
+	.attn { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); flex: none; }
+	.item.on .attn { background: var(--primary-foreground); }
+	.content { min-width: 0; }
+	@media (max-width: 860px) {
+		.settings { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+		.side { position: static; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap: 0.35rem; padding-bottom: 0.3rem; scrollbar-width: none; }
+		.side::-webkit-scrollbar { display: none; }
+		.group { display: none; }
+		.item { width: auto; white-space: nowrap; border-radius: 2rem; border: 1px solid var(--border); }
+	}
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
