@@ -32,8 +32,19 @@ jobs:
         working-directory: functions
         run: npm test
 
+      # Pinned and verified, not the vendor's get.sh: that script asks the
+      # unauthenticated GitHub API for "latest", which is rate-limited on shared
+      # runner IPs and made this step (and so the deploy) fail at random.
       - name: Install Scaleway CLI
-        run: curl -fsSL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sudo sh
+        env:
+          SCW_VERSION: "2.65.1"
+          SCW_SHA256: "b9ced8bc52c27baba76136a24e65a5e0abd53e9499edf02226513977d45da503"
+        run: |
+          curl -fsSL --retry 5 --retry-all-errors -o scw \
+            "https://github.com/scaleway/scaleway-cli/releases/download/v${SCW_VERSION}/scaleway-cli_${SCW_VERSION}_linux_amd64"
+          echo "${SCW_SHA256}  scw" | sha256sum -c -
+          sudo install -m 0755 scw /usr/local/bin/scw
+          scw version
 
       - name: Deploy functions
         working-directory: functions
