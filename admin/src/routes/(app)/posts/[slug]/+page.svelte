@@ -29,8 +29,6 @@
 	// Removing a translation is a deliberate, per-language act — never a
 	// consequence of clearing the title field.
 	let removeTranslation = $state<Record<string, boolean>>({ fr: false, it: false });
-	let showDanger = $state(false);
-	let showRename = $state(false);
 	let newSlug = $state('');
 	let keepRedirect = $state(true);
 	let renaming = $state(false);
@@ -46,7 +44,6 @@
 	let editors = $state<Record<string, RichEditor | undefined>>({});
 
 	/* ------------------------------------------------------------- scheduling */
-	let showSchedule = $state(false);
 	let copied = $state(false);
 	async function copyLink(url: string) {
 		try {
@@ -73,11 +70,6 @@
 		d.setUTCDate(d.getUTCDate() + 1);
 		return d.toISOString().slice(0, 10);
 	});
-	function openSchedule() {
-		showSchedule = !showSchedule;
-		if (!showSchedule || scheduleDay) return;
-		scheduleDay = tomorrow;
-	}
 
 	// After a blocked publish the server returns the findings it rejected on;
 	// otherwise show the checks computed when the page loaded.
@@ -111,12 +103,21 @@
 		return opts;
 	}
 
+	/** One row of tiles: committed pictures, then the ones staged in this browser. */
+	let activeImg = $state<string | null>(null);
+	const strip = $derived([
+		...post.images.map((name) => ({ name, pending: false, src: `/api/image/${post.slug}/${name}`, removing: removed.includes(name) })),
+		...pending.map((p) => ({ name: p.name, pending: true, src: p.previewUrl, removing: false }))
+	]);
+	const activeItem = $derived(strip.find((s) => s.name === activeImg));
+
 	async function onFiles(e: Event) {
 		const input = e.target as HTMLInputElement;
 		imgError = '';
 		for (const file of Array.from(input.files ?? [])) {
 			try {
 				pending.push(await prepareImage(file, [...post.images, ...pending.map((p) => p.name)]));
+				activeImg = pending[pending.length - 1].name;
 			} catch (err) {
 				imgError = err instanceof ImageError ? err.message : String(err);
 			}
@@ -464,78 +465,18 @@
 	const missingPartner = $derived(isErasmus && (!post.partner_name || !post.partner_url));
 </script>
 
-<div class="head">
-	<div>
-		<a class="back" href="/posts">← Articles</a>
-		<h1>{post.translations.en.title || post.slug}</h1>
-		<code>content/blog/{post.slug}/</code>
-	</div>
-</div>
-
-{#if form?.review}
-	{@const r = form.review}
-	<section class="review">
-		<h2>
-			{r.changes.length === 0 ? 'Nothing to commit' : `${r.changes.length} file${r.changes.length === 1 ? '' : 's'} would change`}
-			<span class="msgline">{r.message}{r.draft ? ' · stays a draft' : ''}</span>
-		</h2>
-		{#if r.changes.length === 0}
-			<p class="hint">This article is already exactly as written here.</p>
-		{/if}
-		<FileChanges changes={r.changes} />
-		<p class="hint">Nothing has been written yet — this is what Save or Publish would commit.</p>
-	</section>
-{/if}
-
-{#if form?.message}<p class="msg err">{form.message}</p>{/if}
-{#if data.renamedFrom}
-	<p class="msg ok">
-		Moved from <code>{data.renamedFrom}</code>. The old address
-		{#if data.renamedRedirect}redirects here once the site rebuilds.{:else}is no longer served by this article.{/if}
-	</p>
-{/if}
-
-{#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
-{#if form?.scheduled}<p class="msg ok">Scheduled for {whenLocal(form.at)}{form.newsletter ? ', newsletter included' : ''}.</p>{/if}
-{#if form?.unscheduled}<p class="msg ok">No longer scheduled.</p>{/if}
-
-{#if findings.length > 0}
-	<section class="findings">
-		<h2>
-			{errors.length > 0 ? `${errors.length} to fix before publishing` : `${warnings.length} suggestion${warnings.length === 1 ? '' : 's'}`}
-		</h2>
-		<ul>
-			{#each findings as f}
-				<li class={f.severity}>
-					<span class="sev">{f.severity === 'error' ? 'must fix' : 'suggestion'}</span>
-					{#if f.lang}<span class="lang">{f.lang}</span>{/if}
-					<span>{f.message}</span>
-				</li>
-			{/each}
-		</ul>
-		{#if errors.length === 0}
-			<p class="note">Suggestions never block publishing.</p>
-		{/if}
-	</section>
-{/if}
-
-{#if offer}
-	<section class="restore" class:stale={staleOffer}>
-		<div>
-			<strong>Unsaved changes from {when(offer.savedAt)}</strong>
-			<span>
-				{offer.where === 'this device' ? 'Autosaved on this device.' : 'Autosaved to your account, possibly from another device.'}
-				{#if staleOffer}
-					The article has been saved since then — restoring would replace those newer changes.
-				{/if}
-			</span>
-		</div>
-		<div class="restore-actions">
-			<button type="button" class="btn-primary" onclick={restoreDraft}>Restore</button>
-			<button type="button" class="btn-outline" onclick={discardDraft}>Discard</button>
-		</div>
-	</section>
-{/if}
+{#snippet statusMessages()}
+	{#if form?.message}<p class="msg err">{form.message}</p>{/if}
+	{#if data.renamedFrom}
+		<p class="msg ok">
+			Moved from <code>{data.renamedFrom}</code>. The old address
+			{#if data.renamedRedirect}redirects here once the site rebuilds.{:else}is no longer served by this article.{/if}
+		</p>
+	{/if}
+	{#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
+	{#if form?.scheduled}<p class="msg ok">Scheduled for {whenLocal(form.at)}{form.newsletter ? ', newsletter included' : ''}.</p>{/if}
+	{#if form?.unscheduled}<p class="msg ok">No longer scheduled.</p>{/if}
+{/snippet}
 
 <form method="POST" action="?/save" enctype="multipart/form-data" use:enhance={({ formData, action }) => {
 		for (const p of pending) formData.append('newimage', p.blob, p.name);
@@ -553,108 +494,202 @@
 				pending.forEach((p) => URL.revokeObjectURL(p.previewUrl));
 				pending = [];
 				removed = [];
+				activeImg = null;
 				markCommitted();
 			}
 		};
 	}}>
-	<section class="shared">
+	<header class="bar">
+		<div class="id">
+			<a class="back" href="/posts">← Articles</a>
+			<h1>{post.translations.en.title || post.slug}</h1>
+			<div class="sub">
+				<code>content/blog/{post.slug}/</code>
+				<span class="chip" class:draft={post.draft}>{post.draft ? 'Draft' : 'Published'}</span>
+				{#if data.scheduled?.state === 'pending'}
+					<span class="chip sched">Publishing {whenLocal(data.scheduled.at)}</span>
+				{/if}
+			</div>
+		</div>
+		<div class="actions">
+			<span class="autosave {autosave}" aria-live="polite">
+				{#if autosave === 'dirty'}Unsaved changes
+				{:else if autosave === 'local'}Saved on this device
+				{:else if autosave === 'saving'}Syncing draft…
+				{:else if autosave === 'synced'}Draft synced{#if syncedAt}{' · '}{when(syncedAt)}{/if}
+				{:else if autosave === 'offline'}Offline — kept on this device
+				{:else if autosave === 'signedout'}Signed out — kept on this device
+				{/if}
+			</span>
+			<button type="submit" formaction="?/review" class="btn-ghost btn-sm" disabled={saving || reviewing}>
+				{reviewing ? 'Checking…' : 'Review changes'}
+			</button>
+			<button type="submit" name="intent" value="save" class="btn-outline btn-sm" disabled={saving}>
+				{saving ? 'Saving…' : 'Save'}
+			</button>
+			<button
+				type="submit"
+				name="intent"
+				value="publish"
+				class="btn-primary btn-sm"
+				disabled={saving || errors.length > 0}
+				title={errors.length > 0 ? 'Fix the blocking problems first' : ''}
+			>
+				Publish
+			</button>
+		</div>
+	</header>
+
+	{#if form?.review}
+		{@const r = form.review}
+		<section class="review">
+			<h2>
+				{r.changes.length === 0 ? 'Nothing to commit' : `${r.changes.length} file${r.changes.length === 1 ? '' : 's'} would change`}
+				<span class="msgline">{r.message}{r.draft ? ' · stays a draft' : ''}</span>
+			</h2>
+			{#if r.changes.length === 0}
+				<p class="hint">This article is already exactly as written here.</p>
+			{/if}
+			<FileChanges changes={r.changes} />
+			<p class="hint">Nothing has been written yet — this is what Save or Publish would commit.</p>
+		</section>
+	{/if}
+
+	{@render statusMessages()}
+
+	{#if findings.length > 0}
+		<details class="findings" open={errors.length > 0}>
+			<summary>
+				{#if errors.length > 0}<span class="sev error">{errors.length} to fix before publishing</span>{/if}
+				{#if warnings.length > 0}<span class="sev warning">{warnings.length} suggestion{warnings.length === 1 ? '' : 's'}</span>{/if}
+			</summary>
+			<ul>
+				{#each findings as f}
+					<li class={f.severity}>
+						{#if f.lang}<span class="lang">{f.lang}</span>{/if}
+						<span>{f.message}</span>
+					</li>
+				{/each}
+			</ul>
+			{#if errors.length === 0}<p class="note">Suggestions never block publishing.</p>{/if}
+		</details>
+	{/if}
+
+	{#if offer}
+		<section class="restore" class:stale={staleOffer}>
+			<div>
+				<strong>Unsaved changes from {when(offer.savedAt)}</strong>
+				<span>
+					{offer.where === 'this device' ? 'Autosaved on this device.' : 'Autosaved to your account, possibly from another device.'}
+					{#if staleOffer}
+						The article has been saved since then — restoring would replace those newer changes.
+					{/if}
+				</span>
+			</div>
+			<div class="restore-actions">
+				<button type="button" class="btn-primary btn-sm" onclick={restoreDraft}>Restore</button>
+				<button type="button" class="btn-outline btn-sm" onclick={discardDraft}>Discard</button>
+			</div>
+		</section>
+	{/if}
+
+	<div class="meta">
 		<label>Date<input name="date" bind:value={post.date} placeholder="YYYY-MM-DD" /></label>
 		<label>Category
 			<select name="category" bind:value={post.category}>
 				{#each data.categories as c}<option>{c}</option>{/each}
 			</select>
 		</label>
-		<label>Featured image
-			<select name="featured_image" bind:value={post.featured_image}>
-				<option value="">— first image in the article —</option>
-				{#each optionsFor(post.featured_image) as o}<option value={o.value}>{o.label}</option>{/each}
-			</select>
-		</label>
 		<label class="check"><input type="checkbox" name="draft" bind:checked={post.draft} /> Draft</label>
-	</section>
+		<!-- Chosen from the picture strip below ("Use as thumbnail"). -->
+		<input type="hidden" name="featured_image" value={post.featured_image ?? ''} />
+		{#if post.featured_image && !allImages.includes(post.featured_image)}
+			<p class="hint">Thumbnail <code>{post.featured_image}</code> is missing from the bundle.</p>
+		{/if}
+	</div>
 
 	{#if isErasmus}
-		<fieldset>
-			<legend>Erasmus+ partner strip</legend>
-			<label>Partner name<input name="partner_name" bind:value={post.partner_name} /></label>
-			<label>Partner URL<input name="partner_url" bind:value={post.partner_url} /></label>
-			<label>Partner logo
-				<select name="partner_logo_url" bind:value={post.partner_logo_url}>
-					<option value="">— none —</option>
-					{#each optionsFor(post.partner_logo_url) as o}<option value={o.value}>{o.label}</option>{/each}
-				</select>
-			</label>
-			<label>Project URL<input name="project_url" bind:value={post.project_url} /></label>
-			{#if missingPartner}<p class="hint">Partner name and URL are required for the strip to render.</p>{/if}
-		</fieldset>
+		<details class="partner" open={missingPartner}>
+			<summary>
+				Erasmus+ partner strip
+				<em>{post.partner_name || 'not set'}</em>
+				{#if missingPartner}<span class="need">name and URL needed</span>{/if}
+			</summary>
+			<div class="partner-fields">
+				<label>Partner name<input name="partner_name" bind:value={post.partner_name} /></label>
+				<label>Partner URL<input name="partner_url" bind:value={post.partner_url} /></label>
+				<label>Partner logo
+					<select name="partner_logo_url" bind:value={post.partner_logo_url}>
+						<option value="">— none —</option>
+						{#each optionsFor(post.partner_logo_url) as o}<option value={o.value}>{o.label}</option>{/each}
+					</select>
+				</label>
+				<label>Project URL<input name="project_url" bind:value={post.project_url} /></label>
+			</div>
+			<p class="fixed-note"><span>EU funding line</span>{post.translations[tab].eu_funding_text || 'Added automatically when you save.'}</p>
+		</details>
 	{/if}
 
-	{#snippet thumbChoice(name: string)}
-		{#if thumbnail === name}
-			<span class="thumb-badge">
-				Thumbnail{post.featured_image ? '' : ' · first image'}
-				{#if post.featured_image}
-					<button type="button" onclick={() => (post.featured_image = '')}>use first image</button>
-				{/if}
-			</span>
-		{:else if name !== post.partner_logo_url}
-			<button type="button" class="thumb-pick" onclick={() => (post.featured_image = name)}>Use as thumbnail</button>
-		{/if}
-	{/snippet}
-
-	<fieldset class="images">
-		<legend>Images</legend>
-
-		<label class="picker">
+	<div class="strip" aria-label="Pictures in this article">
+		<label class="add" title="Resized to 1600px and converted to WebP in your browser. EXIF data, including GPS location, is stripped.">
 			<input type="file" accept="image/*" multiple onchange={onFiles} />
-			<span>Add images</span>
+			<span class="plus">+</span>
+			<small>Add</small>
 		</label>
-		<p class="note">
-			Resized to 1600px and converted to WebP in your browser. EXIF data, including GPS
-			location, is stripped in the process.
-		</p>
-		{#if imgError}<p class="hint">{imgError}</p>{/if}
+		{#each strip as s (s.name)}
+			<button
+				type="button"
+				class="tile"
+				class:on={activeImg === s.name}
+				class:removing={s.removing}
+				class:new={s.pending}
+				title={s.name}
+				onclick={() => (activeImg = activeImg === s.name ? null : s.name)}
+			>
+				<img src={s.src} alt="" loading="lazy" />
+				{#if thumbnail === s.name}<b class="star" title="Thumbnail">★</b>{/if}
+			</button>
+		{/each}
+		{#if strip.length === 0}<span class="empty">No pictures yet. They appear in the article as you insert them.</span>{/if}
+	</div>
+	{#if imgError}<p class="hint">{imgError}</p>{/if}
 
-		{#if allImages.length === 0 && pending.length === 0}
-			<p class="empty">No images in this bundle yet.</p>
-		{:else}
-			<ul class="grid">
-				{#each post.images as name}
-					<li class:removing={removed.includes(name)} class:thumb={thumbnail === name}>
-						<img src="/api/image/{post.slug}/{name}" alt="" loading="lazy" />
-						{@render thumbChoice(name)}
-						<code>{name}</code>
-						<input class="alt" placeholder="alt text" bind:value={altText[name]} />
-						<div class="row">
-							<button type="button" onclick={() => insert(name)}>Insert</button>
-							<button type="button" class="danger" onclick={() => toggleRemove(name)}>
-								{removed.includes(name) ? 'Keep' : 'Delete'}
-							</button>
-						</div>
-						{#if removed.includes(name) && usedBy(name)}
-							<p class="hint">Still referenced — remove the reference or it won't save.</p>
+	{#if activeItem}
+		{@const s = activeItem}
+		{@const p = pending.find((x) => x.name === s.name)}
+		<div class="picked">
+			<img src={s.src} alt="" />
+			<div class="picked-body">
+				<div class="picked-top">
+					<code>{s.name}</code>
+					{#if p}<span class="meta-line">{p.width}×{p.height} · {formatBytes(p.originalBytes)} → {formatBytes(p.blob.size)}</span>{/if}
+				</div>
+				<input class="alt" placeholder="Describe the picture (alt text)" bind:value={altText[s.name]} />
+				<div class="picked-actions">
+					<button type="button" class="btn-primary btn-sm" onclick={() => insert(s.name)}>Insert in {LANG_NAMES[tab]} text</button>
+					{#if thumbnail === s.name}
+						<span class="is-thumb">★ Thumbnail{post.featured_image ? '' : ' (first picture)'}</span>
+						{#if post.featured_image}
+							<button type="button" class="btn-ghost btn-sm" onclick={() => (post.featured_image = '')}>Use the first picture</button>
 						{/if}
-					</li>
-				{/each}
-				{#each pending as p}
-					<li class="new" class:thumb={thumbnail === p.name}>
-						<img src={p.previewUrl} alt="" />
-						{@render thumbChoice(p.name)}
-						<code>{p.name}</code>
-						<span class="meta">{p.width}×{p.height} · {formatBytes(p.originalBytes)} → {formatBytes(p.blob.size)}</span>
-						<input class="alt" placeholder="alt text" bind:value={altText[p.name]} />
-						<div class="row">
-							<button type="button" onclick={() => insert(p.name)}>Insert</button>
-							<button type="button" class="danger" onclick={() => dropPending(p.name)}>Discard</button>
-						</div>
-					</li>
-				{/each}
-			</ul>
-			{#if pending.length}
-				<p class="note">{pending.length} image{pending.length > 1 ? 's' : ''} will be committed with your next save.</p>
-			{/if}
-		{/if}
-	</fieldset>
+					{:else if s.name !== post.partner_logo_url}
+						<button type="button" class="btn-outline btn-sm" onclick={() => (post.featured_image = s.name)}>Use as thumbnail</button>
+					{/if}
+					{#if s.pending}
+						<button type="button" class="btn-danger-quiet btn-sm" onclick={() => { dropPending(s.name); activeImg = null; }}>Discard</button>
+					{:else}
+						<button type="button" class="btn-danger-quiet btn-sm" onclick={() => toggleRemove(s.name)}>{removed.includes(s.name) ? 'Keep' : 'Delete'}</button>
+					{/if}
+				</div>
+				{#if removed.includes(s.name) && usedBy(s.name)}
+					<p class="hint">Still referenced — remove the reference or it won't save.</p>
+				{/if}
+			</div>
+		</div>
+	{/if}
+	{#if pending.length}
+		<p class="note">{pending.length} picture{pending.length > 1 ? 's' : ''} will be committed with your next save (pictures are not autosaved).</p>
+	{/if}
 
 	<div class="tabs">
 		<div class="view-switch" role="group" aria-label="Editor layout">
@@ -676,7 +711,7 @@
 			{#if l !== 'en'}
 				<div class="mt">
 					{#if data.canTranslate}
-						<button type="button" class="btn-outline" onclick={() => draftTranslation(l)}
+						<button type="button" class="btn-outline btn-sm" onclick={() => draftTranslation(l)}
 							disabled={translating !== null || !post.translations.en.body.trim()}>
 							{translating === l ? 'Translating…' : `Draft ${LANG_NAMES[l]} from English`}
 						</button>
@@ -687,25 +722,17 @@
 				</div>
 				{#if mtNote[l]}<p class="mt-note" class:err={!mtNote[l]?.ok} role="status">{mtNote[l]?.text}</p>{/if}
 			{/if}
-			<label>Title<input name="title_{l}" bind:value={post.translations[l].title} /></label>
-			<label>Description
-				<textarea name="description_{l}" rows="2" bind:value={post.translations[l].description}></textarea>
-				<span class="count" class:warn={post.translations[l].description.length > 160 || (post.translations[l].description.length > 0 && post.translations[l].description.length < 120)}>
-					{post.translations[l].description.length} chars (120–160 ideal)
-				</span>
-			</label>
-			{#if isErasmus}
-				<p class="fixed-note">
-					<span>EU funding line</span>
-					{post.translations[l].eu_funding_text || 'Added automatically when you save.'}
-				</p>
-			{/if}
-			{#if l !== 'en'}
-				<label class="check">
-					<input type="checkbox" name="untranslated_{l}" bind:checked={post.translations[l].untranslated} />
-					Mark as not yet translated (shows the “read it in another language” notice)
+			<div class="headline">
+				<label>Title<input name="title_{l}" bind:value={post.translations[l].title} /></label>
+				<label>
+					<span class="lbl">Description
+						<span class="count" class:warn={post.translations[l].description.length > 160 || (post.translations[l].description.length > 0 && post.translations[l].description.length < 120)}>
+							{post.translations[l].description.length} / 120–160
+						</span>
+					</span>
+					<textarea name="description_{l}" rows="2" bind:value={post.translations[l].description}></textarea>
 				</label>
-			{/if}
+			</div>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="writing" data-view={shown} onscrollcapture={onBodyScroll}>
 				<div class="body-field">
@@ -736,16 +763,25 @@
 					</div>
 				{/if}
 			</div>
-			{#if l !== 'en' && !post.translations[l].exists}
-				<p class="hint">
-					No {LANG_NAMES[l]} file yet. Leaving the title empty keeps it that way — Hugo generates
-					the “not yet translated” page automatically.
-				</p>
-			{:else if l !== 'en'}
-				<label class="check danger-check">
-					<input type="checkbox" name="delete_translation_{l}" bind:checked={removeTranslation[l]} />
-					Delete the {LANG_NAMES[l]} translation on save
-				</label>
+			{#if l !== 'en'}
+				{#if !post.translations[l].exists}
+					<p class="hint">
+						No {LANG_NAMES[l]} file yet. Leaving the title empty keeps it that way — Hugo generates
+						the “not yet translated” page automatically.
+					</p>
+				{/if}
+				<div class="tr-options">
+					<label class="check">
+						<input type="checkbox" name="untranslated_{l}" bind:checked={post.translations[l].untranslated} />
+						Show the “read it in another language” notice
+					</label>
+					{#if post.translations[l].exists}
+						<label class="check danger-check">
+							<input type="checkbox" name="delete_translation_{l}" bind:checked={removeTranslation[l]} />
+							Delete this translation on save
+						</label>
+					{/if}
+				</div>
 				{#if removeTranslation[l]}
 					<p class="hint">
 						<strong>{LANG_NAMES[l]} will be deleted.</strong> Hugo will fall back to the
@@ -755,319 +791,310 @@
 			{/if}
 		</div>
 	{/each}
-
-	<div class="actions">
-		<button type="submit" name="intent" value="save" class="btn-outline" disabled={saving}>
-			{saving ? 'Saving…' : 'Save'}
-		</button>
-		<button
-			type="submit"
-			name="intent"
-			value="publish"
-			class="btn-primary"
-			disabled={saving || errors.length > 0}
-			title={errors.length > 0 ? 'Fix the blocking problems above first' : ''}
-		>
-			Publish
-		</button>
-		{#if errors.length > 0}
-			<span class="blocked">{errors.length} problem{errors.length === 1 ? '' : 's'} blocking publish</span>
-		{/if}
-		<button type="submit" formaction="?/review" class="btn-outline" disabled={saving || reviewing}>
-			{reviewing ? 'Checking…' : 'Review changes'}
-		</button>
-		<span class="autosave {autosave}" aria-live="polite">
-			{#if autosave === 'dirty'}Unsaved changes
-			{:else if autosave === 'local'}Saved on this device
-			{:else if autosave === 'saving'}Syncing draft…
-			{:else if autosave === 'synced'}Draft synced{#if syncedAt}{' · '}{when(syncedAt)}{/if}
-			{:else if autosave === 'offline'}Offline — kept on this device
-			{:else if autosave === 'signedout'}Signed out — kept on this device. Sign in again in another tab, then keep typing.
-			{/if}
-		</span>
-	</div>
-	{#if pending.length > 0}
-		<p class="note pending-note">Images you have added are not autosaved — Save to keep them.</p>
-	{/if}
 </form>
 
-<section class="share" aria-label="Share a draft">
-	<h3>Show this draft to someone</h3>
-	{#if data.share}
-		<div class="share-row">
-			<input readonly value={data.share.url} aria-label="Preview link" onfocus={(e) => e.currentTarget.select()} />
-			<button type="button" class="btn-outline btn-sm" onclick={() => copyLink(data.share!.url)}>{copied ? 'Copied' : 'Copy'}</button>
-			<a class="btn-outline btn-sm" href={data.share.url} target="_blank" rel="noopener">Open</a>
-		</div>
-		<p class="hint">
-			Anyone with this link can read the article until {new Date(data.share.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}, with no account.
-			It shows {data.share.autosave ? 'your latest autosaved text' : 'the saved article'}, and nothing is published.
-		</p>
-		<div class="share-row">
-			<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-ghost btn-sm" title="Replaces this link with a new one, so the old one stops working">New link</button></form>
-			<form method="POST" action="?/unshare" use:enhance><button type="submit" class="btn-danger-quiet btn-sm">Stop sharing</button></form>
-		</div>
-	{:else}
-		<p class="hint">Get a private link to read this article as it looks now, including what you have not saved yet. Nothing is published, and the link stops working after 7 days.</p>
-		<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-outline">Create a preview link</button></form>
-	{/if}
-</section>
-
-<SiteChecks urls={data.webUrls} googleReady={data.googleReady} />
-
-<section class="schedule">
-	{#if data.scheduled?.state === 'pending'}
-		<p class="scheduled-now">
-			<strong>Publishing {whenLocal(data.scheduled.at)}</strong>
-			{#if data.scheduled.newsletter}· the newsletter goes out once it is live{/if}
-		</p>
-		<form method="POST" action="?/unschedule" use:enhance>
-			<button type="submit" class="linkish">Cancel that</button>
-		</form>
-	{:else if data.scheduled?.state === 'published' && data.scheduled.newsletter}
-		<p class="scheduled-now">
-			{#if data.scheduled.announceAt && !data.scheduled.announcedAt}
-				Published. The newsletter is scheduled for <strong>{whenLocal(data.scheduled.announceAt)}</strong>. <a href="/newsletter?slug={post.slug}">Change it</a>
-			{:else}
-				Published. The newsletter goes out as soon as the site has rebuilt.
-			{/if}
-		</p>
-	{:else if data.scheduled?.error}
-		<p class="msg err">Scheduled publishing failed: {data.scheduled.error}</p>
-	{:else}
-		<button type="button" class="linkish" onclick={openSchedule}>
-			{showSchedule ? 'Cancel' : 'Publish this later'}
-		</button>
-		{#if showSchedule}
-			<form method="POST" action="?/schedule" use:enhance>
-				<label>Day
-					<input type="date" name="day" min={tomorrow} bind:value={scheduleDay} />
-				</label>
-				<label class="check">
-					<input type="checkbox" name="newsletter" bind:checked={alsoNewsletter} disabled={!data.canSendNewsletter} />
-					Send the newsletter too
-				</label>
+<section class="more" aria-label="More about this article">
+	<details>
+		<summary>Preview link{#if data.share}<em>active until {new Date(data.share.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</em>{/if}</summary>
+		<div class="body">
+			{#if data.share}
+				<div class="share-row">
+					<input readonly value={data.share.url} aria-label="Preview link" onfocus={(e) => e.currentTarget.select()} />
+					<button type="button" class="btn-outline btn-sm" onclick={() => copyLink(data.share!.url)}>{copied ? 'Copied' : 'Copy'}</button>
+					<a class="btn-outline btn-sm" href={data.share.url} target="_blank" rel="noopener">Open</a>
+					<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-ghost btn-sm" title="Replaces this link with a new one, so the old one stops working">New link</button></form>
+					<form method="POST" action="?/unshare" use:enhance><button type="submit" class="btn-danger-quiet btn-sm">Stop sharing</button></form>
+				</div>
 				<p class="hint">
-					Goes live at 9:00 (Paris time) on the day you pick.
-					{#if !data.canSendNewsletter}
-						Sending needs RESEND_API_KEY.
-					{:else if alsoNewsletter}
-						The newsletter follows at 9:30, once the site has rebuilt, so the link in it works.
-						<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
+					Anyone with this link can read the article until {new Date(data.share.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}, with no account.
+					It shows {data.share.autosave ? 'your latest autosaved text' : 'the saved article'}, and nothing is published.
+				</p>
+			{:else}
+				<p class="hint">A private link to read this article as it looks now, including what you have not saved yet. Nothing is published, and it stops working after 7 days.</p>
+				<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-outline btn-sm">Create a preview link</button></form>
+			{/if}
+		</div>
+	</details>
+
+	{#if data.webUrls.length > 0}
+		<details>
+			<summary>On the web <em>Google index and speed</em></summary>
+			<div class="body checks-body"><SiteChecks urls={data.webUrls} googleReady={data.googleReady} /></div>
+		</details>
+	{/if}
+
+	<details open={data.scheduled?.state === 'pending' || !!data.scheduled?.error}
+		ontoggle={(e) => { if (e.currentTarget.open && !scheduleDay) scheduleDay = tomorrow; }}>
+		<summary>
+			{#if data.scheduled?.state === 'pending'}Scheduled<em>{whenLocal(data.scheduled.at)}</em>{:else}Publish later{/if}
+		</summary>
+		<div class="body">
+			{#if data.scheduled?.state === 'pending'}
+				<p class="scheduled-now">
+					<strong>Publishing {whenLocal(data.scheduled.at)}</strong>
+					{#if data.scheduled.newsletter}· the newsletter goes out once it is live{/if}
+				</p>
+				<form method="POST" action="?/unschedule" use:enhance>
+					<button type="submit" class="btn-outline btn-sm">Cancel that</button>
+				</form>
+			{:else if data.scheduled?.state === 'published' && data.scheduled.newsletter}
+				<p class="scheduled-now">
+					{#if data.scheduled.announceAt && !data.scheduled.announcedAt}
+						Published. The newsletter is scheduled for <strong>{whenLocal(data.scheduled.announceAt)}</strong>. <a href="/newsletter?slug={post.slug}">Change it</a>
 					{:else}
-						Nothing is emailed.
+						Published. The newsletter goes out as soon as the site has rebuilt.
 					{/if}
 				</p>
-				{#if !data.canRunOnSchedule}
-					<p class="hint">Automatic publishing needs CRON_TOKEN; until then it happens the next time you open the portal.</p>
+			{:else}
+				{#if data.scheduled?.error}
+					<p class="msg err">Scheduled publishing failed: {data.scheduled.error}</p>
 				{/if}
-				<button type="submit" class="btn-primary">Schedule it</button>
+				<form method="POST" action="?/schedule" use:enhance class="stack">
+					<label>Day
+						<input type="date" name="day" min={tomorrow} bind:value={scheduleDay} />
+					</label>
+					<label class="check">
+						<input type="checkbox" name="newsletter" bind:checked={alsoNewsletter} disabled={!data.canSendNewsletter} />
+						Send the newsletter too
+					</label>
+					<p class="hint">
+						Goes live at 9:00 (Paris time) on the day you pick.
+						{#if !data.canSendNewsletter}
+							Sending needs RESEND_API_KEY.
+						{:else if alsoNewsletter}
+							The newsletter follows at 9:30, once the site has rebuilt, so the link in it works.
+							<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
+						{:else}
+							Nothing is emailed.
+						{/if}
+					</p>
+					{#if !data.canRunOnSchedule}
+						<p class="hint">Automatic publishing needs CRON_TOKEN; until then it happens the next time you open the portal.</p>
+					{/if}
+					<button type="submit" class="btn-primary btn-sm">Schedule it</button>
+				</form>
+			{/if}
+		</div>
+	</details>
+
+	<details ontoggle={(e) => { newSlug = e.currentTarget.open ? post.slug : ''; }}>
+		<summary>Web address <em>/blog/{post.slug}/</em></summary>
+		<div class="body">
+			<form method="POST" action="?/rename" use:enhance={() => { renaming = true; return async ({ update }) => { await update(); renaming = false; }; }} class="stack">
+				<p>
+					Moves the whole bundle — every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'} —
+					and updates any article that links here, in one commit.
+				</p>
+				<label>New address
+					<input name="slug" bind:value={newSlug} autocomplete="off" spellcheck="false" placeholder={post.slug} />
+				</label>
+				<p class="urls">
+					{#if slugOk}
+						<code>{data.siteUrl}/en/blog/{newSlug}/</code>
+					{:else if newSlug && newSlug !== post.slug}
+						<span class="bad">Lowercase letters, digits and single hyphens only.</span>
+					{/if}
+				</p>
+				<label class="check">
+					<!-- The intent travels in a hidden field: an unticked checkbox submits
+					     nothing at all, which would read as "no answer" and keep the redirect. -->
+					<input type="hidden" name="redirect" value={keepRedirect ? 'on' : 'off'} />
+					<input type="checkbox" bind:checked={keepRedirect} />
+					Leave a redirect at the old address
+				</label>
+				<p class="hint">
+					{#if keepRedirect}
+						Anyone following an old link — a newsletter, a search result, someone else's page — lands on the new one.
+					{:else}
+						<strong>Old links break.</strong> The old address keeps serving the old copy until the host is cleaned out,
+						because a build never removes files it no longer produces.
+					{/if}
+				</p>
+				<button type="submit" class="btn-primary btn-sm" disabled={!slugOk || renaming}>
+					{renaming ? 'Moving…' : 'Change address'}
+				</button>
 			</form>
-		{/if}
-	{/if}
-</section>
+		</div>
+	</details>
 
-<section class="rename">
-	<button type="button" class="linkish" onclick={() => { showRename = !showRename; newSlug = showRename ? post.slug : ''; }}>
-		{showRename ? 'Cancel' : 'Change the web address'}
-	</button>
-	{#if showRename}
-		<form method="POST" action="?/rename" use:enhance={() => { renaming = true; return async ({ update }) => { await update(); renaming = false; }; }}>
-			<p>
-				Moves the whole bundle — every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'} —
-				and updates any article that links here, in one commit.
-			</p>
-			<label>New address
-				<input name="slug" bind:value={newSlug} autocomplete="off" spellcheck="false" placeholder={post.slug} />
-			</label>
-			<p class="urls">
-				{#if slugOk}
-					<code>{data.siteUrl}/en/blog/{newSlug}/</code>
-				{:else if newSlug && newSlug !== post.slug}
-					<span class="bad">Lowercase letters, digits and single hyphens only.</span>
-				{/if}
-			</p>
-			<label class="check">
-				<!-- The intent travels in a hidden field: an unticked checkbox submits
-				     nothing at all, which would read as "no answer" and keep the redirect. -->
-				<input type="hidden" name="redirect" value={keepRedirect ? 'on' : 'off'} />
-				<input type="checkbox" bind:checked={keepRedirect} />
-				Leave a redirect at the old address
-			</label>
-			<p class="hint">
-				{#if keepRedirect}
-					Anyone following an old link — a newsletter, a search result, someone else's page — lands on the new one.
-				{:else}
-					<strong>Old links break.</strong> The old address keeps serving the old copy until the host is cleaned out,
-					because a build never removes files it no longer produces.
-				{/if}
-			</p>
-			<button type="submit" class="btn-primary" disabled={!slugOk || renaming}>
-				{renaming ? 'Moving…' : 'Change address'}
-			</button>
-		</form>
-	{/if}
-</section>
+	<HistoryPanel
+		endpoint="/api/history/posts/{post.slug}"
+		onRestore={(v: Version) => restoreVersion(v)}
+		note="Every save is kept. Loading an older version fills the editor with its text; images stay as they are now."
+	/>
 
-<HistoryPanel
-	endpoint="/api/history/posts/{post.slug}"
-	onRestore={(v: Version) => restoreVersion(v)}
-	note="Every save is kept. Loading an older version fills the editor with its text; images stay as they are now."
-/>
-
-<section class="danger-zone">
-	<button type="button" class="linkish" onclick={() => (showDanger = !showDanger)}>
-		{showDanger ? 'Cancel' : 'Delete this article'}
-	</button>
-	{#if showDanger}
-		<form method="POST" action="?/delete" use:enhance>
-			<p>
-				Deletes every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'}
-				in <code>content/blog/{post.slug}/</code>. Recoverable only from git history. Type the slug
-				to confirm.
-			</p>
-			<input name="confirm" bind:value={confirmSlug} placeholder={post.slug} autocomplete="off" />
-			<button type="submit" class="btn-danger" disabled={confirmSlug !== post.slug}>
-				Delete {post.slug}
-			</button>
-		</form>
-	{/if}
+	<details class="danger-zone">
+		<summary>Delete this article</summary>
+		<div class="body">
+			<form method="POST" action="?/delete" use:enhance class="stack">
+				<p>
+					Deletes every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'}
+					in <code>content/blog/{post.slug}/</code>. Recoverable only from git history. Type the slug
+					to confirm.
+				</p>
+				<input name="confirm" bind:value={confirmSlug} placeholder={post.slug} autocomplete="off" />
+				<button type="submit" class="btn-danger btn-sm" disabled={confirmSlug !== post.slug}>
+					Delete {post.slug}
+				</button>
+			</form>
+		</div>
+	</details>
 </section>
 
 <style>
-	.head { margin-bottom: 1.25rem; }
-	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); }
-	h1 { font-size: 1.4rem; margin: 0.35rem 0 0.15rem; letter-spacing: -0.015em; }
 	code { font-size: 0.78rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
-	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
+	.msg { padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 0.75rem; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
-	.shared { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: 0.75rem; align-items: end; }
-	fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem 1rem; margin: 1.25rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.75rem; }
-	legend { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); padding: 0 0.35rem; }
-	.danger-check { color: var(--danger); }
-	.share { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: grid; gap: 0.6rem; max-width: 40rem; }
-	.share h3 { margin: 0; font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
-	.share .hint { margin: 0; font-size: 0.84rem; color: var(--muted-foreground); }
-	.share-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-	.share-row input { flex: 1; min-width: 14rem; font-family: ui-monospace, monospace; font-size: 0.78rem; }
-	.share-row form { margin: 0; }
-	.schedule { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
-	.schedule form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; margin-top: 0.6rem; }
-	.schedule .hint { margin: 0; font-size: 0.84rem; color: var(--muted-foreground); }
-	.scheduled-now { margin: 0 0 0.3rem; font-size: 0.9rem; }
-	.rename { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
-	.rename form { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; }
-	.rename p { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
-	.rename .urls { min-height: 1.2rem; }
-	.rename .urls code { color: var(--ok); }
-	.rename .bad { color: var(--danger); font-size: 0.82rem; }
-	.rename label { width: 100%; }
+	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.4rem 0 0; }
+	.note { font-size: 0.78rem; color: var(--muted-foreground); margin: 0.4rem 0 0; }
+
+	/* The title, the state and the buttons stay in view while writing. */
+	.bar {
+		position: sticky; top: 0; z-index: 6; display: flex; align-items: flex-end; justify-content: space-between;
+		gap: 1rem; flex-wrap: wrap; padding: 0.4rem 0 0.7rem; margin-bottom: 0.9rem;
+		background: var(--background); border-bottom: 1px solid var(--border);
+	}
+	.id { min-width: 0; }
+	.back { font-size: 0.8rem; text-decoration: none; color: var(--muted-foreground); }
+	h1 { font-size: 1.25rem; margin: 0.15rem 0 0.2rem; letter-spacing: -0.015em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 38rem; }
+	.sub { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+	.chip { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.1rem 0.45rem; border-radius: 999px; background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+	.chip.draft { background: var(--warn-bg); color: var(--warn); }
+	.chip.sched { background: var(--accent); color: var(--accent-foreground); }
+	.actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+	.autosave { font-size: 0.78rem; color: var(--muted-foreground); margin-right: 0.25rem; }
+	.autosave.dirty, .autosave.offline, .autosave.signedout { color: var(--warn); }
+	.autosave.synced, .autosave.local { color: var(--ok); }
+
+	.meta { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+	.meta label:not(.check) { width: 11rem; }
+	.meta .check { padding-bottom: 0.6rem; }
+	.meta .hint { flex-basis: 100%; margin: 0; }
 	label.check { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--foreground); }
 	label.check input { width: auto; margin: 0; }
-	.count { font-size: 0.72rem; color: var(--muted-foreground); }
-	.count.warn { color: var(--warn); }
-	.hint { font-size: 0.82rem; color: var(--warn); margin: 0.5rem 0 0; }
-	.tabs { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 1.75rem 0 0.9rem; border-bottom: 1px solid var(--border); }
-	.tabs > button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 0.5rem 0.8rem; cursor: pointer; color: var(--muted-foreground); font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+
+	.partner { margin-top: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); padding: 0.45rem 0.8rem; }
+	.partner summary { cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; gap: 0.6rem; align-items: baseline; }
+	.partner summary em { font-style: normal; color: var(--muted-foreground); font-weight: 400; }
+	.partner .need { color: var(--warn); font-size: 0.78rem; }
+	.partner-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr)); gap: 0.6rem; margin-top: 0.6rem; }
+	.fixed-note { margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--muted-foreground); }
+	.fixed-note span { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.68rem; margin-right: 0.5rem; }
+
+	/* Pictures: a single row of small tiles; the one picked opens below it. */
+	.strip { display: flex; gap: 0.45rem; align-items: center; margin-top: 0.9rem; overflow-x: auto; padding: 0.2rem 0.1rem 0.35rem; }
+	.add { flex: none; width: 3.75rem; height: 3.75rem; border: 1px dashed var(--border); border-radius: 8px; display: grid; place-content: center; text-align: center; cursor: pointer; color: var(--muted-foreground); gap: 0; }
+	.add input { display: none; }
+	.add .plus { font-size: 1.3rem; line-height: 1; }
+	.add small { font-size: 0.68rem; }
+	.add:hover { color: var(--foreground); border-color: var(--primary); }
+	.tile { flex: none; position: relative; width: 3.75rem; height: 3.75rem; padding: 0; border: 2px solid transparent; border-radius: 8px; background: var(--card); cursor: pointer; overflow: hidden; }
+	.tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.tile.on { border-color: var(--primary); }
+	.tile.new { border-color: var(--brand-yellow-deep); }
+	.tile.removing { opacity: 0.4; border-color: var(--danger); }
+	.star { position: absolute; top: 2px; right: 3px; font-size: 0.8rem; color: #fff; text-shadow: 0 0 3px rgba(0, 0, 0, 0.8); }
+	.empty { font-size: 0.8rem; color: var(--muted-foreground); }
+
+	.picked { display: flex; gap: 0.8rem; align-items: flex-start; margin-top: 0.4rem; padding: 0.7rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+	.picked > img { width: 7rem; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; flex: none; }
+	.picked-body { flex: 1; min-width: 0; display: grid; gap: 0.45rem; }
+	.picked-top { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+	.picked-top code { word-break: break-all; }
+	.meta-line { font-size: 0.72rem; color: var(--muted-foreground); }
+	.alt { margin: 0; font-size: 0.85rem; padding: 0.4rem 0.55rem; width: 100%; }
+	.picked-actions { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+	.is-thumb { font-size: 0.78rem; font-weight: 600; color: var(--primary); }
+
+	.tabs { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.9rem 0 0.7rem; border-bottom: 1px solid var(--border); }
+	.tabs > button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 0.4rem 0.8rem; cursor: pointer; color: var(--muted-foreground); font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
 	.tabs > button.active { color: var(--foreground); border-bottom-color: var(--primary); font-weight: 600; }
 	.tabs i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); display: inline-block; }
 	.tabs i.on { background: var(--primary); }
-	.pane { display: grid; gap: 0.85rem; }
-	.restore {
-		display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-		margin: 0 0 1.25rem; padding: 0.9rem 1.1rem; border-radius: var(--radius);
-		background: var(--brand-yellow-soft); border: 1px solid var(--brand-yellow-deep);
-	}
-	.restore.stale { background: var(--warn-bg); border-color: var(--warn); }
-	.restore > div:first-child { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 14rem; }
-	.restore span { font-size: 0.84rem; color: var(--muted-foreground); }
-	.restore-actions { display: flex; gap: 0.5rem; }
+	.view-switch { display: flex; gap: 0.3rem; margin-right: auto; padding-bottom: 0.35rem; }
+	.view-switch .pill { font-size: 0.78rem; padding: 0.2rem 0.7rem; }
 
-	.view-switch { display: flex; gap: 0.3rem; margin-right: auto; padding-bottom: 0.4rem; }
-	.view-switch .pill { font-size: 0.78rem; padding: 0.22rem 0.7rem; }
+	.pane { display: grid; gap: 0.65rem; }
+	.headline { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 0.75rem; align-items: start; }
+	.headline textarea { resize: vertical; }
+	.lbl { display: flex; justify-content: space-between; align-items: baseline; }
+	.count { font-size: 0.72rem; color: var(--muted-foreground); font-weight: 400; }
+	.count.warn { color: var(--warn); }
+	.tr-options { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+	.danger-check { color: var(--danger); }
 
 	.writing { display: grid; gap: 1rem; }
 	.writing[data-view='split'] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 	/* Preview-only keeps the textarea in the form (it must still submit) but out of sight. */
 	.writing[data-view='preview'] .body-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-	.preview { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+	.preview { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; height: 75vh; }
 	.preview-label { font-size: 0.72rem; color: var(--muted-foreground); }
-	.preview { height: 75vh; }
 	.writing[data-view='split'] :global(.editor .surface) { max-height: calc(75vh - 2.5rem); }
+	.writing :global(.editor .surface) { min-height: 26rem; max-height: 78vh; }
+
+	.mt { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.4rem 0.65rem; border: 1px dashed var(--border); border-radius: var(--radius); }
+	.mt span { font-size: 0.8rem; color: var(--muted-foreground); }
+	.mt-note { margin: 0; font-size: 0.84rem; color: var(--ok); }
+	.mt-note.err { color: var(--danger); }
+
+	.review { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1.1rem; margin: 0 0 0.9rem; }
+	.review h2 { font-size: 0.95rem; margin: 0 0 0.75rem; display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+	.review .msgline { font-weight: 400; font-size: 0.8rem; color: var(--muted-foreground); }
+
+	.restore { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 0 0 0.9rem; padding: 0.7rem 1rem; border-radius: var(--radius); background: var(--brand-yellow-soft); border: 1px solid var(--brand-yellow-deep); }
+	.restore.stale { background: var(--warn-bg); border-color: var(--warn); }
+	.restore > div:first-child { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 14rem; }
+	.restore span { font-size: 0.84rem; color: var(--muted-foreground); }
+	.restore-actions { display: flex; gap: 0.5rem; }
+
+	.findings { margin: 0 0 0.9rem; font-size: 0.85rem; }
+	.findings summary { cursor: pointer; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+	.findings ul { list-style: none; padding: 0; margin: 0.5rem 0 0; display: grid; gap: 0.3rem; }
+	.findings li { display: flex; gap: 0.5rem; align-items: baseline; }
+	.findings .sev { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
+	.findings .sev.error { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+	.findings .sev.warning { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+	.findings .lang { font-variant: small-caps; font-weight: 700; color: var(--muted-foreground); font-size: 0.75rem; }
+
+	/* Everything seldom needed, folded into one list. */
+	.more { margin-top: 2rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+	.more :global(details) { border-top: 1px solid var(--border); }
+	.more :global(details:first-child) { border-top: 0; }
+	.more :global(summary) { cursor: pointer; padding: 0.65rem 1rem; font-size: 0.88rem; font-weight: 500; color: var(--foreground); display: flex; gap: 0.6rem; align-items: baseline; list-style: none; }
+	.more :global(summary::-webkit-details-marker) { display: none; }
+	.more :global(summary::before) { content: '›'; color: var(--muted-foreground); transition: transform 0.15s; display: inline-block; width: 0.7rem; }
+	.more :global(details[open] > summary::before) { transform: rotate(90deg); }
+	.more :global(summary em) { font-style: normal; font-weight: 400; color: var(--muted-foreground); font-size: 0.8rem; }
+	.more :global(summary:hover) { color: var(--primary); }
+	.more .body { padding: 0 1rem 1rem 2.3rem; display: grid; gap: 0.6rem; }
+	.more .body p { margin: 0; font-size: 0.85rem; color: var(--muted-foreground); }
+	.more .body .hint { color: var(--muted-foreground); }
+	.more .stack { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; max-width: 34rem; }
+	.more .stack label { width: 100%; }
+	.more .checks-body :global(.checks h3) { display: none; }
+	.more .checks-body :global(.checks) { margin: 0; padding: 0; border: 0; }
+	.share-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+	.share-row input { flex: 1; min-width: 14rem; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+	.share-row form { margin: 0; }
+	.scheduled-now { margin: 0; font-size: 0.9rem; color: var(--foreground) !important; }
+	.urls { min-height: 1.2rem; }
+	.urls code { color: var(--ok); }
+	.bad { color: var(--danger); font-size: 0.82rem; }
+	.danger-zone summary { color: var(--danger); }
+	.more .danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--background); width: 100%; }
+
+	@media (max-width: 900px) {
+		.headline { grid-template-columns: 1fr; }
+		.picked { flex-direction: column; }
+		.picked > img { width: 100%; max-width: 14rem; }
+	}
 	@media (max-width: 1100px) {
 		.split-only { display: none; }
 	}
 	@media (max-width: 560px) {
-		/* The layout switch gets its own row so all three languages fit. */
 		.view-switch { flex-basis: 100%; }
-		.tabs > button { padding: 0.5rem 0.6rem; }
+		.tabs > button { padding: 0.45rem 0.6rem; }
+		h1 { white-space: normal; }
 	}
-
-	.mt { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.55rem 0.75rem; border: 1px dashed var(--border); border-radius: var(--radius); }
-	.mt span { font-size: 0.8rem; color: var(--muted-foreground); }
-	.mt .btn-outline { font-size: 0.85rem; padding: 0.35rem 0.85rem; }
-	.mt-note { margin: 0; font-size: 0.84rem; color: var(--ok); }
-	.mt-note.err { color: var(--danger); }
-	.fixed-note { margin: 0; font-size: 0.86rem; color: var(--muted-foreground); }
-	.fixed-note span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.15rem; font-family: 'DM Sans', system-ui, sans-serif; }
-
-	.review { border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0 0 1.25rem; }
-	.review h2 { font-size: 0.95rem; margin: 0 0 0.75rem; display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
-	.review .msgline { font-weight: 400; font-size: 0.8rem; color: var(--muted-foreground); }
-
-	.autosave { margin-left: auto; font-size: 0.8rem; color: var(--muted-foreground); align-self: center; }
-	.autosave.dirty { color: var(--warn); }
-	.autosave.synced, .autosave.local { color: var(--ok); }
-	.autosave.offline, .autosave.signedout { color: var(--warn); }
-	.pending-note { margin: 0.25rem 0 0; }
-
-	.danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-	.linkish { background: none; border: 0; color: var(--danger); font-size: 0.85rem; cursor: pointer; padding: 0; }
-	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
-	.danger-zone p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
-	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
-	.danger-zone .btn-danger { justify-self: start; }
-
-	.findings { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card);
-		padding: 0.85rem 1rem; margin-bottom: 1.25rem; }
-	.findings h2 { font-family: 'DM Sans', system-ui, sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em;
-		color: var(--muted-foreground); margin: 0 0 0.55rem; }
-	.findings ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
-	.findings li { display: flex; gap: 0.5rem; align-items: baseline; font-size: 0.85rem; }
-	.findings .sev { flex: none; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
-		font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px; }
-	.findings li.error .sev { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
-	.findings li.warning .sev { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
-	.findings .lang { flex: none; font-variant: small-caps; font-weight: 700; color: var(--muted-foreground); font-size: 0.75rem; }
-	.blocked { align-self: center; font-size: 0.8rem; color: var(--danger); }
-
-	fieldset.images { display: block; }
-	.picker { display: inline-block; cursor: pointer; }
-	.picker input { display: none; }
-	.picker span {
-		display: inline-block; padding: 0.45rem 0.85rem; border: 1px dashed var(--border);
-		border-radius: 8px; font-size: 0.85rem; color: var(--muted-foreground);
-	}
-	.picker:hover span { color: var(--foreground); border-color: var(--primary); }
-	.note { font-size: 0.78rem; color: var(--muted-foreground); margin: 0.5rem 0 0; }
-	.empty { font-size: 0.85rem; color: var(--muted-foreground); margin: 0.75rem 0 0; }
-	.grid { list-style: none; padding: 0; margin: 0.9rem 0 0; display: grid; gap: 0.75rem;
-		grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); }
-	.grid li { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; display: grid; gap: 0.35rem; }
-	.grid li.new { border-color: var(--brand-yellow-deep); background: var(--brand-yellow-soft); }
-	.grid li.removing { opacity: 0.45; border-color: var(--danger); }
-	.grid li.thumb { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-	.thumb-badge { font-size: 0.72rem; font-weight: 600; color: var(--primary); display: flex; flex-wrap: wrap; gap: 0 0.4rem; align-items: baseline; }
-	.thumb-badge button, .thumb-pick { background: none; border: 0; padding: 0; font: inherit; font-size: 0.72rem; font-weight: 400; color: var(--muted-foreground); text-decoration: underline; cursor: pointer; justify-self: start; }
-	.thumb-pick:hover, .thumb-badge button:hover { color: var(--primary); }
-	.grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 5px; background: var(--background); }
-	.grid code { font-size: 0.7rem; word-break: break-all; color: var(--muted-foreground); }
-	.grid .meta { font-size: 0.68rem; color: var(--muted-foreground); }
-	.grid .alt { font-size: 0.75rem; padding: 0.3rem 0.4rem; margin: 0; }
-	.grid .row { display: flex; gap: 0.3rem; }
-	.grid .row button { flex: 1; font-size: 0.75rem; padding: 0.28rem; border: 1px solid var(--border);
-		border-radius: 5px; background: var(--card); cursor: pointer; }
-	.grid .row button.danger { color: var(--danger); }
-	.actions { display: flex; gap: 0.6rem; margin-top: 1.5rem; position: sticky; bottom: 0; padding: 1rem 0; background: linear-gradient(transparent, var(--background) 35%); }
 </style>
