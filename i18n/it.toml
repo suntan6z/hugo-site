@@ -88,10 +88,8 @@ other = "Cofinanziato dall'Unione europea nell'ambito del programma Erasmus+."
 other = "Iscriviti alla mia newsletter"
 [newsletter_desc]
 other = "Ricevi una notifica quando pubblico nuovi articoli su tecnologia, politica europea e riflessioni personali. Niente spam, disiscrizione in qualsiasi momento."
-[newsletter_subscribed]
-other = "Iscrizione completata!"
-[newsletter_already_subscribed]
-other = "Sei già iscritto/a!"
+[newsletter_check_inbox]
+other = "Quasi fatto! Controlla la tua casella di posta e clicca sul link nell'email per confermare."
 [email_placeholder]
 other = "tua@email.com"
 [newsletter_email_label]

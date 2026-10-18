@@ -1,0 +1,176 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { SECRET, freshPayload, sitePost, withFetch } from './helpers.js';
+
+process.env.ALTCHA_SECRET = SECRET;
+process.env.CONFIRM_SECRET = 'confirm-secret';
+process.env.RESEND_API_KEY = 'test-key';
+const { handle } = await import('../newsletter.js');
+const { signToken } = await import('../lib/confirm.js');
+
+const post = (body, headers) => sitePost(handle, body, headers);
+
+/**
+ * A stand-in for Resend: `contacts` is who is on the list (address -> unsubscribed),
+ * and everything sent to it is recorded.
+ */
+function resend({ contacts = {}, failEmails = false, failLookup = false } = {}) {
+  const calls = [];
+  const stub = async (url, init = {}) => {
+    const body = init.body ? JSON.parse(init.body) : undefined;
+    calls.push({ url: String(url), method: init.method ?? 'GET', body });
+    if (String(url).includes('/contacts/')) {
+      if (failLookup) return new Response('{}', { status: 500 });
+      const email = decodeURIComponent(String(url).split('/contacts/')[1]);
+      return email in contacts
+        ? new Response(JSON.stringify({ email, unsubscribed: contacts[email] }), { status: 200 })
+        : new Response('{}', { status: 404 });
+    }
+    if (String(url).endsWith('/contacts')) {
+      contacts[body.email] = false;
+      return new Response('{}', { status: 201 });
+    }
+    return new Response('{}', { status: failEmails ? 500 : 200 });
+  };
+  return { stub, calls, contacts };
+}
+const emails = (calls) => calls.filter((c) => c.url.endsWith('/emails'));
+const added = (calls) => calls.filter((c) => c.url.endsWith('/contacts') && c.method === 'POST');
+
+test('subscribing sends a confirmation email and adds nobody', async () => {
+  const r = resend();
+  await withFetch(r.stub, async () => {
+    const res = await post({ email: 'Li@Example.com', lang: 'fr', altcha: freshPayload() });
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body), { ok: true });
+  });
+  assert.equal(added(r.calls).length, 0);
+  const [mail] = emails(r.calls);
+  assert.deepEqual(mail.body.to, ['li@example.com']);
+  assert.match(mail.body.text, /https:\/\/lorenzo\.loconsole\.eu\/fr\/newsletter-confirm\/#[\w-]+\.[\w-]+/);
+  assert.equal(mail.body.subject, 'Confirmez votre inscription');
+});
+
+test('the link points at the site the form was on', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ email: 'a@example.com', altcha: freshPayload() }, { origin: 'http://localhost:1313' }));
+  assert.match(emails(r.calls)[0].body.text, /^[\s\S]*http:\/\/localhost:1313\/en\/newsletter-confirm\/#/);
+});
+
+test('an unknown language falls back to English', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ email: 'a@example.com', lang: '../x', altcha: freshPayload() }));
+  assert.match(emails(r.calls)[0].body.text, /\/en\/newsletter-confirm\/#/);
+});
+
+test('an address already on the list gets the same answer and no email', async () => {
+  const r = resend({ contacts: { 'in@example.com': false } });
+  await withFetch(r.stub, async () => {
+    const res = await post({ email: 'in@example.com', altcha: freshPayload() });
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body), { ok: true });
+  });
+  assert.equal(emails(r.calls).length, 0);
+});
+
+test('someone who unsubscribed can ask again', async () => {
+  const r = resend({ contacts: { 'back@example.com': true } });
+  await withFetch(r.stub, () => post({ email: 'back@example.com', altcha: freshPayload() }));
+  assert.equal(emails(r.calls).length, 1);
+});
+
+test('no proof of work, no email', async () => {
+  const r = resend();
+  await withFetch(r.stub, async () => {
+    const res = await post({ email: 'a@example.com' });
+    assert.equal(res.statusCode, 400);
+    assert.equal(JSON.parse(res.body).code, 'altcha');
+  });
+  assert.equal(r.calls.length, 0);
+});
+
+test('a bad address is refused before anything else', async () => {
+  const r = resend();
+  await withFetch(r.stub, async () => {
+    assert.equal((await post({ email: 'nope', altcha: freshPayload() })).statusCode, 400);
+    assert.equal((await post({ email: `${'a'.repeat(250)}@example.com`, altcha: freshPayload() })).statusCode, 400);
+  });
+  assert.equal(r.calls.length, 0);
+});
+
+test('the honeypot is told it worked and nothing happens', async () => {
+  const r = resend();
+  await withFetch(r.stub, async () => {
+    const res = await post({ email: 'a@example.com', website: 'spam', altcha: freshPayload() });
+    assert.equal(res.statusCode, 200);
+  });
+  assert.equal(r.calls.length, 0);
+});
+
+test('a failing Resend is reported, not hidden', async () => {
+  await withFetch(resend({ failEmails: true }).stub, async () => {
+    assert.equal((await post({ email: 'a@example.com', altcha: freshPayload() })).statusCode, 502);
+  });
+  await withFetch(resend({ failLookup: true }).stub, async () => {
+    assert.equal((await post({ email: 'b@example.com', altcha: freshPayload() })).statusCode, 502);
+  });
+});
+
+test('using the link adds the address and welcomes it', async () => {
+  const r = resend();
+  const token = signToken('new@example.com', { secret: 'confirm-secret' });
+  await withFetch(r.stub, async () => {
+    const res = await post({ confirm: token });
+    assert.equal(res.statusCode, 200);
+  });
+  assert.deepEqual(added(r.calls).map((c) => c.body), [{ email: 'new@example.com', unsubscribed: false }]);
+  assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome');
+  assert.deepEqual(emails(r.calls)[0].body.to, ['new@example.com']);
+});
+
+test('using the link twice adds once and welcomes once', async () => {
+  const r = resend();
+  const token = signToken('twice@example.com', { secret: 'confirm-secret' });
+  await withFetch(r.stub, async () => {
+    assert.equal((await post({ confirm: token })).statusCode, 200);
+    assert.equal((await post({ confirm: token })).statusCode, 200);
+  });
+  assert.equal(added(r.calls).length, 1);
+  assert.equal(emails(r.calls).length, 1);
+});
+
+test('an expired, forged or foreign link adds nobody', async () => {
+  const r = resend();
+  const old = signToken('late@example.com', { secret: 'confirm-secret', now: Date.now() - 3 * 86400_000 });
+  const forged = signToken('x@example.com', { secret: 'not-our-secret' });
+  await withFetch(r.stub, async () => {
+    const expired = await post({ confirm: old });
+    assert.equal(expired.statusCode, 400);
+    assert.equal(JSON.parse(expired.body).error, 'expired');
+    assert.equal(JSON.parse((await post({ confirm: forged })).body).error, 'invalid');
+    assert.equal(JSON.parse((await post({ confirm: 'garbage' })).body).error, 'invalid');
+  });
+  assert.equal(r.calls.length, 0);
+});
+
+test('confirming needs no proof of work but still needs the site as the origin', async () => {
+  const token = signToken('o@example.com', { secret: 'confirm-secret' });
+  await withFetch(resend().stub, async () => {
+    assert.equal((await post({ confirm: token }, { origin: 'https://evil.example' })).statusCode, 403);
+  });
+});
+
+test('without CONFIRM_SECRET the form says so instead of sending unsigned links', async () => {
+  const kept = process.env.CONFIRM_SECRET;
+  delete process.env.CONFIRM_SECRET;
+  try {
+    const r = resend();
+    await withFetch(r.stub, async () => {
+      assert.equal((await post({ email: 'a@example.com', altcha: freshPayload() })).statusCode, 503);
+      assert.equal((await post({ confirm: 'x.y' })).statusCode, 503);
+    });
+    assert.equal(emails(r.calls).length, 0);
+  } finally {
+    process.env.CONFIRM_SECRET = kept;
+  }
+});

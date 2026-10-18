@@ -66,6 +66,10 @@
     {{- end }}
   <meta name="robots" content="noindex, follow" />
   {{- end }}
+  {{- /* Utility pages (e.g. the newsletter confirmation) are not for search results. */}}
+  {{- if .Params.noindex }}
+  <meta name="robots" content="noindex, follow" />
+  {{- end }}
   <link rel="canonical" href="{{ $canonical }}" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 

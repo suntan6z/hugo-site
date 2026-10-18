@@ -30,6 +30,10 @@ description: "Get in touch with Lorenzo Loconsole — questions, collaborations,
             <p style="color:var(--muted-foreground);line-height:1.7;max-width:22rem;margin:0 auto 0.5rem">Thanks for reaching out. I'll get back to you as soon as possible — usually within a couple of days.</p>
             <p style="font-size:0.875rem;color:var(--muted-foreground)">A confirmation has been sent to your email.</p>
           </div>
+          <!-- Proof of work, started when a field is first focused (static/js/main.js, "ALTCHA").
+               Outside the form on purpose: inside it the widget would block submitting while it works. -->
+          <altcha-widget data-for="contact-form" display="invisible" auto="off" hidden></altcha-widget>
+          <script type="module" src="/js/altcha/altcha.min.js"></script>
           <form id="contact-form" novalidate>
             <!-- honeypot -->
             <div style="position:absolute;left:-9999px" aria-hidden="true">
@@ -131,7 +135,8 @@ description: "Get in touch with Lorenzo Loconsole — questions, collaborations,
             </div>
             <div class="form-group" id="custom-subject-wrap" style="display:none">
               <label for="customSubject">Describe your subject <span class="req">*</span></label>
-              <input type="text" id="customSubject" name="customSubject" placeholder="What's this about?" />
+              <input type="text" id="customSubject" name="customSubject" maxlength="120" placeholder="What's this about?" />
+              <p class="field-error" id="customSubject-error" style="display:none;font-size:0.8rem;color:var(--primary);margin-top:0.3rem"></p>
             </div>
             <div class="form-group">
               <label for="message">Message <span class="req">*</span></label>

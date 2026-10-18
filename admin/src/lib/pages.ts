@@ -51,7 +51,7 @@ export const DESCRIPTION_MAX = 160;
 export const CONTACT_IDS = [
 	'contact-form', 'contact-website', 'firstName', 'firstName-error', 'lastName', 'lastName-error',
 	'email', 'email-error', 'phone', 'phone-country', 'subject', 'subject-error', 'custom-subject-wrap',
-	'message', 'message-error', 'char-count', 'submit-btn', 'form-title', 'form-note', 'form-success'
+	'customSubject', 'customSubject-error', 'message', 'message-error', 'char-count', 'submit-btn', 'form-title', 'form-note', 'form-success'
 ];
 
 export interface PageFinding {

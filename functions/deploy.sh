@@ -2,13 +2,18 @@
 # Deploys both functions (contact, newsletter) to Scaleway.
 # Requires: `scw` CLI configured (scw init, or SCW_ACCESS_KEY/SCW_SECRET_KEY/
 # SCW_DEFAULT_ORGANIZATION_ID/SCW_DEFAULT_PROJECT_ID env vars), plus
-# a RESEND_API_KEY env var set.
+# RESEND_API_KEY, ALTCHA_SECRET and CONFIRM_SECRET set. The last two are any long
+# random strings (openssl rand -hex 32): ALTCHA_SECRET signs the forms' proof-of-work
+# challenges, CONFIRM_SECRET signs the newsletter confirmation links. Changing
+# either only invalidates what is already out: open challenges and unused links.
 #
 # Safe to re-run: reuses the namespace/functions if they already exist.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 : "${RESEND_API_KEY:?Set RESEND_API_KEY}"
+: "${ALTCHA_SECRET:?Set ALTCHA_SECRET (openssl rand -hex 32)}"
+: "${CONFIRM_SECRET:?Set CONFIRM_SECRET (openssl rand -hex 32)}"
 
 NAMESPACE_NAME="loconsole-api"
 
@@ -20,12 +25,20 @@ if [ -z "$NS_ID" ]; then
   NS_ID=$(scw function namespace create name="$NAMESPACE_NAME" \
     secret-environment-variables.0.key=RESEND_API_KEY \
     secret-environment-variables.0.value="$RESEND_API_KEY" \
+    secret-environment-variables.1.key=ALTCHA_SECRET \
+    secret-environment-variables.1.value="$ALTCHA_SECRET" \
+    secret-environment-variables.2.key=CONFIRM_SECRET \
+    secret-environment-variables.2.value="$CONFIRM_SECRET" \
     -o json | jq -r '.id')
 else
   echo "==> Updating namespace secrets (namespace $NS_ID)..."
   scw function namespace update "$NS_ID" \
     secret-environment-variables.0.key=RESEND_API_KEY \
     secret-environment-variables.0.value="$RESEND_API_KEY" \
+    secret-environment-variables.1.key=ALTCHA_SECRET \
+    secret-environment-variables.1.value="$ALTCHA_SECRET" \
+    secret-environment-variables.2.key=CONFIRM_SECRET \
+    secret-environment-variables.2.value="$CONFIRM_SECRET" \
     -o json > /dev/null
 fi
 
@@ -107,4 +120,4 @@ deploy_function contact contact.handle
 deploy_function newsletter newsletter.handle
 
 rm -f function.zip
-echo "==> Done. Paste the two endpoint URLs above into static/js/main.js, layouts/blog/single.html, and static/_headers."
+echo "==> Done. If an endpoint URL changed, paste it into static/js/main.js, layouts/blog/single.html, static/_headers (connect-src) and the Altcha challenge URLs in content/contact*.md and layouts/blog/single.html."

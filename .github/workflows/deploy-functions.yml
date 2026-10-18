@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
     paths: ["functions/**"]
+  # GitHub only compares the first 300 changed files against `paths`, so a big
+  # commit (a batch of photos, say) that also touches functions/ can skip this
+  # workflow silently. That is how contact.js sat undeployed after 3d8b417.
+  # Run it by hand from the Actions tab whenever functions/ changed.
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,11 +19,21 @@ jobs:
       SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCW_DEFAULT_ORGANIZATION_ID }}
       SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALTCHA_SECRET: ${{ secrets.ALTCHA_SECRET }}
+      CONFIRM_SECRET: ${{ secrets.CONFIRM_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Test functions
+        working-directory: functions
+        run: npm test
+
       - name: Install Scaleway CLI
-        run: curl -s https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sh
+        run: curl -fsSL https://raw.githubusercontent.com/scaleway/scaleway-cli/master/scripts/get.sh | sudo sh
 
       - name: Deploy functions
         working-directory: functions

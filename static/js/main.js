@@ -70,8 +70,89 @@ if (fadeEls.length && !window.matchMedia('(prefers-reduced-motion: reduce)').mat
   fadeEls.forEach(el => { el.classList.add('fade-pending'); observer.observe(el); });
 }
 
+/* ── The site's two form handlers (Scaleway Functions, see functions/) ──
+   Also named in static/_headers (connect-src): change them there too. */
+const FORM_ENDPOINTS = {
+  contact: 'https://loconsoleapik19unsn0-contact.functions.fnc.fr-par.scw.cloud',
+  newsletter: 'https://loconsoleapik19unsn0-newsletter.functions.fnc.fr-par.scw.cloud',
+};
+
+/* ── ALTCHA: a small proof of work each form must solve before it is accepted ──
+   Self-hosted widget (static/js/altcha/), checked by functions/lib/altcha.js.
+   The widget is invisible and sits next to its form, not in it (inside, it would
+   block submitting while it works). It starts when the form is first touched, and
+   by the time the form is filled in the answer is usually ready. */
+const formProofs = new WeakMap(); // widget -> the payload it last produced
+
+function setUpProof(form, endpoint) {
+  const widget = document.querySelector('altcha-widget[data-for="' + form.id + '"]');
+  if (!widget) return null;
+  widget.setAttribute('challenge', endpoint + '?challenge=1');
+  widget.addEventListener('verified', (e) => formProofs.set(widget, e.detail.payload));
+  widget.addEventListener('statechange', (e) => {
+    if (['expired', 'unverified', 'error'].includes(e.detail.state)) formProofs.delete(widget);
+  });
+  // The widget file loads after this one; the worker must be known before it first solves.
+  const ready = customElements.whenDefined('altcha-widget').then(() => {
+    const algorithms = globalThis.$altcha && globalThis.$altcha.algorithms;
+    if (algorithms && !algorithms.has('PBKDF2/SHA-256')) {
+      algorithms.set('PBKDF2/SHA-256', () => new Worker('/js/altcha/pbkdf2.worker.js'));
+    }
+  });
+  // Start working the first time anything in the form is touched.
+  form.addEventListener('focusin', () => ready.then(() => startProof(widget)), { once: true });
+  return widget;
+}
+
+/* One verification at a time: starting a second aborts the first. The widget's own
+   state lags a moment behind a call to verify(), so track it here instead. */
+const proofRunning = new WeakSet();
+
+function startProof(widget) {
+  if (formProofs.has(widget) || proofRunning.has(widget)) return;
+  proofRunning.add(widget);
+  Promise.resolve(widget.verify()).catch(() => {}).finally(() => proofRunning.delete(widget));
+}
+
+/** The widget's answer: the one it already has, else it works one out and we wait. '' if it cannot. */
+function getProof(widget, timeoutMs = 60000) {
+  if (!widget) return Promise.resolve('');
+  const have = formProofs.get(widget);
+  if (have) return Promise.resolve(have);
+  return customElements.whenDefined('altcha-widget').then(() => new Promise((resolve) => {
+    const finish = (value) => {
+      clearTimeout(timer);
+      widget.removeEventListener('verified', onVerified);
+      widget.removeEventListener('statechange', onState);
+      resolve(value);
+    };
+    const onVerified = (e) => finish(e.detail.payload);
+    const onState = (e) => { if (e.detail.state === 'error') finish(''); };
+    const timer = setTimeout(() => finish(''), timeoutMs);
+    widget.addEventListener('verified', onVerified);
+    widget.addEventListener('statechange', onState);
+    startProof(widget);
+  }));
+}
+
+/** An answer works once; clear it and let the widget start afresh. */
+function spendProof(widget) {
+  if (!widget) return;
+  formProofs.delete(widget);
+  if (typeof widget.reset === 'function') widget.reset();
+}
+
+/* A function that has been idle takes several seconds to wake. Asking for its
+   challenge ahead of time (a few hundred bytes) means it is awake when needed. */
+function wakeFunction(endpoint) {
+  fetch(endpoint + '?challenge=1', { cache: 'no-store' }).catch(() => {});
+}
+
 /* ── Contact page (only runs when the contact form is present) ── */
 if (document.getElementById('contact-form')) {
+  const contactWidget = setUpProof(document.getElementById('contact-form'), FORM_ENDPOINTS.contact);
+  if (contactWidget) wakeFunction(FORM_ENDPOINTS.contact);
+
   // Local time
   function updateTime() {
     const el = document.getElementById('local-time');
@@ -83,7 +164,14 @@ if (document.getElementById('contact-form')) {
 
   // Show custom subject field
   document.getElementById('subject')?.addEventListener('change', function () {
-    document.getElementById('custom-subject-wrap').style.display = this.value === 'other' ? 'block' : 'none';
+    const other = this.value === 'other';
+    document.getElementById('custom-subject-wrap').style.display = other ? 'block' : 'none';
+    if (!other) {
+      // A subject picked after a failed send must not leave the old complaint showing.
+      const err = document.getElementById('customSubject-error');
+      if (err) err.style.display = 'none';
+      document.getElementById('customSubject').style.borderColor = '';
+    }
   });
 
   // Char counter
@@ -104,6 +192,12 @@ if (document.getElementById('contact-form')) {
       { id: 'subject', errorId: 'subject-error', msg: 'Please select a subject.', check: v => v !== '' },
       { id: 'message', errorId: 'message-error', msg: 'Message must be at least 50 characters (max 500).', check: v => v.length >= 50 && v.length <= 500 },
     ];
+
+    // "Other" asks for a description; the function puts it in the email's subject line.
+    const isOther = document.getElementById('subject').value === 'other';
+    if (isOther) {
+      fields.push({ id: 'customSubject', errorId: 'customSubject-error', msg: 'Please describe your subject.', check: v => v.length >= 1 && v.length <= 120 });
+    }
 
     fields.forEach(f => {
       const el = document.getElementById(f.id);
@@ -131,21 +225,28 @@ if (document.getElementById('contact-form')) {
     const phone = phoneNumber ? `${phoneCountry} ${phoneNumber}` : '';
 
     try {
-      const res = await fetch('https://loconsoleapik19unsn0-contact.functions.fnc.fr-par.scw.cloud', {
+      // Normally ready already; otherwise this is the second or so the visitor waits.
+      const altcha = await getProof(contactWidget);
+      const res = await fetch(FORM_ENDPOINTS.contact, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // A function waking from idle can take a while; give up after a minute, not never.
+        signal: AbortSignal.timeout(60000),
         body: JSON.stringify({
+          altcha,
           firstName: document.getElementById('firstName').value,
           lastName: document.getElementById('lastName').value,
           email: document.getElementById('email').value,
           phone: phone,
           subject: document.getElementById('subject').value,
+          customSubject: isOther ? document.getElementById('customSubject').value : '',
           message: document.getElementById('message').value,
           // The honeypot. Optional here, so a translated page that lacks it still sends.
           website: document.getElementById('contact-website')?.value || '',
         })
       });
 
+      spendProof(contactWidget);
       if (res.ok) {
         // Replace the whole form panel (heading, note, fields) with the confirmation
         document.getElementById('form-title').style.display = 'none';
@@ -156,11 +257,93 @@ if (document.getElementById('contact-form')) {
         throw new Error('Failed');
       }
     } catch {
+      spendProof(contactWidget);
       btn.textContent = 'Send Message';
       btn.disabled = false;
       alert('Failed to send message. Please try again or email me directly at lorenzo@loconsole.eu');
     }
   });
+}
+
+/* ── Newsletter box (article pages) ──
+   Subscribing only sends the confirmation email; the address joins the list
+   when its owner uses the link in it (the confirmation page, below). */
+if (document.getElementById('newsletter-form')) {
+  const newsletterForm = document.getElementById('newsletter-form');
+  const newsletterWidget = setUpProof(newsletterForm, FORM_ENDPOINTS.newsletter);
+
+  // Wake the function when the box nears the screen rather than on every page view.
+  if (newsletterWidget && 'IntersectionObserver' in window) {
+    const watcher = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        watcher.disconnect();
+        wakeFunction(FORM_ENDPOINTS.newsletter);
+      }
+    }, { rootMargin: '400px' });
+    watcher.observe(newsletterForm);
+  }
+
+  newsletterForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('newsletter-btn');
+    const err = document.getElementById('newsletter-error');
+    err.hidden = true;
+    btn.disabled = true;
+    btn.childNodes[0].textContent = I18N.subscribing;
+    try {
+      const altcha = await getProof(newsletterWidget);
+      const res = await fetch(FORM_ENDPOINTS.newsletter, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(60000),
+        body: JSON.stringify({
+          email: document.getElementById('newsletter-email').value,
+          // The language of the page is the language of the confirmation email.
+          lang: document.documentElement.lang.slice(0, 2),
+          altcha,
+          website: document.getElementById('nl-website').value,
+        }),
+      });
+      spendProof(newsletterWidget);
+      if (!res.ok) throw new Error('Failed');
+      newsletterForm.style.display = 'none';
+      document.getElementById('newsletter-sent').style.display = 'flex';
+    } catch {
+      spendProof(newsletterWidget);
+      btn.disabled = false;
+      btn.childNodes[0].textContent = I18N.subscribe + ' ';
+      err.hidden = false;
+    }
+  });
+}
+
+/* ── Newsletter confirmation page: where the link in the email lands ──
+   The link is /<lang>/newsletter-confirm/#<token>. The token sits after the #
+   so it never reaches a server log or the analytics, and the page uses it
+   only once its own script has run, which a mail scanner that merely fetches
+   the link does not do. */
+if (document.getElementById('newsletter-confirm')) {
+  const states = ['nlc-working', 'nlc-done', 'nlc-failed', 'nlc-error'];
+  const show = (id) => states.forEach((s) => { document.getElementById(s).hidden = s !== id; });
+  const token = location.hash.slice(1);
+
+  if (!token) {
+    show('nlc-failed'); // opened without a link
+  } else {
+    fetch(FORM_ENDPOINTS.newsletter, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(60000),
+      body: JSON.stringify({ confirm: token }),
+    })
+      .then((res) => {
+        // The link has done its job, or can never work: take it out of the address bar.
+        // On a temporary failure it stays, so reloading the page tries again.
+        if (res.ok || res.status === 400) history.replaceState(null, '', location.pathname);
+        show(res.ok ? 'nlc-done' : res.status === 400 ? 'nlc-failed' : 'nlc-error');
+      })
+      .catch(() => show('nlc-error'));
+  }
 }
 
 // RSS button: offer to open the feed in the reader app installed on the device.

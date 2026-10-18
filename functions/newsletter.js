@@ -1,15 +1,128 @@
 import { isValidEmail } from './lib/validate.js';
-import { optionsResponse, json } from './lib/cors.js';
+import { optionsResponse, json, isAllowedOrigin, resolveOrigin } from './lib/cors.js';
 import { isRateLimited, clientIp } from './lib/rateLimit.js';
+import { wantsChallenge, serveChallenge, isHuman } from './lib/guard.js';
+import { signToken, verifyToken } from './lib/confirm.js';
+import { confirmationEmail } from './lib/confirm-email.js';
+import { normalizeLang } from './lib/request.js';
 
 // The only Resend Audience that currently exists in the account ("General").
 // A previous "Blog" audience referenced by the old Supabase code has since
 // been deleted — verified directly against the Resend API.
 const RESEND_GENERAL_AUDIENCE_ID = '276f21cc-de35-468d-8b30-06fc08ad1016';
+const AUDIENCE_URL = `https://api.resend.com/audiences/${RESEND_GENERAL_AUDIENCE_ID}/contacts`;
+const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
+
+const authHeaders = () => ({
+  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+  'Content-Type': 'application/json',
+});
+
+/**
+ * Where an address stands in the audience. Resend answers 404 for a stranger;
+ * anything else unexpected is an error, never "not subscribed", so a hiccup
+ * cannot make us email someone who is already on the list.
+ */
+async function lookup(email) {
+  const res = await fetch(`${AUDIENCE_URL}/${encodeURIComponent(email)}`, { headers: authHeaders() });
+  if (res.status === 404) return { subscribed: false };
+  if (!res.ok) throw new Error(`Resend contact lookup failed (${res.status})`);
+  const contact = await res.json().catch(() => ({}));
+  return { subscribed: contact.unsubscribed !== true };
+}
+
+/**
+ * Step one: nobody is added yet. The address gets an email with a signed link
+ * to the site's confirmation page, and joins the audience only when the link
+ * is used (double opt-in, as the privacy policy says).
+ *
+ * The answer is the same whether or not the address is already on the list,
+ * so the form cannot be used to find out who is subscribed.
+ */
+async function subscribe(event, body) {
+  if (!isValidEmail(body.email)) return json(event, { error: 'Invalid email' }, 400);
+  const email = body.email.trim().toLowerCase();
+
+  if (!(await isHuman(body.altcha))) return json(event, { error: 'Verification failed', code: 'altcha' }, 400);
+
+  const secret = process.env.CONFIRM_SECRET;
+  if (!secret) {
+    console.error('newsletter: CONFIRM_SECRET is not set');
+    return json(event, { error: 'Not configured' }, 503);
+  }
+
+  try {
+    if ((await lookup(email)).subscribed) return json(event, { ok: true }, 200);
+  } catch (e) {
+    console.error('newsletter:', e.message);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+
+  const link = `${resolveOrigin(event)}/${normalizeLang(body.lang)}/newsletter-confirm/#${signToken(email, { secret })}`;
+  const mail = confirmationEmail(normalizeLang(body.lang), link);
+  const sent = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ from: FROM, to: [email], subject: mail.subject, html: mail.html, text: mail.text }),
+  });
+  if (!sent.ok) {
+    console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+  return json(event, { ok: true }, 200);
+}
+
+/**
+ * Step two: the link from the email, opened on the site's confirmation page,
+ * which posts its token here. Using a link twice is harmless: an address
+ * already on the list is answered ok and gets no second welcome email.
+ */
+async function confirm(event, token) {
+  const secret = process.env.CONFIRM_SECRET;
+  if (!secret) {
+    console.error('newsletter: CONFIRM_SECRET is not set');
+    return json(event, { error: 'Not configured' }, 503);
+  }
+  const checked = verifyToken(token, { secret });
+  if (checked.error) return json(event, { error: checked.error }, 400);
+
+  try {
+    if ((await lookup(checked.email)).subscribed) return json(event, { ok: true }, 200);
+  } catch (e) {
+    console.error('newsletter:', e.message);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+
+  const added = await fetch(AUDIENCE_URL, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ email: checked.email, unsubscribed: false }),
+  });
+  if (!added.ok) {
+    console.error(`newsletter: Resend could not add the contact (${added.status})`);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+
+  // Best-effort: don't fail the request if only the welcome email errors.
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ from: FROM, to: [checked.email], template: { id: 'newsletter-welcome' } }),
+  })
+    .then((r) => {
+      if (!r.ok) console.error(`newsletter: welcome email failed (${r.status})`);
+    })
+    .catch((e) => console.error('newsletter: welcome email failed', e?.message));
+
+  return json(event, { ok: true }, 200);
+}
 
 export async function handle(event) {
   if (event.httpMethod === 'OPTIONS') return optionsResponse(event);
+  if (wantsChallenge(event)) return serveChallenge(event);
   if (event.httpMethod !== 'POST') return json(event, { error: 'Method not allowed' }, 405);
+
+  if (!isAllowedOrigin(event)) return json(event, { error: 'Forbidden' }, 403);
 
   if (isRateLimited(clientIp(event))) {
     return json(event, { error: 'Too many requests' }, 429);
@@ -28,47 +141,6 @@ export async function handle(event) {
     return json(event, { ok: true }, 200);
   }
 
-  if (!isValidEmail(body.email)) {
-    return json(event, { error: 'Invalid email' }, 400);
-  }
-
-  const email = body.email.trim().toLowerCase();
-  const audienceUrl = `https://api.resend.com/audiences/${RESEND_GENERAL_AUDIENCE_ID}/contacts`;
-  const authHeaders = {
-    Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-    'Content-Type': 'application/json',
-  };
-
-  // The create endpoint is an idempotent upsert (always 201, even for an
-  // existing contact) — so check existence first to decide whether this is
-  // a genuinely new subscriber who should get the welcome email.
-  const existingRes = await fetch(`${audienceUrl}/${encodeURIComponent(email)}`, {
-    headers: authHeaders,
-  });
-  const alreadySubscribed = existingRes.status === 200;
-
-  const addRes = await fetch(audienceUrl, {
-    method: 'POST',
-    headers: authHeaders,
-    body: JSON.stringify({ email, unsubscribed: false }),
-  });
-
-  if (!addRes.ok) return json(event, { error: 'Subscribe failed' }, 502);
-
-  if (alreadySubscribed) {
-    return json(event, { ok: true, message: 'Already subscribed' }, 200);
-  }
-
-  // Best-effort: don't fail the request if only the welcome email errors.
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: authHeaders,
-    body: JSON.stringify({
-      from: 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>',
-      to: [email],
-      template: { id: 'newsletter-welcome' },
-    }),
-  }).catch(() => {});
-
-  return json(event, { ok: true }, 200);
+  if (typeof body.confirm === 'string') return confirm(event, body.confirm);
+  return subscribe(event, body);
 }
