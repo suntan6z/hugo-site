@@ -18,7 +18,7 @@ The Resend API key, `ALTCHA_SECRET` and `CONFIRM_SECRET` are the namespace secre
 
 Each function gets its own auto-generated HTTPS URL on first deploy (of the form `https://<name>-<slug>.functions.fnc.<region>.scw.cloud`) — there's no custom domain involved, which avoids having to point `loconsole.eu`'s DNS at Scaleway. After running `deploy.sh`, if a URL changed paste it into `FORM_ENDPOINTS` at the top of `static/js/main.js` and into the `connect-src` of `static/_headers`, which names both hosts exactly.
 
-The Resend Templates referenced by ID (`contact-form-notification`, `contact-form-confirmation`, `newsletter-welcome`) are managed in the Resend dashboard (Templates section), not in this repo — editing their content/design there takes effect immediately without any redeploy here. There's also a `contact-form-reply` template in Resend, but that one is a manual draft for composing replies by hand — it's not referenced by any code here.
+The Resend Templates referenced by ID (`contact-form-notification`, `contact-form-confirmation`, `newsletter-welcome-en`) are managed in the Resend dashboard (Templates section), not in this repo — editing their content/design there takes effect immediately without any redeploy here. There's also a `contact-form-reply` template in Resend, but that one is a manual draft for composing replies by hand — it's not referenced by any code here.
 
 To change the backend logic (e.g. swap Resend for another provider, or adjust validation), edit `functions/contact.js` / `newsletter.js` and re-run `functions/deploy.sh` (or push to `main`, which triggers the same via CI, or run the workflow by hand: a big commit can skip the path filter).
 
