@@ -1,0 +1,53 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { renderWelcome, LANGS } from '../templates/welcome.js';
+
+test('there is a welcome email in each of the site\'s three languages', () => {
+  assert.deepEqual(LANGS, ['en', 'fr', 'it']);
+});
+
+for (const lang of LANGS) {
+  const html = renderWelcome(lang);
+
+  test(`${lang}: nothing is left to fill in, and nothing is fetched from a third party`, () => {
+    assert.doesNotMatch(html, /\{\{|\}\}/, 'no template variable that Resend would have to supply');
+    assert.doesNotMatch(html, /googleapis|gstatic|@import|<script/i);
+    const hosts = new Set([...html.matchAll(/(?:src|href)="(https?:\/\/[^/"]+)/g)].map((m) => m[1]));
+    assert.deepEqual([...hosts].sort(), ['https://c.im', 'https://github.com', 'https://lorenzo.loconsole.eu', 'https://www.linkedin.com']);
+  });
+
+  test(`${lang}: it says what language it is, and its links go to that language's pages`, () => {
+    assert.match(html, new RegExp(`<html lang="${lang}"`));
+    assert.match(html, new RegExp(`https://lorenzo\\.loconsole\\.eu/${lang}/blog/`));
+    assert.match(html, new RegExp(`https://lorenzo\\.loconsole\\.eu/${lang}/privacy-policy/`));
+  });
+
+  test(`${lang}: no unsubscribe link of its own (Resend gives one only to broadcasts), but it says where to find it`, () => {
+    assert.doesNotMatch(html, /unsubscribe_url|RESEND_UNSUBSCRIBE_URL/);
+  });
+
+  test(`${lang}: the three profile buttons carry their label as text, not only an icon`, () => {
+    for (const label of ['LinkedIn', 'Mastodon', 'GitHub']) assert.match(html, new RegExp(`>${label}</span>`));
+    for (const icon of ['linkedin', 'mastodon', 'github']) assert.match(html, new RegExp(`/img/email/${icon}\\.png`));
+    assert.doesNotMatch(html, /Trakt|Apple Music/);
+  });
+
+  test(`${lang}: the profile links are the site's own`, () => {
+    assert.match(html, /https:\/\/www\.linkedin\.com\/in\/lloconsole\//);
+    assert.match(html, /https:\/\/c\.im\/@lv/);
+    assert.match(html, /https:\/\/github\.com\/suntan6z/);
+  });
+}
+
+test('the French and Italian ones are really translated, not English with a new lang attribute', () => {
+  for (const lang of ['fr', 'it']) {
+    const html = renderWelcome(lang);
+    assert.doesNotMatch(html, /Thank you for subscribing|What to expect|You're receiving/);
+  }
+  assert.match(renderWelcome('fr'), /Bienvenue/);
+  assert.match(renderWelcome('it'), /Benvenuto/);
+});
+
+test('a language the site does not have is refused', () => {
+  assert.throws(() => renderWelcome('de'), /no welcome email/);
+});

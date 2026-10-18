@@ -132,7 +132,7 @@ test('using the link adds the address and welcomes it', async () => {
     assert.equal(res.statusCode, 200);
   });
   assert.deepEqual(added(r.calls).map((c) => c.body), [{ email: 'new@example.com', unsubscribed: false, segments: [{ id: EN_SEGMENT }] }]);
-  assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome');
+  assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome-en');
   assert.deepEqual(emails(r.calls)[0].body.to, ['new@example.com']);
 });
 
@@ -264,7 +264,7 @@ test('a welcome template that does not exist for a language falls back to the En
     return base(url, init);
   };
   await withFetch(stub, () => post({ confirm: signToken('i@example.com', { secret: 'confirm-secret', lang: 'it' }) }));
-  assert.deepEqual(emails(r.calls).map((c) => c.body.template.id), ['newsletter-welcome-it', 'newsletter-welcome']);
+  assert.deepEqual(emails(r.calls).map((c) => c.body.template.id), ['newsletter-welcome-it', 'newsletter-welcome-en']);
 });
 
 test('coming back in another language moves a known contact to that list and off the others', async () => {
@@ -284,4 +284,13 @@ test('the language travels from the form into the signed link', async () => {
   await withFetch(r.stub, () => post({ email: 'fr@example.com', lang: 'fr', altcha: freshPayload() }));
   const token = emails(r.calls)[0].body.text.match(/#([\w.-]+)/)[1];
   assert.equal(verifyToken(token, { secret: 'confirm-secret' }).lang, 'fr');
+});
+
+test('both emails a subscriber gets can be answered, and the answer reaches the owner', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ email: 'a@example.com', altcha: freshPayload() }));
+  await withFetch(r.stub, () => post({ confirm: signToken('a@example.com', { secret: 'confirm-secret' }) }));
+  const sent = emails(r.calls);
+  assert.equal(sent.length, 2);
+  assert.ok(sent.every((m) => m.body.reply_to === 'contact@loconsole.eu'));
 });

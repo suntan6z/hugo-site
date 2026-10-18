@@ -25,7 +25,10 @@ const segments = () => ({
 const segmentFor = (lang) => segments()[lang] || segments().en;
 
 // Dashboard templates, one per language; a language without its own falls back to English.
-const WELCOME = { en: 'newsletter-welcome', fr: 'newsletter-welcome-fr', it: 'newsletter-welcome-it' };
+const WELCOME = { en: 'newsletter-welcome-en', fr: 'newsletter-welcome-fr', it: 'newsletter-welcome-it' };
+
+// Where a reply to either email goes: the owner reads it, rather than a no-reply address.
+const REPLY_TO = 'contact@loconsole.eu';
 const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
 
 const authHeaders = () => ({
@@ -109,7 +112,7 @@ async function subscribe(event, body) {
   const sent = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ from: FROM, to: [email], subject: mail.subject, html: mail.html, text: mail.text }),
+    body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [email], subject: mail.subject, html: mail.html, text: mail.text }),
   });
   if (!sent.ok) {
     console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
@@ -153,7 +156,7 @@ async function confirm(event, token) {
     fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ from: FROM, to: [checked.email], template: { id: template } }),
+      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [checked.email], template: { id: template } }),
     });
   try {
     let r = await welcome(WELCOME[checked.lang]);
