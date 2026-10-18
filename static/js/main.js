@@ -162,3 +162,52 @@ if (document.getElementById('contact-form')) {
     }
   });
 }
+
+// RSS button: offer to open the feed in the reader app installed on the device.
+// A page cannot tell which apps are installed, so it hands the feed to the
+// system with the feed: scheme (the OS or browser asks "open in <app>?" if
+// something handles it) and keeps every other way one click away: web readers,
+// copying the address, and the raw feed. Without JavaScript the button is a
+// plain link to the raw feed.
+(() => {
+  const trigger = document.querySelector('[data-rss-open]');
+  const dialog = document.getElementById('rss-dialog');
+  if (!trigger || !dialog || typeof dialog.showModal !== 'function') return;
+  const feed = trigger.dataset.feedUrl;
+  const enc = encodeURIComponent(feed);
+  const $ = (id) => document.getElementById(id);
+  $('rss-open-app').href = 'feed:' + feed;
+  $('rss-feedly').href = 'https://feedly.com/i/subscription/feed/' + enc;
+  $('rss-inoreader').href = 'https://www.inoreader.com/?add_feed=' + enc;
+  $('rss-newsblur').href = 'https://www.newsblur.com/?url=' + enc;
+  $('rss-raw').href = feed;
+
+  trigger.addEventListener('click', (e) => {
+    e.preventDefault();
+    $('rss-hint').hidden = true;
+    dialog.showModal();
+  });
+  $('rss-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  // If the page is still in front a moment after the click, nothing took the link.
+  $('rss-open-app').addEventListener('click', () => {
+    let left = false;
+    const gone = () => { left = true; };
+    addEventListener('blur', gone, { once: true });
+    document.addEventListener('visibilitychange', gone, { once: true });
+    setTimeout(() => { if (!left) $('rss-hint').hidden = false; }, 1500);
+  });
+
+  $('rss-copy').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const label = btn.textContent;
+    try {
+      await navigator.clipboard.writeText(feed);
+      btn.textContent = btn.dataset.copied;
+      setTimeout(() => { btn.textContent = label; }, 2000);
+    } catch (err) {
+      window.prompt(label, feed);
+    }
+  });
+})();

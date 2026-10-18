@@ -224,6 +224,24 @@ other = "Tutti i diritti riservati."
 other = "Realizzato con"
 [rss_feed]
 other = "Feed RSS"
+[rss_title]
+other = "Segui con un lettore RSS"
+[rss_intro]
+other = "Ricevi i nuovi articoli nell'app che usi già per leggere i feed, senza account e senza algoritmi."
+[rss_open_app]
+other = "Apri nella mia app RSS"
+[rss_not_opened]
+other = "Non si è aperto nulla? Il tuo dispositivo potrebbe non avere un'app RSS che gestisce i link dei feed. Scegli una delle opzioni qui sotto."
+[rss_web_readers]
+other = "Oppure usa un lettore web"
+[rss_copy]
+other = "Copia l'indirizzo del feed"
+[rss_copied]
+other = "Copiato"
+[rss_raw]
+other = "Vedi il feed grezzo"
+[rss_close]
+other = "Chiudi"
 
 # ── Varie ────────────────────────────────────────────────────────
 [toggle_dark_mode]

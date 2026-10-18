@@ -225,6 +225,24 @@ other = "All rights reserved."
 other = "Powered by"
 [rss_feed]
 other = "RSS Feed"
+[rss_title]
+other = "Follow with an RSS reader"
+[rss_intro]
+other = "Get new articles in the app you already use to read feeds, with no account and no algorithm."
+[rss_open_app]
+other = "Open in my RSS app"
+[rss_not_opened]
+other = "Nothing opened? Your device may have no RSS app that handles feed links. Pick one of the options below."
+[rss_web_readers]
+other = "Or use a web reader"
+[rss_copy]
+other = "Copy the feed address"
+[rss_copied]
+other = "Copied"
+[rss_raw]
+other = "View the raw feed"
+[rss_close]
+other = "Close"
 
 # ── Misc ─────────────────────────────────────────────────────────
 [toggle_dark_mode]

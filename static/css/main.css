@@ -1284,3 +1284,18 @@ main:focus { outline: none; }
   .lb-download { padding: 0.55rem; border-radius: 50%; }
   .lb-download span { display: none; }
 }
+
+/* RSS: open-in-reader dialog */
+.rss-dialog { margin: auto; width: min(26rem, calc(100vw - 2rem)); padding: 1.6rem 1.5rem 1.4rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--foreground); box-shadow: 0 24px 60px -12px hsl(0 0% 0% / 0.45); }
+.rss-dialog::backdrop { background: hsl(0 0% 0% / 0.5); }
+.rss-dialog h2 { margin: 0 0 0.5rem; font-size: 1.3rem; padding-right: 1.5rem; }
+.rss-dialog p { margin: 0 0 1rem; font-size: 0.92rem; color: var(--muted-foreground); }
+.rss-dialog .rss-open { display: flex; justify-content: center; width: 100%; box-sizing: border-box; margin-bottom: 0.8rem; }
+.rss-dialog .rss-hint { padding: 0.55rem 0.75rem; border-radius: 0.5rem; background: var(--accent); color: var(--accent-foreground); font-size: 0.84rem; }
+.rss-dialog .rss-sub { margin: 0.6rem 0 0.4rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.rss-readers { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.rss-readers a { padding: 0.3rem 0.85rem; border: 2px solid var(--border); border-radius: 2rem; font-size: 0.85rem; font-weight: 500; color: var(--foreground); text-decoration: none; }
+.rss-readers a:hover { border-color: var(--primary); color: var(--primary); }
+.rss-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
+.rss-row a { font-size: 0.85rem; }
+.rss-close { position: absolute; top: 0.5rem; right: 0.7rem; border: 0; background: none; color: var(--muted-foreground); font-size: 1.6rem; line-height: 1; cursor: pointer; }

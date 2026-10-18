@@ -224,6 +224,24 @@ other = "Tous droits réservés."
 other = "Propulsé par"
 [rss_feed]
 other = "Flux RSS"
+[rss_title]
+other = "Suivre avec un lecteur RSS"
+[rss_intro]
+other = "Recevez les nouveaux articles dans l'application que vous utilisez déjà pour lire vos flux, sans compte et sans algorithme."
+[rss_open_app]
+other = "Ouvrir dans mon application RSS"
+[rss_not_opened]
+other = "Rien ne s'est ouvert ? Votre appareil n'a peut-être aucune application RSS qui gère les liens de flux. Choisissez une des options ci-dessous."
+[rss_web_readers]
+other = "Ou utilisez un lecteur web"
+[rss_copy]
+other = "Copier l'adresse du flux"
+[rss_copied]
+other = "Copié"
+[rss_raw]
+other = "Voir le flux brut"
+[rss_close]
+other = "Fermer"
 
 # ── Divers ───────────────────────────────────────────────────────
 [toggle_dark_mode]
