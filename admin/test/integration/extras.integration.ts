@@ -18,7 +18,7 @@ import { FrontMatter } from '../../src/lib/server/content/frontmatter.ts';
 import { readSiteText, readMenu, readTitle } from '../../src/lib/server/content/site-params.ts';
 
 const LANGS = ['en', 'fr', 'it'] as const;
-const AUDIENCE = 'aud-test-0000';
+const SEGMENT_EN = 'seg-en-0000';
 const SHARE = 'test-share-link';
 
 type Seen = { method: string; path: string; query?: string; headers: http.IncomingHttpHeaders; body?: string };
@@ -57,7 +57,7 @@ async function startFakes() {
 			res.statusCode = 404;
 			return res.end('{}');
 		}
-		if (url.pathname === `/audiences/${AUDIENCE}/contacts` && req.method === 'GET') {
+		if (url.pathname === `/segments/${SEGMENT_EN}/contacts` && req.method === 'GET') {
 			// Like Resend: 20 rows unless asked for more, a cursor, and a flag saying whether there are further pages.
 			const limit = Number(url.searchParams.get('limit') ?? 20);
 			const after = url.searchParams.get('after');
@@ -65,7 +65,7 @@ async function startFakes() {
 			const data = contacts.slice(start, start + limit);
 			return res.end(JSON.stringify({ object: 'list', data, has_more: start + data.length < contacts.length }));
 		}
-		if (url.pathname.startsWith(`/audiences/${AUDIENCE}/contacts/`) && req.method === 'DELETE') {
+		if (url.pathname.startsWith('/contacts/') && req.method === 'DELETE') {
 			return res.end(JSON.stringify({ object: 'contact', deleted: true }));
 		}
 		if (url.pathname in litlyx) {
@@ -100,7 +100,7 @@ before(async () => {
 		env: {
 			RESEND_API_KEY: 're_test',
 			RESEND_API_URL: fakes.url,
-			RESEND_AUDIENCE_ID: AUDIENCE,
+			RESEND_SEGMENT_EN: SEGMENT_EN,
 			LITLYX_TOKEN: SHARE,
 			LITLYX_HOST: fakes.url,
 			LINKCHECK_HOSTS: fakes.host,
@@ -421,7 +421,7 @@ describe('subscribers', () => {
 	test('a matching remove deletes that contact, and the log keeps no address', async () => {
 		const r = await portal.action('/newsletter?/removeSubscriber', { id: 'c1aaaaaa-0000-0000-0000-000000000001', email: 'reader@example.com' }, { cookie });
 		assert.equal(r.type, 'success', r.raw);
-		assert.deepEqual(fakes.seen.filter((s) => s.method === 'DELETE').map((s) => s.path), [`/audiences/${AUDIENCE}/contacts/c1aaaaaa-0000-0000-0000-000000000001`]);
+		assert.deepEqual(fakes.seen.filter((s) => s.method === 'DELETE').map((s) => s.path), ['/contacts/c1aaaaaa-0000-0000-0000-000000000001']);
 		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
 		assert.match(log, /subscriber-removed/);
 		assert.doesNotMatch(log, /reader@example\.com/);
@@ -456,7 +456,7 @@ describe('the subscriber export', () => {
 	});
 
 	test('it asks Resend for a full page and follows the cursor, rather than taking the first twenty', async () => {
-		const asked = fakes.seen.filter((s) => s.method === 'GET' && s.path === `/audiences/${AUDIENCE}/contacts`);
+		const asked = fakes.seen.filter((s) => s.method === 'GET' && s.path === `/segments/${SEGMENT_EN}/contacts`);
 		assert.ok(asked.length > 0);
 		assert.ok(asked.every((s) => /[?&]limit=100\b/.test(s.query ?? '')), 'always asks for the largest page');
 	});
@@ -802,6 +802,8 @@ describe('newsletter: test copy and confirmed send', () => {
 		assert.equal(sent('/broadcasts/bc-test-1/send').length, 1);
 		const body = JSON.parse(sent('/broadcasts')[0].body ?? '{}');
 		assert.equal(body.subject, 'A subject');
+		assert.equal(body.segment_id, SEGMENT_EN, 'to the English list, by segment');
+		assert.equal(body.audience_id, undefined, 'not through the deprecated audiences');
 		assert.ok(String(body.html).includes('RESEND_UNSUBSCRIBE_URL'), 'a broadcast keeps Resend\'s own token');
 	});
 });

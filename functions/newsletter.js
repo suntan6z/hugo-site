@@ -6,11 +6,12 @@ import { signToken, verifyToken } from './lib/confirm.js';
 import { confirmationEmail } from './lib/confirm-email.js';
 import { normalizeLang } from './lib/request.js';
 
-// The only Resend Audience that currently exists in the account ("General").
-// A previous "Blog" audience referenced by the old Supabase code has since
-// been deleted — verified directly against the Resend API.
-const RESEND_GENERAL_AUDIENCE_ID = '276f21cc-de35-468d-8b30-06fc08ad1016';
-const AUDIENCE_URL = `https://api.resend.com/audiences/${RESEND_GENERAL_AUDIENCE_ID}/contacts`;
+// Resend's contacts are global and a mailing list is a segment (the old
+// "audiences", renamed). The English list is the one that existed before there
+// were languages ("General"), so its id is the default.
+const RESEND_ENGLISH_SEGMENT_ID = '276f21cc-de35-468d-8b30-06fc08ad1016';
+const API = 'https://api.resend.com';
+const segmentFor = () => process.env.RESEND_SEGMENT_EN || RESEND_ENGLISH_SEGMENT_ID;
 const FROM = 'Lorenzo Loconsole 〡Blog <newsletter@loconsole.eu>';
 
 const authHeaders = () => ({
@@ -19,16 +20,39 @@ const authHeaders = () => ({
 });
 
 /**
- * Where an address stands in the audience. Resend answers 404 for a stranger;
- * anything else unexpected is an error, never "not subscribed", so a hiccup
- * cannot make us email someone who is already on the list.
+ * Where an address stands. Resend answers 404 for a stranger; anything else
+ * unexpected is an error, never "not subscribed", so a hiccup cannot make us
+ * email someone who is already on the list.
  */
 async function lookup(email) {
-  const res = await fetch(`${AUDIENCE_URL}/${encodeURIComponent(email)}`, { headers: authHeaders() });
-  if (res.status === 404) return { subscribed: false };
+  const res = await fetch(`${API}/contacts/${encodeURIComponent(email)}`, { headers: authHeaders() });
+  if (res.status === 404) return { known: false, subscribed: false };
   if (!res.ok) throw new Error(`Resend contact lookup failed (${res.status})`);
   const contact = await res.json().catch(() => ({}));
-  return { subscribed: contact.unsubscribed !== true };
+  return { known: true, subscribed: contact.unsubscribed !== true };
+}
+
+/**
+ * Puts an address on a list, whether or not Resend already knows it. A new
+ * contact is created into the segment in one call; one Resend already has (it
+ * unsubscribed once, say) is made subscribed again and added to the segment, since
+ * creating a contact that exists is not something its docs promise to allow.
+ */
+async function enrol(email, known, segmentId) {
+  if (!known) {
+    return fetch(`${API}/contacts`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ email, unsubscribed: false, segments: [{ id: segmentId }] }),
+    });
+  }
+  const back = await fetch(`${API}/contacts/${encodeURIComponent(email)}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ unsubscribed: false }),
+  });
+  if (!back.ok) return back;
+  return fetch(`${API}/contacts/${encodeURIComponent(email)}/segments/${segmentId}`, { method: 'POST', headers: authHeaders() });
 }
 
 /**
@@ -86,18 +110,16 @@ async function confirm(event, token) {
   const checked = verifyToken(token, { secret });
   if (checked.error) return json(event, { error: checked.error }, 400);
 
+  let seen;
   try {
-    if ((await lookup(checked.email)).subscribed) return json(event, { ok: true }, 200);
+    seen = await lookup(checked.email);
+    if (seen.subscribed) return json(event, { ok: true }, 200);
   } catch (e) {
     console.error('newsletter:', e.message);
     return json(event, { error: 'Subscribe failed' }, 502);
   }
 
-  const added = await fetch(AUDIENCE_URL, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ email: checked.email, unsubscribed: false }),
-  });
+  const added = await enrol(checked.email, seen.known, segmentFor());
   if (!added.ok) {
     console.error(`newsletter: Resend could not add the contact (${added.status})`);
     return json(event, { error: 'Subscribe failed' }, 502);

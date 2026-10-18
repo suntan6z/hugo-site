@@ -4,14 +4,38 @@
     {
       "name": "hugo",
       "runtimeExecutable": "hugo",
-      "runtimeArgs": ["server", "--port", "1313", "--bind", "0.0.0.0"],
+      "runtimeArgs": [
+        "server",
+        "--port",
+        "1313",
+        "--bind",
+        "0.0.0.0"
+      ],
       "port": 1313
     },
     {
       "name": "admin",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "admin", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "admin",
+        "run",
+        "dev"
+      ],
       "port": 5180
+    },
+    {
+      "name": "hugo-alt",
+      "runtimeExecutable": "hugo",
+      "runtimeArgs": [
+        "server",
+        "--port",
+        "1321",
+        "--bind",
+        "127.0.0.1",
+        "--disableFastRender"
+      ],
+      "port": 1321
     }
   ]
 }

@@ -18,15 +18,22 @@ function resend({ contacts = {}, failEmails = false, failLookup = false } = {}) 
   const calls = [];
   const stub = async (url, init = {}) => {
     const body = init.body ? JSON.parse(init.body) : undefined;
-    calls.push({ url: String(url), method: init.method ?? 'GET', body });
-    if (String(url).includes('/contacts/')) {
+    const method = init.method ?? 'GET';
+    calls.push({ url: String(url), method, body });
+    const path = String(url).replace('https://api.resend.com', '');
+    if (path.startsWith('/contacts/')) {
+      const [email, ...rest] = path.slice('/contacts/'.length).split('/').map(decodeURIComponent);
+      if (rest[0] === 'segments') return new Response('{"id":"x"}', { status: 200 });
+      if (method === 'PATCH') {
+        contacts[email] = body.unsubscribed;
+        return new Response('{}', { status: 200 });
+      }
       if (failLookup) return new Response('{}', { status: 500 });
-      const email = decodeURIComponent(String(url).split('/contacts/')[1]);
       return email in contacts
         ? new Response(JSON.stringify({ email, unsubscribed: contacts[email] }), { status: 200 })
         : new Response('{}', { status: 404 });
     }
-    if (String(url).endsWith('/contacts')) {
+    if (path === '/contacts') {
       contacts[body.email] = false;
       return new Response('{}', { status: 201 });
     }
@@ -36,6 +43,7 @@ function resend({ contacts = {}, failEmails = false, failLookup = false } = {}) 
 }
 const emails = (calls) => calls.filter((c) => c.url.endsWith('/emails'));
 const added = (calls) => calls.filter((c) => c.url.endsWith('/contacts') && c.method === 'POST');
+const EN_SEGMENT = '276f21cc-de35-468d-8b30-06fc08ad1016';
 
 test('subscribing sends a confirmation email and adds nobody', async () => {
   const r = resend();
@@ -123,7 +131,7 @@ test('using the link adds the address and welcomes it', async () => {
     const res = await post({ confirm: token });
     assert.equal(res.statusCode, 200);
   });
-  assert.deepEqual(added(r.calls).map((c) => c.body), [{ email: 'new@example.com', unsubscribed: false }]);
+  assert.deepEqual(added(r.calls).map((c) => c.body), [{ email: 'new@example.com', unsubscribed: false, segments: [{ id: EN_SEGMENT }] }]);
   assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-welcome');
   assert.deepEqual(emails(r.calls)[0].body.to, ['new@example.com']);
 });
@@ -173,4 +181,25 @@ test('without CONFIRM_SECRET the form says so instead of sending unsigned links'
   } finally {
     process.env.CONFIRM_SECRET = kept;
   }
+});
+
+test('someone Resend already knows, who had unsubscribed, is made subscribed again and put back on the list', async () => {
+  const r = resend({ contacts: { 'back@example.com': true } });
+  const token = signToken('back@example.com', { secret: 'confirm-secret' });
+  await withFetch(r.stub, async () => {
+    assert.equal((await post({ confirm: token })).statusCode, 200);
+  });
+  assert.equal(added(r.calls).length, 0, 'not created a second time');
+  const patch = r.calls.find((c) => c.method === 'PATCH');
+  assert.equal(patch.url, 'https://api.resend.com/contacts/back%40example.com');
+  assert.deepEqual(patch.body, { unsubscribed: false });
+  assert.ok(r.calls.some((c) => c.method === 'POST' && c.url === `https://api.resend.com/contacts/back%40example.com/segments/${EN_SEGMENT}`));
+  assert.equal(emails(r.calls).length, 1, 'and welcomed');
+});
+
+test('the list is looked up through the global contacts, never the deprecated audiences', async () => {
+  const r = resend();
+  await withFetch(r.stub, () => post({ email: 'a@example.com', altcha: freshPayload() }));
+  await withFetch(r.stub, () => post({ confirm: signToken('a@example.com', { secret: 'confirm-secret' }) }));
+  assert.ok(r.calls.every((c) => !c.url.includes('/audiences')));
 });

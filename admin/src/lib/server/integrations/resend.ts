@@ -2,6 +2,7 @@ import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
 import { memo, invalidate, mapLimit } from '../cache.ts';
 import { readAll } from './paginate.ts';
+import { LANGS, type Lang } from '../langs.ts';
 import { STAT_TYPES, summarise, type BroadcastStats, type RecipientRow, type StatType } from './resend-stats.ts';
 import {
 	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient,
@@ -14,8 +15,9 @@ export type { BroadcastStats, LinkStat } from './resend-stats.ts';
 /**
  * Resend, for the subscriber list and broadcasts.
  *
- * The audience id is the same one functions/newsletter.js enrols people into,
- * so the portal sends to exactly the list the site's signup form fills. The
+ * Contacts are global at Resend and a list is a segment: one per language,
+ * the same ones functions/newsletter.js enrols people into, so the portal sends
+ * to exactly the lists the site's signup form fills. The
  * sender is newsletter@loconsole.eu, which is the verified identity that form
  * already uses for its welcome email.
  */
@@ -48,10 +50,20 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 	return (text ? JSON.parse(text) : {}) as T;
 }
 
+/** The segments that exist, by language. A language with none cannot be written to or sent to. */
+export function segmentIds(): Partial<Record<Lang, string>> {
+	return Object.fromEntries(LANGS.flatMap((l) => (integrations.resendSegments[l] ? [[l, integrations.resendSegments[l]]] : []))) as Partial<Record<Lang, string>>;
+}
+
+/** The languages that have a list to send to, in the site's order. */
+export const configuredLangs = (): Lang[] => LANGS.filter((l) => !!integrations.resendSegments[l]);
+
 export interface AudienceSummary {
 	total: number;
 	subscribed: number;
 	unsubscribed: number;
+	/** Who is subscribed, per language that has a list. */
+	byLang: Partial<Record<Lang, number>>;
 }
 
 export interface Subscriber {
@@ -59,26 +71,32 @@ export interface Subscriber {
 	email: string;
 	createdAt: string;
 	unsubscribed: boolean;
+	/** The list they are on. */
+	lang: Lang;
 }
 
 /** Everyone the signup form has enrolled, newest first. Cached like the count it feeds. */
 export async function listSubscribers(): Promise<Subscriber[]> {
 	return memo('resend:contacts', 5 * 60_000, async () => {
 		type Row = { id?: string; email?: string; created_at?: string; unsubscribed?: boolean };
-		// Every page: Resend returns 20 rows unless told otherwise, and a list that stops there is wrong without saying so.
-		const rows = await readAll<Row>(async (after) => {
-			const r = await call<{ data?: Row[]; has_more?: boolean }>(
-				'GET',
-				`/audiences/${integrations.resendAudienceId}/contacts?limit=100${after ? `&after=${encodeURIComponent(after)}` : ''}`
-			);
-			return { data: r.data ?? [], has_more: r.has_more };
-		});
-		return rows
-			.filter((c): c is { id: string; email: string; created_at?: string; unsubscribed?: boolean } =>
-				typeof c.id === 'string' && typeof c.email === 'string'
-			)
-			.map((c) => ({ id: c.id, email: c.email, createdAt: c.created_at ?? '', unsubscribed: !!c.unsubscribed }))
-			.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+		const byId = new Map<string, Subscriber>();
+		// One segment at a time, every page of each: Resend returns 20 rows unless told otherwise,
+		// and a list that stops there is wrong without saying so.
+		for (const [lang, segment] of Object.entries(segmentIds()) as [Lang, string][]) {
+			const rows = await readAll<Row>(async (after) => {
+				const r = await call<{ data?: Row[]; has_more?: boolean }>(
+					'GET',
+					`/segments/${segment}/contacts?limit=100${after ? `&after=${encodeURIComponent(after)}` : ''}`
+				);
+				return { data: r.data ?? [], has_more: r.has_more };
+			});
+			for (const c of rows) {
+				// Someone in two lists (set by hand in Resend) is counted once, under the first language that has them.
+				if (typeof c.id !== 'string' || typeof c.email !== 'string' || byId.has(c.id)) continue;
+				byId.set(c.id, { id: c.id, email: c.email, createdAt: c.created_at ?? '', unsubscribed: !!c.unsubscribed, lang });
+			}
+		}
+		return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 	});
 }
 
@@ -86,7 +104,9 @@ export async function listSubscribers(): Promise<Subscriber[]> {
 export async function audienceSummary(): Promise<AudienceSummary> {
 	const contacts = await listSubscribers();
 	const unsubscribed = contacts.filter((c) => c.unsubscribed).length;
-	return { total: contacts.length, subscribed: contacts.length - unsubscribed, unsubscribed };
+	const byLang: Partial<Record<Lang, number>> = {};
+	for (const l of configuredLangs()) byLang[l] = contacts.filter((c) => c.lang === l && !c.unsubscribed).length;
+	return { total: contacts.length, subscribed: contacts.length - unsubscribed, unsubscribed, byLang };
 }
 
 /**
@@ -95,7 +115,7 @@ export async function audienceSummary(): Promise<AudienceSummary> {
  */
 export async function removeSubscriber(id: string): Promise<void> {
 	if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) throw new Error('That is not a subscriber id.');
-	await call('DELETE', `/audiences/${integrations.resendAudienceId}/contacts/${id}`);
+	await call('DELETE', `/contacts/${id}`);
 	invalidate('resend:');
 }
 
@@ -106,6 +126,8 @@ export interface SentBroadcast {
 	subject: string;
 	at: string;
 	recipients: number;
+	/** The list it went to; absent on broadcasts sent before there were languages (English). */
+	lang?: Lang;
 }
 
 export async function sentBroadcasts(): Promise<SentBroadcast[]> {
@@ -187,6 +209,8 @@ export async function sendAlert(to: string, subject: string, text: string): Prom
 export interface SendInput extends BroadcastInput {
 	subject: string;
 	slug: string;
+	/** Which list to send to. English when not said. */
+	lang?: Lang;
 }
 
 export interface SendResult {
@@ -212,8 +236,12 @@ export async function sendBroadcast(input: SendInput): Promise<SendResult> {
 	});
 	if (!check.ok) return { ok: false, errors: check.errors, warnings: check.warnings };
 
+	const lang = input.lang ?? 'en';
+	const segment = segmentIds()[lang];
+	if (!segment) return { ok: false, errors: [`There is no ${lang.toUpperCase()} list to send to.`], warnings: check.warnings };
+
 	const created = await call<{ id: string }>('POST', '/broadcasts', {
-		audience_id: integrations.resendAudienceId,
+		segment_id: segment,
 		from: FROM,
 		subject: input.subject,
 		html,
@@ -222,13 +250,14 @@ export async function sendBroadcast(input: SendInput): Promise<SendResult> {
 
 	await call('POST', `/broadcasts/${created.id}/send`, {});
 
-	const audience = await audienceSummary().catch(() => ({ subscribed: 0 }) as AudienceSummary);
+	const audience = await audienceSummary().catch(() => ({ subscribed: 0, byLang: {} }) as AudienceSummary);
 	await recordSent({
 		id: created.id,
 		slug: input.slug,
 		subject: input.subject,
 		at: new Date().toISOString(),
-		recipients: audience.subscribed
+		recipients: audience.byLang[lang] ?? 0,
+		lang
 	});
 	invalidate('resend:');
 

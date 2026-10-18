@@ -92,7 +92,18 @@ export const auth = {
 
 export const integrations = {
 	resendApiKey: optional('RESEND_API_KEY'),
-	resendAudienceId: optional('RESEND_AUDIENCE_ID', '276f21cc-de35-468d-8b30-06fc08ad1016'),
+	/**
+	 * One Resend segment per language of the newsletter. English is the list that
+	 * existed before there were languages (Resend's old "General" audience, now a
+	 * segment), so its id is the default and nothing had to be migrated. French and
+	 * Italian are empty until their ids are set: a language without a segment is
+	 * simply not offered.
+	 */
+	resendSegments: {
+		en: optional('RESEND_SEGMENT_EN', optional('RESEND_AUDIENCE_ID', '276f21cc-de35-468d-8b30-06fc08ad1016')),
+		fr: optional('RESEND_SEGMENT_FR'),
+		it: optional('RESEND_SEGMENT_IT')
+	} as Record<'en' | 'fr' | 'it', string>,
 	// Tests only: points the client at a stand-in server. Unset in production.
 	resendApiUrl: optional('RESEND_API_URL'),
 	/**
