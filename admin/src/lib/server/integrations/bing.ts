@@ -2,8 +2,8 @@ import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
 import { memo } from '../cache.ts';
 import {
-	parseTraffic, parseQueries, parsePages,
-	type TrafficPoint, type QueryRow, type PageRow
+	parseTraffic, parseQueries, parsePages, parseCrawlStats, parseCrawlIssues, parseFeeds,
+	type TrafficPoint, type QueryRow, type PageRow, type CrawlPoint, type CrawlIssue, type SitemapRow
 } from './bing-parse.ts';
 
 export * from './bing-parse.ts';
@@ -76,10 +76,20 @@ async function cached<T>(method: string, parse: (body: unknown) => T): Promise<C
 	});
 }
 
+/** What Bing's crawler found on the site: how much it fetched, what failed, and the sitemaps it knows. */
+export interface CrawlHealth {
+	/** The last 28 days. */
+	days: CrawlPoint[];
+	issues: CrawlIssue[];
+	sitemaps: SitemapRow[];
+}
+
 export interface BingData {
 	traffic: TrafficPoint[];
 	queries: QueryRow[];
 	pages: PageRow[];
+	/** Null when Bing would not say; it never takes the rest of the page down. */
+	crawl: CrawlHealth | null;
 	fetchedAt: string;
 	stale: boolean;
 }
@@ -99,6 +109,18 @@ export async function fetchBing(): Promise<BingResult> {
 			cached('GetQueryStats', parseQueries),
 			cached('GetPageStats', parsePages)
 		]);
+		// Crawl health is a bonus: if Bing will not answer it, the traffic numbers still show.
+		const crawl = await Promise.all([
+			cached('GetCrawlStats', parseCrawlStats),
+			cached('GetCrawlIssues', parseCrawlIssues),
+			cached('GetFeeds', parseFeeds)
+		])
+			.then(([days, issues, sitemaps]): CrawlHealth => ({
+				days: days.value.slice(-28),
+				issues: issues.value.slice(0, 20),
+				sitemaps: sitemaps.value
+			}))
+			.catch((): CrawlHealth | null => null);
 		const fetchedAt = [traffic.at, queries.at, pages.at].sort()[0];
 		return {
 			configured: true,
@@ -107,6 +129,7 @@ export async function fetchBing(): Promise<BingResult> {
 				traffic: traffic.value,
 				queries: queries.value,
 				pages: pages.value,
+				crawl,
 				fetchedAt,
 				stale: Date.now() - Date.parse(fetchedAt) > DISK_TTL_MS
 			}
@@ -118,7 +141,7 @@ export async function fetchBing(): Promise<BingResult> {
 
 /** Drops the cached responses so the next load re-fetches. */
 export async function refreshBing(): Promise<void> {
-	for (const m of ['GetRankAndTrafficStats', 'GetQueryStats', 'GetPageStats']) {
+	for (const m of ['GetRankAndTrafficStats', 'GetQueryStats', 'GetPageStats', 'GetCrawlStats', 'GetCrawlIssues', 'GetFeeds']) {
 		await store.del(`cache/bing-${m}`);
 	}
 }

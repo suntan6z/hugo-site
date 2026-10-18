@@ -9,14 +9,15 @@ import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
 import { preflight, errorsIn, warningsIn } from '$lib/server/seo/preflight.ts';
-import { queueUrls, postUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
+import { queueUrls, postUrls, listUrls, dequeueSlug } from '$lib/server/integrations/indexnow.ts';
 import { clearDraft } from '$lib/server/content/drafts.ts';
 import { isConfigured as canTranslate } from '$lib/server/integrations/deepl.ts';
 import { fundingTextFor } from '$lib/server/content/erasmus.ts';
 import { readScheduled, schedule as addSchedule, cancel as cancelSchedule } from '$lib/server/schedule/runner.ts';
 import { whyNotDay, morningOf, forSlug, todayIn } from '$lib/server/schedule/plan.ts';
 import { isConfigured as canSendNewsletter } from '$lib/server/integrations/resend.ts';
-import { auth } from '$lib/server/env.ts';
+import { auth, integrations } from '$lib/server/env.ts';
+import { isConfigured as googleConfigured } from '$lib/server/integrations/gsc.ts';
 import { createPreview, activePreview, revokePreview } from '$lib/server/content/previews.ts';
 import { readDraft } from '$lib/server/content/drafts.ts';
 
@@ -38,6 +39,14 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		share: await activePreview(params.slug).then(async (l) =>
 			l ? { url: `${auth.origin}/preview/${l.token}`, expiresAt: l.expiresAt, autosave: !!(await readDraft(params.slug)) } : null
 		),
+		// The article's public addresses, for the checks on how it does once live.
+		webUrls: post.draft
+			? []
+			: LANGS.filter((l) => post.translations[l].exists && post.translations[l].title.trim() && !post.translations[l].untranslated).map((l) => ({
+					lang: l,
+					url: `${integrations.siteUrl}/${l}/blog/${params.slug}/`
+				})),
+		googleReady: googleConfigured(),
 		// Set by the rename action's redirect, so the new page says what happened.
 		renamedFrom: url.searchParams.get('renamed'),
 		renamedRedirect: url.searchParams.get('kept') !== '0'
@@ -210,7 +219,9 @@ export const actions: Actions = {
 			await recordPublish({ sha, at: new Date().toISOString(), slug: params.slug });
 			// The committed version supersedes any autosaved work in progress.
 			await clearDraft(params.slug).catch(() => {});
-			if (publish) {
+			// Whenever the result is public, not only on the Publish button: editing
+			// an article that is already live changes a page search engines hold.
+			if (!willBeDraft) {
 				// Queued rather than submitted: StaticHost has not rebuilt yet, so
 				// the URL would still 404. The dashboard submits once it sees the
 				// deploy go live.
@@ -218,6 +229,8 @@ export const actions: Actions = {
 					(l) => input.translations[l].title.trim() && !input.translations[l].untranslated
 				);
 				await queueUrls(postUrls(params.slug, langs));
+				// A first publication also changes the pages that list it.
+				if (publish) await queueUrls(listUrls(langs));
 			}
 			await audit(publish ? 'publish' : 'save', {
 				slug: params.slug,

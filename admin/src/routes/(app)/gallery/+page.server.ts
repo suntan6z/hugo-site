@@ -4,6 +4,8 @@ import { listCities, addCity } from '$lib/server/content/gallery.ts';
 import { slugifyCity } from '$lib/server/content/gallery-data.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
+import { queueUrls, homeUrls } from '$lib/server/integrations/indexnow.ts';
+import { LANGS } from '$lib/server/langs.ts';
 
 export const load: PageServerLoad = async () => ({ cities: await listCities() });
 
@@ -21,6 +23,8 @@ export const actions: Actions = {
 		try {
 			const { sha } = await addCity(name, slug, flag);
 			await recordPublish({ sha, at: new Date().toISOString(), slug: `gallery/${slug}` });
+			// The photos are on the home page; tell search engines it changed.
+			await queueUrls(homeUrls(LANGS));
 			await audit('gallery-add-city', { slug, sha });
 			return { success: true, slug };
 		} catch (e) {

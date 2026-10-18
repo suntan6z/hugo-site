@@ -1,7 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-	parseDotNetDate, unwrap, parseTraffic, parseQueries, parsePages, sum, ctr, trend
+	parseDotNetDate, unwrap, parseTraffic, parseQueries, parsePages, sum, ctr, trend,
+	parseCrawlStats, parseCrawlIssues, parseFeeds
 } from '../src/lib/server/integrations/bing-parse.ts';
 
 describe('the legacy .NET date format', () => {
@@ -135,5 +136,46 @@ describe('derived figures', () => {
 		const p = [0, 0, 3, 4].map((c, i) => ({ date: `2026-09-0${i + 1}`, clicks: c, impressions: 0 }));
 		assert.equal(trend(p).change, 100);
 		assert.equal(Number.isFinite(trend(p).change), true);
+	});
+});
+
+describe('crawl health', () => {
+	// Shapes copied from Bing's own answers.
+	const stats = {
+		d: [
+			{ __type: 'CrawlStats:#Microsoft.Bing.Webmaster.Api', CrawledPages: 20, CrawlErrors: 2, InIndex: 41, Code4xx: 1, Code5xx: 1, BlockedByRobotsTxt: 0, DnsFailures: 0, ConnectionTimeout: 0, Date: '/Date(1757635200000)/' },
+			{ CrawledPages: 5, Date: '/Date(1757548800000)/' },
+			{ CrawledPages: 99, Date: 'broken' }
+		]
+	};
+
+	test('crawl days come oldest first, unreadable days are dropped, missing counts are zero', () => {
+		const p = parseCrawlStats(stats);
+		assert.deepEqual(p.map((x) => x.date), ['2025-09-11', '2025-09-12']);
+		assert.deepEqual(p[0], { date: '2025-09-11', crawled: 5, errors: 0, indexed: 0, blockedByRobots: 0, dnsFailures: 0, timeouts: 0, notFound: 0, serverErrors: 0 });
+		assert.equal(p[1].indexed, 41);
+		assert.equal(p[1].notFound, 1);
+	});
+
+	test('no issues is the good answer, and rows are most-linked first', () => {
+		assert.deepEqual(parseCrawlIssues({ d: [] }), []);
+		assert.deepEqual(parseCrawlIssues(null), []);
+		const rows = parseCrawlIssues({
+			d: [
+				{ Url: 'https://x.example/b', HttpCode: 404, Issues: 4, InLinks: 1 },
+				{ Url: 'https://x.example/a', HttpCode: 500, Issues: 8, InLinks: 5 },
+				{ HttpCode: 404 }
+			]
+		});
+		assert.deepEqual(rows.map((r) => r.url), ['https://x.example/a', 'https://x.example/b']);
+		assert.equal(rows[0].httpCode, 500);
+	});
+
+	test('a sitemap says how Bing got on with it', () => {
+		const rows = parseFeeds({
+			d: [{ Compressed: false, FileSize: 0, LastCrawled: '/Date(1757635200000)/', Status: 'Success', Submitted: '/Date(1757548800000)/', Type: 'Sitemap Index', Url: 'https://lorenzo.loconsole.eu/sitemap.xml', UrlCount: 45 }]
+		});
+		assert.deepEqual(rows, [{ url: 'https://lorenzo.loconsole.eu/sitemap.xml', type: 'Sitemap Index', status: 'Success', submitted: '2025-09-11', lastCrawled: '2025-09-12', urlCount: 45 }]);
+		assert.deepEqual(parseFeeds({ d: [{ Status: 'Success' }] }), []);
 	});
 });

@@ -5,6 +5,8 @@ import { ConcurrentWriteError } from '$lib/server/content/repo.ts';
 import { audit } from '$lib/server/store/kv.ts';
 import { fromForm } from '$lib/server/content/post.ts';
 import { recordPublish } from '$lib/server/integrations/buildinfo.ts';
+import { queueUrls, homeUrls } from '$lib/server/integrations/indexnow.ts';
+import { LANGS } from '$lib/server/langs.ts';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const city = await loadCity(params.city);
@@ -47,6 +49,8 @@ export const actions: Actions = {
 				message: `Update gallery ${slug}`
 			});
 			await recordPublish({ sha, at: new Date().toISOString(), slug: `gallery/${slug}` });
+			// The photos are on the home page; tell search engines it changed.
+			await queueUrls(homeUrls(LANGS));
 			await audit('gallery-save', {
 				slug, sha, added: newImages.length, removed: deleteFilenames.length
 			});
@@ -65,6 +69,8 @@ export const actions: Actions = {
 		}
 		const { sha } = await removeCity(params.city);
 		await recordPublish({ sha, at: new Date().toISOString(), slug: `gallery/${params.city}` });
+		// The photos are on the home page; tell search engines it changed.
+		await queueUrls(homeUrls(LANGS));
 		await audit('gallery-remove-city', { slug: params.city, sha });
 		redirect(303, '/gallery');
 	}

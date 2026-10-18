@@ -115,6 +115,21 @@ export const integrations = {
 	deeplApiKey: optional('DEEPL_API_KEY'),
 	// Tests only: points the client at a stand-in server. Unset in production.
 	deeplApiUrl: optional('DEEPL_API_URL'),
+	/**
+	 * Google Search Console, read as a service account: the key file's JSON as base64,
+	 * and the property exactly as Search Console names it (`sc-domain:loconsole.eu` for a
+	 * Domain property, `https://lorenzo.loconsole.eu/` for a URL-prefix one).
+	 */
+	gscServiceAccount: optional('GSC_SERVICE_ACCOUNT_B64'),
+	gscSiteUrl: optional('GSC_SITE_URL'),
+	// Tests only: point the clients at stand-in servers. Unset in production.
+	gscApiUrl: optional('GSC_API_URL'),
+	gscTokenUrl: optional('GSC_TOKEN_URL'),
+	/** PageSpeed Insights works without a key at a low quota; a key lifts it. */
+	pagespeedApiKey: optional('PAGESPEED_API_KEY'),
+	pagespeedApiUrl: optional('PAGESPEED_API_URL'),
+	/** Where the health check writes to when something is wrong. Unset means the dashboard alone says so. */
+	alertEmail: optional('ALERT_EMAIL'),
 	siteUrl: optional('SITE_URL', 'https://lorenzo.loconsole.eu'),
 	// The site's own form handlers (functions/), pinged for health only. The
 	// same URLs static/js/main.js and layouts/blog/single.html post to.

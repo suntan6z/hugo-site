@@ -136,3 +136,94 @@ export function trend(points: TrafficPoint[]): { change: number; enough: boolean
 	if (a === 0) return { change: b > 0 ? 100 : 0, enough: b > 0 };
 	return { change: ((b - a) / a) * 100, enough: true };
 }
+
+/* ── Crawl health: what Bing's crawler found on the site ── */
+
+export interface CrawlPoint {
+	date: string; // YYYY-MM-DD
+	/** Pages Bing fetched that day. */
+	crawled: number;
+	/** Fetches that failed, whatever the reason. */
+	errors: number;
+	/** Pages in Bing's index at the time. */
+	indexed: number;
+	blockedByRobots: number;
+	dnsFailures: number;
+	timeouts: number;
+	notFound: number; // Code4xx
+	serverErrors: number; // Code5xx
+}
+
+/** One row a day; sorted oldest first. */
+export function parseCrawlStats(body: unknown): CrawlPoint[] {
+	return unwrap(body)
+		.map((r) => {
+			const row = r as Record<string, unknown>;
+			const date = parseDotNetDate(row.Date);
+			return date
+				? {
+						date,
+						crawled: num(row.CrawledPages),
+						errors: num(row.CrawlErrors),
+						indexed: num(row.InIndex),
+						blockedByRobots: num(row.BlockedByRobotsTxt),
+						dnsFailures: num(row.DnsFailures),
+						timeouts: num(row.ConnectionTimeout),
+						notFound: num(row.Code4xx),
+						serverErrors: num(row.Code5xx)
+					}
+				: null;
+		})
+		.filter((x): x is CrawlPoint => x !== null)
+		.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export interface CrawlIssue {
+	url: string;
+	httpCode: number;
+	/** Bing's own bit mask of what went wrong; the portal shows it as is. */
+	issues: number;
+	inLinks: number;
+}
+
+/** Pages Bing could not fetch or understand. An empty list is the good answer. */
+export function parseCrawlIssues(body: unknown): CrawlIssue[] {
+	return unwrap(body)
+		.map((r) => {
+			const row = r as Record<string, unknown>;
+			const url = str(row.Url);
+			return url ? { url, httpCode: num(row.HttpCode), issues: num(row.Issues), inLinks: num(row.InLinks) } : null;
+		})
+		.filter((x): x is CrawlIssue => x !== null)
+		.sort((a, b) => b.inLinks - a.inLinks || a.url.localeCompare(b.url));
+}
+
+export interface SitemapRow {
+	url: string;
+	type: string;
+	/** Bing's word: Success, Pending, an error. */
+	status: string;
+	submitted: string | null;
+	lastCrawled: string | null;
+	urlCount: number;
+}
+
+/** The sitemaps Bing knows of, with how it got on with each. */
+export function parseFeeds(body: unknown): SitemapRow[] {
+	return unwrap(body)
+		.map((r) => {
+			const row = r as Record<string, unknown>;
+			const url = str(row.Url);
+			return url
+				? {
+						url,
+						type: str(row.Type) || 'Sitemap',
+						status: str(row.Status) || 'Unknown',
+						submitted: parseDotNetDate(row.Submitted),
+						lastCrawled: parseDotNetDate(row.LastCrawled),
+						urlCount: num(row.UrlCount)
+					}
+				: null;
+		})
+		.filter((x): x is SitemapRow => x !== null);
+}

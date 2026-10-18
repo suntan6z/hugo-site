@@ -12,17 +12,29 @@
 	const fmt = (n: number) => n.toLocaleString('en-GB');
 	const day = (d: string) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 	const shortUrl = (u: string) => u.replace(/^https?:\/\/[^/]+/, '') || '/';
+
+	// Bing's crawler: what it fetched, what failed, and what it holds in its index.
+	const crawl = $derived(bing.data?.crawl ?? null);
+	const crawled = $derived((crawl?.days ?? []).reduce((n, d) => n + d.crawled, 0));
+	const crawlErrors = $derived((crawl?.days ?? []).reduce((n, d) => n + d.errors, 0));
+	const indexed = $derived((crawl?.days ?? []).filter((d) => d.indexed > 0).at(-1)?.indexed ?? null);
+	const when = (d: string | null) => (d ? day(d) : '–');
+	// A sitemap Bing has not read for a month is not being used to find new pages.
+	const daysAgo = (d: string | null) => (d ? Math.floor((Date.now() - Date.parse(d + 'T00:00:00Z')) / 86_400_000) : null);
+	const staleSitemap = (d: string | null) => (daysAgo(d) ?? 0) > 30;
 </script>
 
 <div class="head">
 	<h1>Search</h1>
-	{#if bing.configured}
+	<nav class="jump" aria-label="Search engines"><a href="#bing">Bing</a><a href="#google">Google</a></nav>
+	{#if bing.configured || data.google.configured}
 		<form method="POST" action="?/refresh" use:enhance>
 			<button type="submit" class="btn-outline btn-sm">Refresh</button>
 		</form>
 	{/if}
 </div>
 
+<h2 id="bing" class="engine">Bing</h2>
 {#if !bing.configured}
 	<section class="setup">
 		<h2>Bing Webmaster Tools is not connected</h2>
@@ -158,9 +170,171 @@
 		</section>
 	{/if}
 
+	{#if crawl}
+		<h2 class="sub">Crawl health</h2>
+		<section class="tiles">
+			<div class="tile" title="Pages Bing's crawler fetched from the site"><span class="n">{fmt(crawled)}</span><span class="l">pages fetched · {crawl.days.length} days</span></div>
+			<div class="tile" class:bad={crawlErrors > 0} title="Fetches that failed: not found, a server error, a timeout, blocked by robots.txt"><span class="n">{fmt(crawlErrors)}</span><span class="l">fetches that failed</span></div>
+			<div class="tile"><span class="n">{indexed === null ? '–' : fmt(indexed)}</span><span class="l">pages in Bing’s index</span></div>
+			<div class="tile" class:bad={crawl.issues.length > 0}><span class="n">{crawl.issues.length}</span><span class="l">pages with problems</span></div>
+		</section>
+
+		<div class="cols">
+			<section>
+				<h2>Sitemaps</h2>
+				{#if crawl.sitemaps.length === 0}
+					<p class="empty">Bing knows of no sitemap. Submit <code>{data.siteUrl}/sitemap.xml</code> in Bing Webmaster Tools.</p>
+				{:else}
+					<div class="scroll"><table>
+						<thead><tr><th>Sitemap</th><th>Status</th><th>URLs</th><th>Read</th></tr></thead>
+						<tbody>
+							{#each crawl.sitemaps as m}
+								<tr>
+									<td class="q" title={m.url}>{shortUrl(m.url)}</td>
+									<td class="n" class:okcell={m.status === 'Success'}>{m.status}</td>
+									<td class="n">{fmt(m.urlCount)}</td>
+									<td class="n" class:warncell={staleSitemap(m.lastCrawled)} title={staleSitemap(m.lastCrawled) ? `Bing last read this ${daysAgo(m.lastCrawled)} days ago` : ''}>{when(m.lastCrawled)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table></div>
+					{#if crawl.sitemaps.some((m) => staleSitemap(m.lastCrawled))}
+						<p class="note">Bing has not read a sitemap for over a month. Submitting it again in Bing Webmaster Tools → Sitemaps prompts a fresh read; IndexNow covers pages as they change.</p>
+					{/if}
+				{/if}
+			</section>
+
+			<section>
+				<h2>Pages with problems</h2>
+				{#if crawl.issues.length === 0}
+					<p class="empty">None. Bing found nothing it could not fetch or read.</p>
+				{:else}
+					<div class="scroll"><table>
+						<thead><tr><th>Page</th><th>HTTP</th><th title="Links to it that Bing knows of">Links</th></tr></thead>
+						<tbody>
+							{#each crawl.issues as i}
+								<tr><td class="q" title={i.url}>{shortUrl(i.url)}</td><td class="n">{i.httpCode || '–'}</td><td class="n">{fmt(i.inLinks)}</td></tr>
+							{/each}
+						</tbody>
+					</table></div>
+					<p class="note">The reason for each is in Bing Webmaster Tools → Site Explorer.</p>
+				{/if}
+			</section>
+		</div>
+	{/if}
+
 	<p class="fetched" class:stale={bing.data.stale}>
 		Fetched {new Date(bing.data.fetchedAt).toLocaleString('en-GB')}
 		{#if bing.data.stale}· stale, Bing could not be reached on the last attempt{/if}
+	</p>
+{/if}
+
+<h2 id="google" class="engine">Google</h2>
+{#if !data.google.configured}
+	<section class="setup">
+		<h2>Google Search Console is not connected</h2>
+		<ol>
+			<li>In <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer">Google Cloud Console</a>, create a project, enable the <strong>Google Search Console API</strong>, then create a <strong>service account</strong> and download a JSON key for it.</li>
+			<li>In <a href="https://search.google.com/search-console/users" target="_blank" rel="noreferrer">Search Console → Settings → Users and permissions</a>, add the service account’s email address as a user (Restricted is enough: it only reads).</li>
+			<li>Put the key into <code>admin/.env</code> as <code>GSC_SERVICE_ACCOUNT_B64=…</code> (<code>base64 -i key.json | tr -d '\n'</code>) and the property as <code>GSC_SITE_URL=…</code>, exactly as Search Console lists it: <code>sc-domain:loconsole.eu</code> or <code>{data.siteUrl}/</code>.</li>
+			<li>Run <code>cd admin && ./scripts/create-container.sh</code>.</li>
+		</ol>
+		<p class="note">The key can only read search numbers; it cannot change anything in Search Console.</p>
+	</section>
+{:else if data.google.error}
+	<p class="msg err">{data.google.error}</p>
+{:else if data.google.data}
+	{@const g = data.google.data}
+	{#if data.googleTotals.impressions === 0}
+		<p class="explain">Google has not shown the site in any results over the last {g.days.length || 28} days. A new site takes weeks to appear; the sitemap below is how Google finds its pages.</p>
+	{/if}
+
+	<section class="tiles">
+		<div class="tile"><span class="n">{fmt(data.googleTotals.clicks)}</span><span class="l">clicks</span></div>
+		<div class="tile"><span class="n">{fmt(data.googleTotals.impressions)}</span><span class="l">impressions</span></div>
+		<div class="tile"><span class="n">{data.googleTotals.ctr.toFixed(1)}%</span><span class="l">click-through rate</span></div>
+		<div class="tile"><span class="n">{data.googleTotals.position ?? '–'}</span><span class="l">average position</span></div>
+	</section>
+
+	<div class="cols">
+		<section>
+			<h2>Top queries</h2>
+			{#if g.queries.length === 0}
+				<p class="empty">No query data yet.</p>
+			{:else}
+				<div class="scroll"><table>
+					<thead><tr><th>Query</th><th>Clicks</th><th>Impr.</th><th title="Average position in results">Pos.</th></tr></thead>
+					<tbody>
+						{#each g.queries.slice(0, 12) as q}
+							<tr><td class="q">{q.query}</td><td class="n">{fmt(q.clicks)}</td><td class="n">{fmt(q.impressions)}</td><td class="n">{q.position.toFixed(1)}</td></tr>
+						{/each}
+					</tbody>
+				</table></div>
+			{/if}
+		</section>
+
+		<section>
+			<h2>Your articles in Google</h2>
+			{#if data.googleByPost.length === 0}
+				<p class="empty">No article page has appeared in Google results yet.</p>
+			{:else}
+				<div class="scroll"><table>
+					<thead><tr><th>Article</th><th>Clicks</th><th>Impr.</th><th title="Average position in results">Pos.</th></tr></thead>
+					<tbody>
+						{#each data.googleByPost as p}
+							<tr>
+								<td class="q"><a href="/posts/{p.slug}">{data.titles[p.slug] ?? p.slug}</a></td>
+								<td class="n">{fmt(p.clicks)}</td>
+								<td class="n">{fmt(p.impressions)}</td>
+								<td class="n">{p.position ?? '–'}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table></div>
+			{/if}
+		</section>
+	</div>
+
+	<div class="cols">
+		<section>
+			<h2>Sitemaps</h2>
+			{#if g.sitemaps.length === 0}
+				<p class="empty">Google knows of no sitemap. Submit <code>{data.siteUrl}/sitemap.xml</code> in Search Console → Sitemaps.</p>
+			{:else}
+				<div class="scroll"><table>
+					<thead><tr><th>Sitemap</th><th>Indexed</th><th>Errors</th><th>Read</th></tr></thead>
+					<tbody>
+						{#each g.sitemaps as m}
+							<tr>
+								<td class="q" title={m.path}>{shortUrl(m.path)}</td>
+								<td class="n" title="{m.indexed} of the {m.offered} URLs it offers">{m.offered > 0 ? `${fmt(m.indexed)} / ${fmt(m.offered)}` : '–'}</td>
+								<td class="n" class:warncell={m.errors > 0}>{m.errors}</td>
+								<td class="n" class:warncell={staleSitemap(m.lastRead)} title={staleSitemap(m.lastRead) ? `Google last read this ${daysAgo(m.lastRead)} days ago` : ''}>{when(m.lastRead)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table></div>
+			{/if}
+		</section>
+
+		{#if g.pages.length > 0}
+			<section>
+				<h2>All pages</h2>
+				<div class="scroll"><table>
+					<thead><tr><th>Page</th><th>Clicks</th><th>Impr.</th></tr></thead>
+					<tbody>
+						{#each g.pages.slice(0, 12) as p}
+							<tr><td class="q">{shortUrl(p.url)}</td><td class="n">{fmt(p.clicks)}</td><td class="n">{fmt(p.impressions)}</td></tr>
+						{/each}
+					</tbody>
+				</table></div>
+			</section>
+		{/if}
+	</div>
+
+	<p class="fetched" class:stale={g.stale}>
+		From Google Search Console, the last {g.days.length} days with data (its figures run a couple of days behind) · fetched {new Date(g.fetchedAt).toLocaleString('en-GB')}
+		{#if g.stale}· stale, Google could not be reached on the last attempt{/if}
 	</p>
 {/if}
 
@@ -232,6 +406,15 @@
 	.langs { text-align: right; font-size: 0.72rem; color: var(--muted-foreground); }
 	.langs span { margin-left: 0.4rem; font-variant: small-caps; }
 	.empty { font-size: 0.85rem; color: var(--muted-foreground); }
+	h2.sub { margin: 0.5rem 0 0.7rem; }
+	h2.engine { font-size: 1.05rem; text-transform: none; letter-spacing: 0; color: var(--foreground); margin: 1.75rem 0 0.9rem; padding-top: 0.25rem; }
+	h2.engine:first-of-type { margin-top: 0; }
+	.jump { display: flex; gap: 0.9rem; font-size: 0.85rem; margin-right: auto; margin-left: 1.25rem; }
+	.jump a { color: var(--muted-foreground); text-decoration: none; }
+	.jump a:hover { color: var(--foreground); text-decoration: underline; }
+	.tile.bad .n { color: var(--danger); }
+	td.okcell { color: var(--ok); }
+	td.warncell { color: var(--warn); font-weight: 600; }
 	.fetched { font-size: 0.75rem; color: var(--muted-foreground); margin-top: 1.5rem; }
 	.fetched.stale { color: var(--warn); }
 	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }

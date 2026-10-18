@@ -1,5 +1,6 @@
 import { integrations } from '../env.ts';
 import { store } from '../store/kv.ts';
+import * as urls from './indexnow-urls.ts';
 
 /**
  * IndexNow tells Bing (and other participating engines) that a URL changed,
@@ -47,9 +48,11 @@ export async function dequeueSlug(slug: string): Promise<void> {
 }
 
 /** All language variants of a blog post, which are separate indexable URLs. */
-export function postUrls(slug: string, langs: string[]): string[] {
-	return langs.map((l) => `${integrations.siteUrl}/${l}/blog/${slug}/`);
-}
+export const postUrls = (slug: string, langs: readonly string[]) => urls.postUrls(integrations.siteUrl, slug, langs);
+/** Each language's home page and blog index: where a crawler finds what is new. */
+export const listUrls = (langs: readonly string[]) => urls.listUrls(integrations.siteUrl, langs);
+/** Just the home pages, which is what a gallery change touches. */
+export const homeUrls = (langs: readonly string[]) => urls.homeUrls(integrations.siteUrl, langs);
 
 export interface SubmitResult {
 	ok: boolean;

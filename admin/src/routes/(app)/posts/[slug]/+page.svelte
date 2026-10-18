@@ -7,6 +7,7 @@
 	import RichEditor from '$lib/components/RichEditor.svelte';
 	import FileChanges from '$lib/components/FileChanges.svelte';
 	import HistoryPanel from '$lib/components/HistoryPanel.svelte';
+	import SiteChecks from '$lib/components/SiteChecks.svelte';
 	import { thumbnailOf } from '$lib/thumbnail';
 	let { data, form } = $props();
 
@@ -811,6 +812,8 @@
 		<form method="POST" action="?/share" use:enhance><button type="submit" class="btn-outline">Create a preview link</button></form>
 	{/if}
 </section>
+
+<SiteChecks urls={data.webUrls} googleReady={data.googleReady} />
 
 <section class="schedule">
 	{#if data.scheduled?.state === 'pending'}
