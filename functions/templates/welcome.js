@@ -13,7 +13,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const SITE = 'https://lorenzo.loconsole.eu';
-const ACCENT = '#9f3747';
+// The site's own tokens (static/css/main.css, as hex because email clients ignore hsl and variables):
+// primary #943847, background #f9f7f5, card #fdfcfc, foreground #21242c, muted text #676f7e,
+// border #e5e0dc, accent #f2e3e6. The newsletter builder in the portal uses the same.
+const ACCENT = '#943847';
 
 const SOCIALS = [
   { key: 'linkedin', label: 'LinkedIn', href: 'https://www.linkedin.com/in/lloconsole/' },
@@ -102,11 +105,11 @@ export function renderWelcome(lang) {
   if (!c) throw new Error(`no welcome email in ${lang}`);
   const blog = `${SITE}/${lang}/blog/`;
   const items = c.items
-    .map(([icon, text]) => `<tr><td width="30" valign="top" style="padding:0 0 10px 0;font-size:18px;line-height:24px">${icon}</td><td valign="top" style="padding:0 0 10px 0;font-family:${SANS};font-size:16px;line-height:24px;color:#444444">${esc(text)}</td></tr>`)
+    .map(([icon, text]) => `<tr><td width="30" valign="top" style="padding:0 0 10px 0;font-size:18px;line-height:24px">${icon}</td><td valign="top" style="padding:0 0 10px 0;font-family:${SANS};font-size:16px;line-height:24px;color:#21242c">${esc(text)}</td></tr>`)
     .join('');
   const socials = SOCIALS.map(
     (s) =>
-      `<a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin:4px 4px;padding:9px 16px 9px 12px;background-color:#b25565;border-radius:8px;color:#ffffff;text-decoration:none;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px"><span style="vertical-align:middle">${s.label}</span></a>`
+      `<a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin:4px 4px;padding:9px 16px 9px 12px;background-color:#a45663;border-radius:8px;color:#ffffff;text-decoration:none;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px"><span style="vertical-align:middle">${s.label}</span></a>`
   ).join('');
 
   return `<!DOCTYPE html>
@@ -118,22 +121,22 @@ export function renderWelcome(lang) {
 <meta name="color-scheme" content="light">
 <title>${esc(c.title)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f5f5f5">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f5f5f5">${esc(c.preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f5f5">
+<body style="margin:0;padding:0;background-color:#f9f7f5">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f9f7f5">${esc(c.preheader)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9f7f5">
 <tr><td align="center" style="padding:32px 12px">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#fdfcfc;border-radius:12px;overflow:hidden">
   <tr><td style="padding:40px 40px 8px 40px;font-family:${SERIF}">
     <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none;font-family:${SERIF};font-size:18px;font-weight:bold"><img src="${SITE}/img/email/logo.png" width="140" height="72" alt="Lorenzo Loconsole" style="display:block;border:0;width:140px;height:auto;font-family:${SERIF};font-size:18px;color:${ACCENT}"></a>
   </td></tr>
   <tr><td style="padding:16px 40px 0 40px">
-    <h1 style="margin:0 0 24px 0;font-family:${SERIF};font-size:34px;line-height:1.2;font-weight:bold;color:#1a1a1a">${esc(c.title)} 👋</h1>
-    <p style="margin:0 0 16px 0;font-family:${SANS};font-size:16px;line-height:26px;color:#444444">${esc(c.hi)}</p>
-    <p style="margin:0 0 24px 0;font-family:${SANS};font-size:16px;line-height:26px;color:#444444">${esc(c.intro)}</p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 20px;background-color:#fef3f2;border-left:4px solid ${ACCENT};border-radius:0 8px 8px 0;font-family:${SANS};font-size:15px;line-height:24px;color:#1a1a1a"><strong>${esc(c.languageName)}.</strong> ${esc(c.note)}</td></tr></table>
-    <p style="margin:28px 0 12px 0;font-family:${SERIF};font-size:20px;font-weight:bold;color:#1a1a1a">${esc(c.expect)}</p>
+    <h1 style="margin:0 0 24px 0;font-family:${SERIF};font-size:34px;line-height:1.2;font-weight:bold;color:#21242c">${esc(c.title)} 👋</h1>
+    <p style="margin:0 0 16px 0;font-family:${SANS};font-size:16px;line-height:26px;color:#21242c">${esc(c.hi)}</p>
+    <p style="margin:0 0 24px 0;font-family:${SANS};font-size:16px;line-height:26px;color:#21242c">${esc(c.intro)}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 20px;background-color:#f2e3e6;border-left:4px solid ${ACCENT};border-radius:0 8px 8px 0;font-family:${SANS};font-size:15px;line-height:24px;color:#21242c"><strong>${esc(c.languageName)}.</strong> ${esc(c.note)}</td></tr></table>
+    <p style="margin:28px 0 12px 0;font-family:${SERIF};font-size:20px;font-weight:bold;color:#21242c">${esc(c.expect)}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0">${items}</table>
-    <p style="margin:8px 0 0 0;font-family:${SANS};font-size:16px;line-height:26px;color:#444444">${esc(c.cadence)}</p>
+    <p style="margin:8px 0 0 0;font-family:${SANS};font-size:16px;line-height:26px;color:#21242c">${esc(c.cadence)}</p>
   </td></tr>
   <tr><td align="center" style="padding:32px 40px 44px 40px">
     <a href="${blog}" target="_blank" style="display:inline-block;padding:14px 28px;background-color:${ACCENT};border-radius:8px;color:#ffffff;text-decoration:none;font-family:${SANS};font-size:16px;font-weight:600;line-height:20px">${esc(c.cta)} →</a>
@@ -142,10 +145,10 @@ export function renderWelcome(lang) {
     <p style="margin:0 0 14px 0;font-family:${SERIF};font-size:26px;font-weight:bold;color:#ffffff">${esc(c.connect)}</p>
     ${socials}
   </td></tr>
-  <tr><td align="center" style="padding:28px 40px;background-color:#fafafa;border-top:1px solid #e5e5e5">
-    <p style="margin:0 0 8px 0;font-family:${SANS};font-size:13px;line-height:21px;color:#777777">${esc(c.why)} <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none">lorenzo.loconsole.eu</a>.</p>
-    <p style="margin:0 0 8px 0;font-family:${SANS};font-size:13px;line-height:21px;color:#777777">${esc(c.unsubscribe)}</p>
-    <p style="margin:0;font-family:${SANS};font-size:13px;line-height:21px;color:#777777"><a href="${SITE}/${lang}/privacy-policy/" style="color:${ACCENT};text-decoration:none">${esc(c.privacy)}</a> · © Lorenzo Loconsole. ${esc(c.rights)}</p>
+  <tr><td align="center" style="padding:28px 40px;background-color:#f9f7f5;border-top:1px solid #e5e0dc">
+    <p style="margin:0 0 8px 0;font-family:${SANS};font-size:13px;line-height:21px;color:#676f7e">${esc(c.why)} <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none">lorenzo.loconsole.eu</a>.</p>
+    <p style="margin:0 0 8px 0;font-family:${SANS};font-size:13px;line-height:21px;color:#676f7e">${esc(c.unsubscribe)}</p>
+    <p style="margin:0;font-family:${SANS};font-size:13px;line-height:21px;color:#676f7e"><a href="${SITE}/${lang}/privacy-policy/" style="color:${ACCENT};text-decoration:none">${esc(c.privacy)}</a> · © Lorenzo Loconsole. ${esc(c.rights)}</p>
   </td></tr>
 </table>
 </td></tr>

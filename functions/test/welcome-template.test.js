@@ -56,3 +56,11 @@ test('the French and Italian ones are really translated, not English with a new 
 test('a language the site does not have is refused', () => {
   assert.throws(() => renderWelcome('de'), /no welcome email/);
 });
+
+test('it wears the site\'s colours, not the greys and the older red it was first made with', () => {
+  for (const lang of LANGS) {
+    const html = renderWelcome(lang);
+    for (const token of ['#943847', '#f9f7f5', '#21242c', '#676f7e', '#e5e0dc', '#f2e3e6']) assert.ok(html.includes(token), `${lang}: ${token}`);
+    for (const stale of ['#9f3747', '#f5f5f5', '#fef3f2', '#1a1a1a', '#444444', '#e5e5e5']) assert.ok(!html.includes(stale), `${lang}: still ${stale}`);
+  }
+});
