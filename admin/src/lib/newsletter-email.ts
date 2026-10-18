@@ -11,7 +11,27 @@
  * live preview beside the form is this function, not a copy of it.
  */
 
+/**
+ * The newsletter's languages. The same three as lib/server/langs.ts, repeated
+ * because this module also runs in the browser and cannot import from there.
+ */
+export const NEWSLETTER_LANGS = ['en', 'fr', 'it'] as const;
+export type NewsletterLang = (typeof NEWSLETTER_LANGS)[number];
+export const LANG_LABEL: Record<NewsletterLang, string> = { en: 'English', fr: 'Français', it: 'Italiano' };
+
+/** The words an email carries that are not the article's: the button and the footer. */
+const WORDS: Record<NewsletterLang, { read: string; readText: string; why: (site: string) => string; unsubscribe: string }> = {
+	en: { read: 'Read the article', readText: 'Read it', why: (s) => `You are receiving this because you subscribed at ${s}.`, unsubscribe: 'Unsubscribe' },
+	fr: { read: "Lire l'article", readText: 'À lire', why: (s) => `Vous recevez ce message parce que vous vous êtes abonné(e) sur ${s}.`, unsubscribe: 'Se désabonner' },
+	it: { read: "Leggi l'articolo", readText: 'Da leggere', why: (s) => `Ricevi questo messaggio perché ti sei iscritto/a su ${s}.`, unsubscribe: 'Annulla l’iscrizione' }
+};
+
+/** An article's address in a language, as the site serves it. */
+export const articleUrl = (siteUrl: string, slug: string, lang: NewsletterLang): string => `${siteUrl}/${lang}/blog/${slug}/`;
+
 export interface BroadcastInput {
+	/** What language the email is written in: its button, footer and `lang`. English when not said. */
+	lang?: NewsletterLang;
 	/** Article title, used as the headline. */
 	title: string;
 	/** The article's own description, or whatever the author rewrote. */
@@ -64,9 +84,11 @@ export function buildBroadcastHtml(input: BroadcastInput): string {
 	const ground = '#f9f7f5'; // --background
 	const serif = "Fraunces,Georgia,'Times New Roman',serif";
 	const body = `margin:0 0 1em;font-size:16px;line-height:1.6;color:${ink}`;
+	const lang = input.lang ?? 'en';
+	const w = WORDS[lang];
 
 	return `<!doctype html>
-<html lang="en">
+<html lang="${lang}">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
 <body style="margin:0;padding:0;background:${ground};">
   <div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
@@ -85,12 +107,12 @@ export function buildBroadcastHtml(input: BroadcastInput): string {
         <a href="${esc(input.url)}" style="color:${ink};text-decoration:none;">${esc(input.title)}</a>
       </h1>
       ${paragraphs(input.intro, `margin:0 0 20px;font-size:16px;line-height:1.6;color:${muted}`)}
-      <a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">Read the article</a>
+      <a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">${esc(w.read)}</a>
     </div>
 
     <div style="margin-top:36px;padding-top:20px;border-top:1px solid ${line};font-size:13px;line-height:1.6;color:${muted};">
-      <p style="margin:0 0 8px;">You are receiving this because you subscribed at ${esc(input.siteName)}.</p>
-      <p style="margin:0;"><a href="${UNSUBSCRIBE_TOKEN}" style="color:${muted};">Unsubscribe</a></p>
+      <p style="margin:0 0 8px;">${esc(w.why(input.siteName))}</p>
+      <p style="margin:0;"><a href="${UNSUBSCRIBE_TOKEN}" style="color:${muted};">${esc(w.unsubscribe)}</a></p>
     </div>
 
   </div>
@@ -100,16 +122,19 @@ export function buildBroadcastHtml(input: BroadcastInput): string {
 
 /** Plain-text alternative, for clients that will not render HTML. */
 export function buildBroadcastText(input: BroadcastInput): string {
+	const w = WORDS[input.lang ?? 'en'];
+	// French sets a space before a colon.
+	const colon = input.lang === 'fr' ? ' : ' : ': ';
 	return [
 		input.note?.trim(),
 		input.title,
 		'',
 		input.intro.trim(),
 		'',
-		`Read it: ${input.url}`,
+		`${w.readText}${colon}${input.url}`,
 		'',
-		`You are receiving this because you subscribed at ${input.siteName}.`,
-		`Unsubscribe: ${UNSUBSCRIBE_TOKEN}`
+		w.why(input.siteName),
+		`${w.unsubscribe}${colon}${UNSUBSCRIBE_TOKEN}`
 	]
 		.filter((l) => l !== undefined)
 		.join('\n');

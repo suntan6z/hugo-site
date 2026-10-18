@@ -119,6 +119,21 @@ export async function removeSubscriber(id: string): Promise<void> {
 	invalidate('resend:');
 }
 
+/**
+ * Moves a subscriber to another language's list: added to the new segment first, then
+ * taken off the old one, so a failure in between leaves them on both (and so
+ * counted once, under the first language) rather than on neither.
+ */
+export async function moveSubscriber(id: string, from: Lang, to: Lang): Promise<void> {
+	if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) throw new Error('That is not a subscriber id.');
+	const ids = segmentIds();
+	if (!ids[to]) throw new Error(`There is no ${to.toUpperCase()} list.`);
+	if (from === to) return;
+	await call('POST', `/contacts/${id}/segments/${ids[to]}`);
+	if (ids[from]) await call('DELETE', `/contacts/${id}/segments/${ids[from]}`);
+	invalidate('resend:');
+}
+
 /** Broadcasts the portal has sent. Kept locally: it is our audit trail, not Resend's. */
 export interface SentBroadcast {
 	id: string;
@@ -209,8 +224,12 @@ export async function sendAlert(to: string, subject: string, text: string): Prom
 export interface SendInput extends BroadcastInput {
 	subject: string;
 	slug: string;
-	/** Which list to send to. English when not said. */
-	lang?: Lang;
+	/**
+	 * Which list it goes to. The language of the email itself is `lang`; they differ
+	 * only when the English version is sent to a list whose language has no translation.
+	 * The email's own language when not said.
+	 */
+	list?: Lang;
 }
 
 export interface SendResult {
@@ -236,9 +255,9 @@ export async function sendBroadcast(input: SendInput): Promise<SendResult> {
 	});
 	if (!check.ok) return { ok: false, errors: check.errors, warnings: check.warnings };
 
-	const lang = input.lang ?? 'en';
-	const segment = segmentIds()[lang];
-	if (!segment) return { ok: false, errors: [`There is no ${lang.toUpperCase()} list to send to.`], warnings: check.warnings };
+	const list = input.list ?? input.lang ?? 'en';
+	const segment = segmentIds()[list];
+	if (!segment) return { ok: false, errors: [`There is no ${list.toUpperCase()} list to send to.`], warnings: check.warnings };
 
 	const created = await call<{ id: string }>('POST', '/broadcasts', {
 		segment_id: segment,
@@ -256,8 +275,8 @@ export async function sendBroadcast(input: SendInput): Promise<SendResult> {
 		slug: input.slug,
 		subject: input.subject,
 		at: new Date().toISOString(),
-		recipients: audience.byLang[lang] ?? 0,
-		lang
+		recipients: audience.byLang[list] ?? 0,
+		lang: list
 	});
 	invalidate('resend:');
 

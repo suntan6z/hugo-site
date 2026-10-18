@@ -70,6 +70,12 @@ ENVS=(
   "environment-variables.GH_BRANCH=${GH_BRANCH:-main}"
   "environment-variables.SCW_BUCKET=$SCW_BUCKET"
   "environment-variables.SCW_REGION=$STORAGE_REGION"
+  # The newsletter's mailing lists, one Resend segment per language (ids, not secrets).
+  # Empty means unset; English then falls back to the list that existed before there
+  # were languages. Create the French and Italian ones with scripts/resend-setup.mjs.
+  "environment-variables.RESEND_SEGMENT_EN=${RESEND_SEGMENT_EN:-}"
+  "environment-variables.RESEND_SEGMENT_FR=${RESEND_SEGMENT_FR:-}"
+  "environment-variables.RESEND_SEGMENT_IT=${RESEND_SEGMENT_IT:-}"
 )
 SECRETS=(
   "secret-environment-variables.GH_PRIVATE_KEY_B64=$GH_PRIVATE_KEY_B64"

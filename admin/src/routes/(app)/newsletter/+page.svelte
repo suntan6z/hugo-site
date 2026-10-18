@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { onMount, untrack } from 'svelte';
-	import { buildBroadcastHtml, validateBroadcast, forSingleRecipient, looksLikeEmail } from '$lib/newsletter-email.ts';
+	import {
+		buildBroadcastHtml, validateBroadcast, forSingleRecipient, looksLikeEmail, LANG_LABEL, type NewsletterLang
+	} from '$lib/newsletter-email.ts';
+	import {
+		initialFields, initialChoices, contentLangFor, planSend, reach, missingTranslations,
+		type ArticleLangs, type Fields, type Choice, type ListInfo, type Planned
+	} from '$lib/newsletter-plan.ts';
 	let { data, form } = $props();
 
 	// ---- the four steps ---------------------------------------------------
@@ -10,11 +16,18 @@
 	let step = $state(untrack(() => (data.chosen ? 2 : 1)));
 	let tab = $state<'compose' | 'subscribers' | 'sent'>(untrack(() => (form?.removed || form?.removeError ? 'subscribers' : data.tab)));
 
+	const lists = $derived(data.lists as ListInfo[]);
+	const label = (l: NewsletterLang) => LANG_LABEL[l];
+
 	let slug = $state(untrack(() => data.chosen?.slug ?? ''));
-	let subject = $state(untrack(() => data.chosen?.title ?? ''));
-	let title = $state(untrack(() => data.chosen?.title ?? ''));
-	let intro = $state(untrack(() => data.chosen?.description ?? ''));
-	let note = $state('');
+	/** What exists in each language, read when the article is picked. */
+	let article = $state<ArticleLangs | null>(untrack(() => data.chosenArticle));
+	let fields = $state<Record<NewsletterLang, Fields> | null>(untrack(() => (data.chosenArticle ? initialFields(data.chosenArticle) : null)));
+	let choices = $state<Record<NewsletterLang, Choice> | null>(untrack(() => (data.chosenArticle ? initialChoices(data.chosenArticle, data.lists as ListInfo[]) : null)));
+	/** The list being looked at: its tab, its preview. */
+	let activeList = $state<NewsletterLang>(untrack(() => (data.lists[0]?.lang ?? 'en') as NewsletterLang));
+	let loadingArticle = $state(false);
+	let articleError = $state('');
 	let device = $state<'desktop' | 'mobile'>('desktop');
 
 	// Each step opens at its top, not wherever the last one was scrolled to.
@@ -33,37 +46,66 @@
 	);
 	const held = $derived(data.held.find((h) => h.slug === slug));
 	const alreadySent = $derived(data.sent.filter((s) => s.slug === slug));
-	const readers = $derived(data.audience?.subscribed ?? 0);
 
-	function choose(p: (typeof data.posts)[number]) {
-		// Re-picking the same article keeps what was already written.
-		if (p.slug !== slug) {
-			slug = p.slug;
-			subject = title = p.title;
-			intro = p.description;
-			note = '';
-		}
-		step = 2;
+	function begin(a: ArticleLangs) {
+		article = a;
+		fields = initialFields(a);
+		choices = initialChoices(a, lists);
+		activeList = lists.find((l) => choices![l.lang].on)?.lang ?? lists[0]?.lang ?? 'en';
 	}
+
+	async function choose(p: (typeof data.posts)[number]) {
+		// Re-picking the same article keeps what was already written.
+		if (p.slug === slug && article) {
+			step = 2;
+			return;
+		}
+		loadingArticle = true;
+		articleError = '';
+		try {
+			const r = await fetch(`/api/newsletter-article/${encodeURIComponent(p.slug)}`);
+			if (!r.ok) throw new Error(`The article could not be read (HTTP ${r.status}).`);
+			slug = p.slug;
+			begin((await r.json()) as ArticleLangs);
+			step = 2;
+		} catch (e) {
+			articleError = e instanceof Error ? e.message : String(e);
+		} finally {
+			loadingArticle = false;
+		}
+	}
+
+	// ---- what will be sent -------------------------------------------------
+	const plan = $derived<Planned[]>(article && fields && choices ? planSend(article, lists, fields, choices) : []);
+	const readers = $derived(reach(plan, lists));
+	const skippedForWantOfTranslation = $derived(article && choices ? missingTranslations(article, lists, choices) : []);
 
 	// The preview is the same function the sender runs, so it cannot drift from
 	// what goes out. Its unsubscribe token is only meaningful to Resend.
-	const rawHtml = $derived(
-		post
-			? buildBroadcastHtml({
-					title, intro, url: post.url, imageUrl: post.imageUrl ?? undefined,
-					note: note.trim() || undefined, siteName: data.siteName, siteUrl: data.siteUrl
-				})
-			: ''
+	const htmlFor = (p: Planned) =>
+		buildBroadcastHtml({
+			lang: p.lang, title: p.title, intro: p.intro, url: article!.urls[p.lang], imageUrl: article!.imageUrl ?? undefined,
+			note: p.note.trim() || undefined, siteName: data.siteName, siteUrl: data.siteUrl
+		});
+	const verdicts = $derived(
+		plan.map((p) => ({ p, v: validateBroadcast({ subject: p.subject, title: p.title, intro: p.intro, url: article!.urls[p.lang], html: htmlFor(p) }) }))
 	);
-	const previewHtml = $derived(forSingleRecipient(rawHtml, '#'));
-	const verdict = $derived(
-		validateBroadcast({ subject, title, intro, url: post?.url ?? '', html: rawHtml })
-	);
-	const blocking = $derived(verdict.errors.length > 0 || (when === 'later' && !dayOk));
+	const blocking = $derived(plan.length === 0 || verdicts.some((x) => !x.v.ok) || (when === 'later' && !dayOk));
+
+	// The list in front of the author, and the email it gets (if any).
+	const activePlan = $derived(plan.find((p) => p.list === activeList) ?? null);
+	const previewHtml = $derived(activePlan ? forSingleRecipient(htmlFor(activePlan), '#') : '');
+	/** The language whose words are edited under this list's tab; null when the list gets nothing. */
+	const editLang = $derived(article && choices ? contentLangFor(activeList, article, choices[activeList]) : null);
+	const activeInfo = $derived(lists.find((l) => l.lang === activeList));
 
 	// A test only vouches for the content it was sent with.
-	const contentKey = $derived(JSON.stringify([slug, subject, title, intro, note]));
+	let testList = $state<NewsletterLang>('en');
+	$effect(() => {
+		if (!plan.some((p) => p.list === testList)) testList = plan[0]?.list ?? 'en';
+	});
+	const testPlan = $derived(plan.find((p) => p.list === testList) ?? null);
+	const contentKey = $derived(JSON.stringify([slug, testPlan]));
 	let testedFor = $state('');
 	const testedOk = $derived(testedFor === contentKey);
 	let testTo = $state('');
@@ -76,17 +118,25 @@
 	type Level = 'ok' | 'warn' | 'bad';
 	const checks = $derived.by(() => {
 		const out: { level: Level; text: string }[] = [];
-		for (const e of verdict.errors) out.push({ level: 'bad', text: e });
-		if (subject.trim()) {
+		const many = plan.length > 1;
+		for (const { p, v } of verdicts) {
+			const tag = many ? `${label(p.list)}: ` : '';
+			for (const e of v.errors) out.push({ level: 'bad', text: tag + e });
 			out.push(
-				subject.length > 60
-					? { level: 'warn', text: `Subject is ${subject.length} characters; many inboxes cut it off around 60.` }
-					: { level: 'ok', text: `Subject fits in an inbox (${subject.length} characters).` }
+				p.subject.length > 60
+					? { level: 'warn', text: `${tag}subject is ${p.subject.length} characters; many inboxes cut it off around 60.` }
+					: { level: 'ok', text: `${tag}subject fits in an inbox (${p.subject.length} characters).` }
 			);
 		}
-		if (title.trim() && intro.trim()) out.push({ level: 'ok', text: 'Headline and intro are written.' });
+		if (plan.length === 0) out.push({ level: 'bad', text: 'No list is switched on, or none has anyone on it.' });
+		if (skippedForWantOfTranslation.length > 0) {
+			out.push({
+				level: 'warn',
+				text: `${skippedForWantOfTranslation.map(label).join(' and ')} readers will not get this: the article has no version in ${skippedForWantOfTranslation.length > 1 ? 'those languages' : 'that language'}. Go back and choose the English one for them if you want them to.`
+			});
+		}
 		out.push(
-			post?.imageUrl
+			article?.imageUrl
 				? { level: 'ok', text: 'The article’s picture is included.' }
 				: { level: 'warn', text: 'No picture: the email will be text only.' }
 		);
@@ -116,7 +166,8 @@
 	let dialog = $state<HTMLDialogElement | null>(null);
 	let sending = $state(false);
 	let sendError = $state('');
-	let sentInfo = $state<{ subject: string; to: number; warnings: string[]; at: string | null } | null>(null);
+	type Outcome = { list: NewsletterLang; ok: boolean; error?: string };
+	let sentInfo = $state<{ subject: string; to: number; warnings: string[]; at: string | null; results: Outcome[] } | null>(null);
 
 	// ---- subscribers -------------------------------------------------------
 	let who = $state('');
@@ -152,7 +203,7 @@
 <section class="stats" aria-label="Audience">
 	<div class="stat">
 		<span class="num">{data.audience ? data.audience.subscribed : '–'}</span>
-		<span class="lbl">Subscribers</span>
+		<span class="lbl">Subscribers{#if lists.length > 1}: {lists.map((l) => `${l.lang.toUpperCase()} ${l.subscribers}`).join(' · ')}{/if}</span>
 	</div>
 	<div class="stat">
 		<span class="num">{data.audience ? data.audience.unsubscribed : '–'}</span>
@@ -178,33 +229,50 @@
 	</button>
 </div>
 
-<!-- Both forms below carry the same hidden copy of what was written. -->
-{#snippet fields()}
+<!-- Both forms below carry the same hidden copy of what was written: the article and one email per list. -->
+{#snippet hidden(items: Planned[])}
 	<input type="hidden" name="slug" value={slug} />
-	<input type="hidden" name="subject" value={subject} />
-	<input type="hidden" name="title" value={title} />
-	<input type="hidden" name="intro" value={intro} />
-	<input type="hidden" name="note" value={note} />
+	<input type="hidden" name="dispatches" value={JSON.stringify(items)} />
 {/snippet}
 
 {#snippet preview()}
 	<div class="preview">
 		<div class="preview-bar">
-			<span class="eyebrow">Live preview</span>
+			<span class="eyebrow">Live preview{#if lists.length > 1}&nbsp;· {label(activeList)}{/if}</span>
 			<div class="seg" role="group" aria-label="Preview width">
 				<button type="button" class:on={device === 'desktop'} onclick={() => (device = 'desktop')}>Desktop</button>
 				<button type="button" class:on={device === 'mobile'} onclick={() => (device = 'mobile')}>Phone</button>
 			</div>
 		</div>
-		<div class="device" class:phone={device === 'mobile'}>
-			<div class="inbox-row">
-				<span class="from">{data.fromName}</span>
-				<span class="subj">{subject || 'Your subject line'}</span>
-				<span class="snip">{(note.trim() || intro).replace(/\s+/g, ' ').slice(0, 90)}</span>
+		{#if activePlan}
+			<div class="device" class:phone={device === 'mobile'}>
+				<div class="inbox-row">
+					<span class="from">{data.fromName}</span>
+					<span class="subj">{activePlan.subject || 'Your subject line'}</span>
+					<span class="snip">{(activePlan.note.trim() || activePlan.intro).replace(/\s+/g, ' ').slice(0, 90)}</span>
+				</div>
+				<iframe title="Newsletter preview" srcdoc={previewHtml} sandbox=""></iframe>
 			</div>
-			<iframe title="Newsletter preview" srcdoc={previewHtml} sandbox=""></iframe>
-		</div>
+		{:else}
+			<div class="device empty-preview"><p>{label(activeList)} gets no email: switched off, nobody on the list, or no version of the article in this language.</p></div>
+		{/if}
 	</div>
+{/snippet}
+
+<!-- One tab per list: the language, who is on it, and whether it will be written to. -->
+{#snippet langTabs()}
+	{#if lists.length > 1 && choices && article}
+		<div class="langtabs" role="tablist" aria-label="Lists">
+			{#each lists as l (l.lang)}
+				{@const will = plan.some((p) => p.list === l.lang)}
+				<button type="button" role="tab" aria-selected={activeList === l.lang} class:on={activeList === l.lang} onclick={() => (activeList = l.lang)}>
+					<span class="lname">{label(l.lang)}</span>
+					<span class="lcount">{l.subscribers}</span>
+					<span class="chip {will ? 'ok' : ''}">{will ? 'Will send' : 'Skipped'}</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
 {/snippet}
 
 {#if tab === 'compose'}
@@ -222,6 +290,13 @@
 				<h2>Sent to {sentInfo.to} {sentInfo.to === 1 ? 'person' : 'people'}</h2>
 				<p>“{sentInfo.subject}” is on its way. Delivery takes a few minutes.</p>
 			{/if}
+			{#if sentInfo.results.length > 1}
+				<ul class="results">
+					{#each sentInfo.results as r}
+						<li><span class="chip {r.ok ? 'ok' : 'danger'}">{label(r.list)}</span> {r.ok ? 'sent' : `not sent: ${r.error}`}</li>
+					{/each}
+				</ul>
+			{/if}
 			{#each sentInfo.warnings as w}<p class="chip warn">{w}</p>{/each}
 			<div class="row-actions">
 				<a class="btn-primary" href="/newsletter" data-sveltekit-reload>Write another</a>
@@ -231,18 +306,18 @@
 	{:else}
 		<!-- Stepper: done steps are buttons back to them, later ones are not clickable yet. -->
 		<ol class="stepper" aria-label="Progress">
-			{#each STEPS as label, i}
+			{#each STEPS as stepLabel, i}
 				{@const n = i + 1}
 				<li class:done={n < step} class:current={n === step}>
 					{#if n < step}
-						<button type="button" onclick={() => (step = n)} aria-label="Back to step {n}, {label}">
+						<button type="button" onclick={() => (step = n)} aria-label="Back to step {n}, {stepLabel}">
 							<span class="dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7" /></svg></span>
-							<span class="name">{label}</span>
+							<span class="name">{stepLabel}</span>
 						</button>
 					{:else}
 						<span class="step-static" aria-current={n === step ? 'step' : undefined}>
 							<span class="dot">{n}</span>
-							<span class="name">{label}</span>
+							<span class="name">{stepLabel}</span>
 						</span>
 					{/if}
 				</li>
@@ -254,14 +329,15 @@
 			<section class="pane">
 				<h2 class="pane-title">Which article?</h2>
 				<p class="pane-sub">Only published articles can be sent. Newest first.</p>
+				{#if articleError}<p class="chip bad block">{articleError}</p>{/if}
 				{#if data.posts.length === 0}
 					<p class="note">Nothing is published yet.</p>
 				{/if}
-				<ul class="cards">
+				<ul class="cards" aria-busy={loadingArticle}>
 					{#each data.posts as p (p.slug)}
 						{@const sentBefore = data.sent.filter((s) => s.slug === p.slug)}
 						<li>
-							<button type="button" class="pick" class:chosen={p.slug === slug} onclick={() => choose(p)}>
+							<button type="button" class="pick" class:chosen={p.slug === slug} disabled={loadingArticle} onclick={() => choose(p)}>
 								<span class="thumb">
 									{#if p.imageUrl}<img src={p.imageUrl} alt="" loading="lazy" onerror={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')} />{/if}
 								</span>
@@ -269,9 +345,12 @@
 									<span class="date">{p.date}</span>
 									<strong>{p.title}</strong>
 									<span class="desc">{p.description}</span>
-									{#if sentBefore.length > 0}
-										<span class="chip warn">Sent {new Date(sentBefore[0].at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-									{/if}
+									<span class="badges">
+										{#each ['en', 'fr', 'it'] as l}<i class:on={p.langs.includes(l as NewsletterLang)}>{l}</i>{/each}
+										{#if sentBefore.length > 0}
+											<span class="chip warn">Sent {new Date(sentBefore[0].at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+										{/if}
+									</span>
 								</span>
 							</button>
 						</li>
@@ -281,47 +360,82 @@
 		{/if}
 
 		<!-- 2 · Write -->
-		{#if step === 2 && post}
+		{#if step === 2 && post && article && fields && choices}
 			<section class="pane split">
 				<div class="col">
-					<h2 class="pane-title">Write the email</h2>
-					<p class="pane-sub">Starts from the article’s own words. Change anything; the preview follows.</p>
+					<h2 class="pane-title">Write the email{lists.length > 1 ? 's' : ''}</h2>
+					<p class="pane-sub">
+						{#if lists.length > 1}One email per list, in that list’s language, starting from the article’s own words. Change anything; the preview follows.
+						{:else}Starts from the article’s own words. Change anything; the preview follows.{/if}
+					</p>
 
-					<label>
-						Subject line
-						<input bind:value={subject} />
-						<span class="hint" class:warnish={subject.length > 60}>{subject.length} characters · inboxes cut off around 60</span>
-					</label>
-					<label>
-						A word before the article <span class="opt">optional</span>
-						<textarea rows="3" bind:value={note} placeholder="Anything you want to say before the article card. Leave empty to skip."></textarea>
-					</label>
-					<label>
-						Headline
-						<input bind:value={title} />
-					</label>
-					<label>
-						Intro
-						<textarea rows="4" bind:value={intro}></textarea>
-					</label>
-					<label>
-						The button links to
-						<input value={post.url} readonly />
-					</label>
-					{#if !post.imageUrl}<p class="note">This article has no images, so the email has no picture.</p>{/if}
+					{@render langTabs()}
+
+					{#if activeInfo}
+						<div class="listbar">
+							<label class="switch">
+								<input type="checkbox" bind:checked={choices[activeList].on} disabled={activeInfo.subscribers === 0} />
+								Write to the {label(activeList)} list
+							</label>
+							<span class="who-count">{activeInfo.subscribers} {activeInfo.subscribers === 1 ? 'subscriber' : 'subscribers'}</span>
+						</div>
+					{/if}
+
+					{#if activeInfo && activeInfo.subscribers === 0}
+						<p class="note">Nobody is on the {label(activeList)} list yet.</p>
+					{:else if !choices[activeList].on}
+						<p class="note">Switched off: this list gets nothing.</p>
+					{:else if editLang === null}
+						<div class="missing">
+							<p><strong>There is no {label(activeList)} version of this article.</strong> The {activeInfo?.subscribers} {label(activeList)} readers will not get this email.</p>
+							<label class="switch"><input type="checkbox" bind:checked={choices[activeList].english} /> Send them the English version instead</label>
+						</div>
+					{:else if editLang !== activeList}
+						<div class="missing">
+							<p>This list gets the <strong>English</strong> email, with its English button and footer.</p>
+							<button type="button" class="btn-outline btn-sm" onclick={() => (activeList = 'en')}>Edit the English email</button>
+						</div>
+					{:else}
+						<label>
+							Subject line
+							<input bind:value={fields[editLang].subject} />
+							<span class="hint" class:warnish={fields[editLang].subject.length > 60}>{fields[editLang].subject.length} characters · inboxes cut off around 60</span>
+						</label>
+						<label>
+							A word before the article <span class="opt">optional</span>
+							<textarea rows="3" bind:value={fields[editLang].note} placeholder="Anything you want to say before the article card. Leave empty to skip."></textarea>
+						</label>
+						<label>
+							Headline
+							<input bind:value={fields[editLang].title} />
+						</label>
+						<label>
+							Intro
+							<textarea rows="4" bind:value={fields[editLang].intro}></textarea>
+						</label>
+						<label>
+							The button links to
+							<input value={article.urls[editLang]} readonly />
+						</label>
+						{#if !article.imageUrl}<p class="note">This article has no images, so the email has no picture.</p>{/if}
+					{/if}
 
 					<div class="nav">
 						<button type="button" class="btn-outline" onclick={() => (step = 1)}>← Article</button>
 						<button type="button" class="btn-primary" disabled={blocking} onclick={() => (step = 3)}>Continue to test →</button>
 					</div>
-					{#if blocking}<p class="chip bad block">{verdict.errors[0]}</p>{/if}
+					{#if blocking}
+						<p class="chip bad block">
+							{plan.length === 0 ? 'No list will be written to. Switch one on above.' : (verdicts.find((x) => !x.v.ok)?.v.errors[0] ?? 'Pick a day after today.')}
+						</p>
+					{/if}
 				</div>
 				<div class="col">{@render preview()}</div>
 			</section>
 		{/if}
 
 		<!-- 3 · Test -->
-		{#if step === 3 && post}
+		{#if step === 3 && post && article && plan.length > 0}
 			<section class="pane split">
 				<div class="col">
 					<h2 class="pane-title">Send yourself a test</h2>
@@ -340,7 +454,15 @@
 							};
 						}}
 					>
-						{@render fields()}
+						{@render hidden(testPlan ? [testPlan] : [])}
+						{#if plan.length > 1}
+							<label>
+								Which email
+								<select bind:value={testList} onchange={() => (activeList = testList)}>
+									{#each plan as p (p.list)}<option value={p.list}>{label(p.list)}{p.lang !== p.list ? ' (English version)' : ''}</option>{/each}
+								</select>
+							</label>
+						{/if}
 						<label>
 							Send the test to
 							<input type="email" name="to" bind:value={testTo} placeholder="you@example.com" autocomplete="email" />
@@ -349,7 +471,7 @@
 							{testing ? 'Sending…' : 'Send test email'}
 						</button>
 					</form>
-					{#if testedOk}<p class="chip ok block">Test sent. Look for “[Test] {subject}” in your inbox, and in spam.</p>{/if}
+					{#if testedOk}<p class="chip ok block">Test sent. Look for “[Test] {testPlan?.subject}” in your inbox, and in spam.</p>{/if}
 					{#if testError}<p class="chip bad block">{testError}</p>{/if}
 					{#if !data.configured}<p class="note">Connect Resend to send a test.</p>{/if}
 
@@ -365,17 +487,29 @@
 		{/if}
 
 		<!-- 4 · Review and send -->
-		{#if step === 4 && post}
+		{#if step === 4 && post && article && choices}
 			<section class="pane split">
 				<div class="col">
 					<h2 class="pane-title">Ready to send?</h2>
 					<p class="pane-sub">One last look. Sending cannot be undone.</p>
 
 					<dl class="summary">
-						<div><dt>To</dt><dd><strong>{readers}</strong> {readers === 1 ? 'subscriber' : 'subscribers'}</dd></div>
 						<div><dt>From</dt><dd>{data.fromName}</dd></div>
-						<div><dt>Subject</dt><dd>{subject}</dd></div>
 						<div><dt>Article</dt><dd>{post.title}</dd></div>
+						{#each lists as l (l.lang)}
+							{@const sent = plan.find((p) => p.list === l.lang)}
+							<div class:skipped={!sent}>
+								<dt>{label(l.lang)}</dt>
+								<dd>
+									{#if sent}
+										<strong>{l.subscribers}</strong> {l.subscribers === 1 ? 'subscriber' : 'subscribers'} · “{sent.subject}”{sent.lang !== l.lang ? ' (English version)' : ''}
+									{:else}
+										Skipped. {l.subscribers === 0 ? 'Nobody is on this list.' : !choices[l.lang].on ? 'Switched off.' : 'No version of the article in this language.'}
+									{/if}
+								</dd>
+							</div>
+						{/each}
+						<div><dt>To</dt><dd><strong>{readers}</strong> {readers === 1 ? 'subscriber' : 'subscribers'}{plan.length > 1 ? ` on ${plan.length} lists` : ''}</dd></div>
 					</dl>
 
 					<ul class="checks" aria-label="Checks">
@@ -398,8 +532,14 @@
 								sending = false;
 								dialog?.close();
 								if (result.type === 'success') {
-									const r = result.data as { warnings?: string[]; at?: string };
-									sentInfo = { subject, to: readers, warnings: r?.warnings ?? [], at: r?.at ?? null };
+									const r = result.data as { warnings?: string[]; at?: string; results?: Outcome[] };
+									sentInfo = {
+										subject: plan[0]?.subject ?? '',
+										to: readers,
+										warnings: r?.warnings ?? [],
+										at: r?.at ?? null,
+										results: r?.results ?? plan.map((p) => ({ list: p.list, ok: true }))
+									};
 								} else if (result.type === 'failure') {
 									sendError = (result.data as { message?: string })?.message ?? 'Sending failed.';
 								} else sendError = 'Sending failed.';
@@ -407,7 +547,7 @@
 							};
 						}}
 					>
-						{@render fields()}
+						{@render hidden(plan)}
 						<input type="hidden" name="confirm" value="send" />
 
 						<fieldset class="when">
@@ -435,10 +575,13 @@
 						<dialog bind:this={dialog} aria-labelledby="confirm-title">
 							{#if when === 'now'}
 								<h2 id="confirm-title">Send to {readers} {readers === 1 ? 'person' : 'people'} now?</h2>
-								<p>“{subject}” goes out immediately and cannot be recalled.</p>
+								<p>{plan.length > 1 ? `${plan.length} emails, one per list,` : `“${plan[0]?.subject}”`} go out immediately and cannot be recalled.</p>
 							{:else}
 								<h2 id="confirm-title">Schedule for {dayLabel}?</h2>
-								<p>“{subject}” goes to everyone on the list at 9:30 that morning, once the site is live. It cannot be recalled after that, and you can cancel it until then.</p>
+								<p>{plan.length > 1 ? `${plan.length} emails, one per list,` : `“${plan[0]?.subject}”`} go to everyone at 9:30 that morning, once the site is live. They cannot be recalled after that, and you can cancel until then.</p>
+							{/if}
+							{#if plan.length > 1}
+								<ul class="results">{#each plan as p}<li><span class="chip">{label(p.list)}</span> {lists.find((l) => l.lang === p.list)?.subscribers} · “{p.subject}”</li>{/each}</ul>
 							{/if}
 							{#if alreadySent.length > 0}<p class="chip warn block">This article was already sent. These readers will get it twice.</p>{/if}
 							<div class="dlg-actions">
@@ -458,6 +601,8 @@
 
 {#if tab === 'subscribers'}
 	<section class="pane plain">
+		{#if form?.moved}<p class="chip ok block">{form.moved} is now on the {label(form.to as NewsletterLang)} list.</p>{/if}
+		{#if form?.languageError}<p class="chip bad block">{form.languageError}</p>{/if}
 		{#if form?.removed}<p class="chip ok block">{form.removed} has been removed from the list.</p>{/if}
 		{#if form?.removeError}<p class="chip bad block">{form.removeError}</p>{/if}
 		{#if data.subscribers === null}
@@ -478,6 +623,15 @@
 						<span class="meta">
 							{#if s.unsubscribed}<span class="chip">unsubscribed</span>{/if}joined {day(s.createdAt)}
 						</span>
+						{#if lists.length > 1}
+							<form method="POST" action="?/setLanguage" class="lang-form" use:enhance={() => async ({ update }) => { await update({ reset: false }); }}>
+								<input type="hidden" name="id" value={s.id} />
+								<input type="hidden" name="email" value={s.email} />
+								<select name="lang" aria-label="List for {s.email}" value={s.lang} onchange={(e) => e.currentTarget.form?.requestSubmit()}>
+									{#each lists as l}<option value={l.lang}>{label(l.lang)}</option>{/each}
+								</select>
+							</form>
+						{:else}<span class="chip">{s.lang.toUpperCase()}</span>{/if}
 						{#if confirmRemove === s.id}
 							<form method="POST" action="?/removeSubscriber" use:enhance={() => async ({ update }) => { confirmRemove = null; await update(); }}>
 								<input type="hidden" name="id" value={s.id} />
@@ -509,7 +663,7 @@
 			<ul class="sent">
 				{#each data.held as h (h.slug)}
 					<li>
-						<span class="subj">{h.subject ?? data.posts.find((p) => p.slug === h.slug)?.title ?? h.slug}</span>
+						<span class="subj">{h.subject ?? data.posts.find((p) => p.slug === h.slug)?.title ?? h.slug}{#if h.lists.length > 1} <span class="chip">{h.lists.map((l) => l.toUpperCase()).join(' + ')}</span>{/if}</span>
 						{#if h.error}<span class="chip danger" title={h.error}>Failed, will retry</span>{:else}<span class="chip info">Waiting</span>{/if}
 						<span class="meta">{new Date(h.at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Paris' })} · 9:30</span>
 						<form method="POST" action="?/cancelScheduled" use:enhance>
@@ -528,7 +682,7 @@
 			<ul class="sent">
 				{#each data.sent as s}
 					<li>
-						<span class="subj">{s.subject}</span>
+						<span class="subj">{s.subject}{#if s.lang && lists.length > 1} <span class="chip">{label(s.lang as NewsletterLang)}</span>{/if}</span>
 						<!-- Resend's own word for it fills in when it answers; until then it was sent. -->
 						{#await data.states}
 							<span class="chip">Sent</span>
@@ -574,6 +728,24 @@
 {/if}
 
 <style>
+	.langtabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0 0 1rem; border-bottom: 1px solid var(--border); }
+	.langtabs button { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.5rem 0.8rem; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; background: none; font-size: 0.9rem; font-weight: 600; color: var(--muted-foreground); cursor: pointer; }
+	.langtabs button.on { color: var(--primary-strong); border-bottom-color: var(--primary); }
+	.langtabs .lcount { font-size: 0.72rem; padding: 0.05rem 0.5rem; border-radius: 2rem; background: var(--muted); }
+	.langtabs .chip { font-size: 0.68rem; padding: 0.1rem 0.5rem; }
+	.listbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1rem; padding: 0.55rem 0.8rem; border-radius: 0.65rem; background: var(--muted); }
+	.switch { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; font-weight: 600; cursor: pointer; }
+	.switch input { accent-color: var(--primary); width: 1rem; height: 1rem; }
+	.who-count { font-size: 0.82rem; color: var(--muted-foreground); }
+	.missing { padding: 0.9rem 1rem; border: 1px dashed var(--warn-line); border-radius: 0.75rem; background: var(--warn-bg); color: var(--foreground); display: grid; gap: 0.6rem; margin-bottom: 1rem; }
+	.missing p { margin: 0; font-size: 0.9rem; }
+	.empty-preview { padding: 2rem 1.2rem; text-align: center; color: var(--muted-foreground); font-size: 0.9rem; background: var(--card); }
+	.badges { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.1rem; }
+	.badges i { font-style: normal; font-size: 0.64rem; font-weight: 700; text-transform: uppercase; padding: 0.05rem 0.35rem; border-radius: 0.3rem; border: 1px dashed var(--border); color: var(--muted-foreground); opacity: 0.7; }
+	.badges i.on { border: 1px solid var(--ok-line); background: var(--ok-bg); color: var(--ok); opacity: 1; }
+	.summary .skipped dt, .summary .skipped dd { color: var(--muted-foreground); }
+	.results { list-style: none; margin: 0.4rem 0 1rem; padding: 0; display: grid; gap: 0.3rem; text-align: left; font-size: 0.88rem; }
+	.all-sent .results { display: inline-grid; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 	.note { font-size: 0.85rem; color: var(--muted-foreground); margin: 0.6rem 0 0; }
 	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
@@ -697,6 +869,8 @@
 	.day .hint { margin: 0; }
 	.list-head { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.8rem; }
 	.who { flex: 1; margin: 0; }
+	.lang-form { margin: 0; }
+	.lang-form select { padding: 0.25rem 0.5rem; font-size: 0.8rem; margin: 0; }
 	.people, .sent { list-style: none; padding: 0; margin: 0 0 0.8rem; font-size: 0.9rem; }
 	.people li, .sent li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.9rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
 	.people .email, .sent .subj { flex: 1; min-width: 12rem; overflow-wrap: anywhere; }

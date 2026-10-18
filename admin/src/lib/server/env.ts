@@ -100,7 +100,8 @@ export const integrations = {
 	 * simply not offered.
 	 */
 	resendSegments: {
-		en: optional('RESEND_SEGMENT_EN', optional('RESEND_AUDIENCE_ID', '276f21cc-de35-468d-8b30-06fc08ad1016')),
+		// `||`, not a default: a variable passed empty (to clear it) means unset.
+		en: optional('RESEND_SEGMENT_EN') || optional('RESEND_AUDIENCE_ID') || '276f21cc-de35-468d-8b30-06fc08ad1016',
 		fr: optional('RESEND_SEGMENT_FR'),
 		it: optional('RESEND_SEGMENT_IT')
 	} as Record<'en' | 'fr' | 'it', string>,

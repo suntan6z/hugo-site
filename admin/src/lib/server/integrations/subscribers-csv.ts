@@ -9,6 +9,8 @@ export interface Row {
 	email: string;
 	createdAt: string;
 	unsubscribed: boolean;
+	/** The list they are on: en, fr or it. */
+	lang?: string;
 }
 
 /**
@@ -29,9 +31,9 @@ export function when(raw: string): string {
 
 /** Newest first, as the page lists them; CRLF line ends, as spreadsheets expect. */
 export function toCsv(rows: Row[]): string {
-	const lines = [['email', 'status', 'joined (UTC)'].map(cell).join(',')];
+	const lines = [['email', 'status', 'language', 'joined (UTC)'].map(cell).join(',')];
 	for (const r of [...rows].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
-		lines.push([r.email, r.unsubscribed ? 'unsubscribed' : 'subscribed', when(r.createdAt)].map(cell).join(','));
+		lines.push([r.email, r.unsubscribed ? 'unsubscribed' : 'subscribed', r.lang ?? 'en', when(r.createdAt)].map(cell).join(','));
 	}
 	return lines.join('\r\n') + '\r\n';
 }

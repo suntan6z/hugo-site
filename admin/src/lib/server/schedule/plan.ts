@@ -9,6 +9,16 @@
  * Pure: the caller supplies the list and the clock.
  */
 
+/** One email to one list: whose list, what language it is in, and its words. */
+export interface Dispatch {
+	list: 'en' | 'fr' | 'it';
+	lang: 'en' | 'fr' | 'it';
+	subject: string;
+	title: string;
+	intro: string;
+	note?: string;
+}
+
 export type ScheduleState = 'pending' | 'published' | 'announced' | 'failed';
 
 export interface Scheduled {
@@ -28,8 +38,16 @@ export interface Scheduled {
 	 * this the next pass would send it at once.
 	 */
 	announceAt?: string;
-	/** What to send, when the author wrote it in the newsletter flow rather than taking the article's own words. */
+	/** What to send, when the author wrote it in the newsletter flow rather than taking the article's own words (English only: how it was before lists). */
 	broadcast?: { subject: string; title: string; intro: string; note?: string };
+	/**
+	 * What to send to each list, written in the newsletter flow: one entry per language
+	 * that is to be written to. Replaces `broadcast` for anything scheduled since there
+	 * were lists.
+	 */
+	dispatches?: Dispatch[];
+	/** Lists already sent to, so a retry after a partial failure sends only what is left. */
+	sentLists?: ('en' | 'fr' | 'it')[];
 	error?: string;
 	/** Attempts made to publish or announce, so a broken item cannot spin forever. */
 	tries?: number;
@@ -153,3 +171,29 @@ export function prune(items: Scheduled[], now = new Date()): Scheduled[] {
 /** An item that no longer needs anything done to it. */
 export const isSettled = (i: Scheduled): boolean =>
 	i.state === 'announced' || (i.state === 'published' && !i.newsletter) || (i.tries ?? 0) >= MAX_TRIES;
+
+type Translations = Record<'en' | 'fr' | 'it', { exists: boolean; title: string; description: string }>;
+
+/**
+ * What an announcement sends when nobody wrote it in the newsletter flow (an
+ * article scheduled with "send the newsletter too"): each list gets the article
+ * in its own language, in the article's own words, and a list whose language has
+ * no translation is left out rather than sent English. The English list takes
+ * what was written for it, if anything was (how a held newsletter worked before
+ * lists).
+ */
+export function defaultDispatches(t: Translations, lists: ('en' | 'fr' | 'it')[], written?: Scheduled['broadcast']): Dispatch[] {
+	const out: Dispatch[] = [];
+	for (const list of lists) {
+		if (list === 'en') {
+			const title = written?.title ?? t.en.title;
+			out.push({ list, lang: 'en', subject: written?.subject ?? title, title, intro: written?.intro ?? t.en.description, note: written?.note });
+		} else if (t[list].exists) {
+			out.push({ list, lang: list, subject: t[list].title, title: t[list].title, intro: t[list].description });
+		}
+	}
+	return out;
+}
+
+/** What is still to be sent: the dispatches whose list has not been written to yet. */
+export const remaining = (dispatches: Dispatch[], sent: string[] = []): Dispatch[] => dispatches.filter((d) => !sent.includes(d.list));

@@ -67,7 +67,9 @@ async function audience() {
 			const end = today - (29 - i) * DAY + DAY;
 			return joined.filter((t) => t < end).length;
 		});
-		return { total: all.length, newThisMonth: joined.filter((t) => t >= today - 29 * DAY).length, series };
+		const byLang: Record<string, number> = {};
+		for (const s of all) byLang[s.lang] = (byLang[s.lang] ?? 0) + 1;
+		return { total: all.length, newThisMonth: joined.filter((t) => t >= today - 29 * DAY).length, series, byLang };
 	} catch {
 		return null;
 	}

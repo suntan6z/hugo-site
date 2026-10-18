@@ -44,7 +44,7 @@
 			summary: null | { days: number; visits: number; views: number; trend: number | null; pages: { key: string; count: number }[]; series: number[] };
 			live?: number | null;
 		};
-		subscribers?: null | { total: number; newThisMonth: number; series: number[] };
+		subscribers?: null | { total: number; newThisMonth: number; series: number[]; byLang?: Record<string, number> };
 	};
 	let insights = $state<Insights | null>(null);
 	type Health = { name: string; ok: boolean; ms: number; cold?: boolean; error?: string };
@@ -187,7 +187,7 @@
 		{:else if insights.subscribers}
 			{@const s = insights.subscribers}
 			<span class="num">{s.total}</span>
-			<span class="sub">{s.newThisMonth > 0 ? `+${s.newThisMonth} in 30 days` : 'none new in 30 days'} · <a href="/newsletter">Write to them</a></span>
+			<span class="sub">{s.newThisMonth > 0 ? `+${s.newThisMonth} in 30 days` : 'none new in 30 days'}{#if s.byLang && Object.keys(s.byLang).length > 1} · {Object.entries(s.byLang).map(([l, n]) => `${l.toUpperCase()} ${n}`).join(' · ')}{/if} · <a href="/newsletter">Write to them</a></span>
 			<div class="spark"><Sparkline values={s.series} /></div>
 		{:else}
 			<span class="num dim">–</span>

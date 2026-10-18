@@ -38,15 +38,20 @@ describe('the file', () => {
 	test('a header, then newest first, with CRLF line ends and a final newline', () => {
 		assert.equal(
 			toCsv(rows),
-			'email,status,joined (UTC)\r\n' +
-				'new@example.com,subscribed,2026-09-01 10:00\r\n' +
-				'old@example.com,unsubscribed,2026-01-01 08:00\r\n' +
-				'"odd,""one""@example.com",subscribed,\r\n'
+			'email,status,language,joined (UTC)\r\n' +
+				'new@example.com,subscribed,en,2026-09-01 10:00\r\n' +
+				'old@example.com,unsubscribed,en,2026-01-01 08:00\r\n' +
+				'"odd,""one""@example.com",subscribed,en,\r\n'
 		);
 	});
 
+	test('each row says which list it is on', () => {
+		const csv = toCsv([{ email: 'a@example.com', createdAt: '2026-09-01 10:00:00.000000+00', unsubscribed: false, lang: 'fr' }]);
+		assert.match(csv, /^a@example\.com,subscribed,fr,2026-09-01 10:00$/m);
+	});
+
 	test('an empty list is just the header', () => {
-		assert.equal(toCsv([]), 'email,status,joined (UTC)\r\n');
+		assert.equal(toCsv([]), 'email,status,language,joined (UTC)\r\n');
 	});
 });
 

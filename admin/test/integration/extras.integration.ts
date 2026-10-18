@@ -19,6 +19,7 @@ import { readSiteText, readMenu, readTitle } from '../../src/lib/server/content/
 
 const LANGS = ['en', 'fr', 'it'] as const;
 const SEGMENT_EN = 'seg-en-0000';
+const SEGMENT_FR = 'seg-fr-0000';
 const SHARE = 'test-share-link';
 
 type Seen = { method: string; path: string; query?: string; headers: http.IncomingHttpHeaders; body?: string };
@@ -26,10 +27,15 @@ type Seen = { method: string; path: string; query?: string; headers: http.Incomi
 /** Resend, Litlyx and two outside websites (one alive, one gone) on one port. */
 async function startFakes() {
 	const seen: Seen[] = [];
+	let broadcastCount = 0;
+	let failSegment: string | null = null;
 	const today = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z';
 	const contacts = [
 		{ id: 'c1aaaaaa-0000-0000-0000-000000000001', email: 'reader@example.com', created_at: '2026-09-01 10:00:00.000000+00', unsubscribed: false },
 		{ id: 'c2bbbbbb-0000-0000-0000-000000000002', email: 'gone@example.com', created_at: '2026-08-01 10:00:00.000000+00', unsubscribed: true }
+	];
+	const contactsFr = [
+		{ id: 'c3cccccc-0000-0000-0000-000000000003', email: 'lecteur@example.com', created_at: '2026-09-15 10:00:00.000000+00', unsubscribed: false }
 	];
 	const litlyx: Record<string, unknown> = {
 		'/api/data/pages': [
@@ -49,22 +55,30 @@ async function startFakes() {
 		seen.push({ method: req.method ?? '', path: url.pathname, query: url.search, headers: req.headers, body: body || undefined });
 		res.setHeader('Content-Type', 'application/json');
 		if (url.pathname === '/emails' && req.method === 'POST') return res.end(JSON.stringify({ id: 'email-test-1' }));
-		if (url.pathname === '/broadcasts' && req.method === 'POST') return res.end(JSON.stringify({ id: 'bc-test-1' }));
+		if (url.pathname === '/broadcasts' && req.method === 'POST') {
+			if (failSegment && JSON.parse(body || '{}').segment_id === failSegment) {
+				res.statusCode = 500;
+				return res.end('{"message":"boom"}');
+			}
+			return res.end(JSON.stringify({ id: `bc-test-${++broadcastCount}` }));
+		}
 		if (/^\/broadcasts\/[^/]+\/send$/.test(url.pathname) && req.method === 'POST') return res.end('{}');
-		if (url.pathname === '/broadcasts/bc-test-1' && req.method === 'GET') return res.end(JSON.stringify({ id: 'bc-test-1', status: 'sent', sent_at: '2026-10-17T07:30:00.000Z' }));
+		if (/^\/broadcasts\/bc-test-\d+$/.test(url.pathname) && req.method === 'GET') return res.end(JSON.stringify({ id: url.pathname.split('/').pop(), status: 'sent', sent_at: '2026-10-17T07:30:00.000Z' }));
 		if (url.pathname === '/alive') return res.end('{}');
 		if (url.pathname === '/gone') {
 			res.statusCode = 404;
 			return res.end('{}');
 		}
-		if (url.pathname === `/segments/${SEGMENT_EN}/contacts` && req.method === 'GET') {
+		const listed = url.pathname === `/segments/${SEGMENT_EN}/contacts` ? contacts : url.pathname === `/segments/${SEGMENT_FR}/contacts` ? contactsFr : null;
+		if (listed && req.method === 'GET') {
 			// Like Resend: 20 rows unless asked for more, a cursor, and a flag saying whether there are further pages.
 			const limit = Number(url.searchParams.get('limit') ?? 20);
 			const after = url.searchParams.get('after');
-			const start = after ? contacts.findIndex((c) => c.id === after) + 1 : 0;
-			const data = contacts.slice(start, start + limit);
-			return res.end(JSON.stringify({ object: 'list', data, has_more: start + data.length < contacts.length }));
+			const start = after ? listed.findIndex((c) => c.id === after) + 1 : 0;
+			const data = listed.slice(start, start + limit);
+			return res.end(JSON.stringify({ object: 'list', data, has_more: start + data.length < listed.length }));
 		}
+		if (/^\/contacts\/[^/]+\/segments\/[^/]+$/.test(url.pathname) && req.method === 'POST') return res.end('{"id":"x"}');
 		if (url.pathname.startsWith('/contacts/') && req.method === 'DELETE') {
 			return res.end(JSON.stringify({ object: 'contact', deleted: true }));
 		}
@@ -84,6 +98,8 @@ async function startFakes() {
 		url: `http://127.0.0.1:${port}`,
 		host: `127.0.0.1:${port}`,
 		seen,
+		/** Makes creating a broadcast for this segment fail, to see what a partial send does. */
+		failFor: (segment: string | null) => { failSegment = segment; },
 		close: () => new Promise<void>((r) => server.close(() => r()))
 	};
 }
@@ -101,6 +117,7 @@ before(async () => {
 			RESEND_API_KEY: 're_test',
 			RESEND_API_URL: fakes.url,
 			RESEND_SEGMENT_EN: SEGMENT_EN,
+			RESEND_SEGMENT_FR: SEGMENT_FR,
 			LITLYX_TOKEN: SHARE,
 			LITLYX_HOST: fakes.url,
 			LINKCHECK_HOSTS: fakes.host,
@@ -450,9 +467,10 @@ describe('the subscriber export', () => {
 		assert.match(r.headers.get('content-disposition') ?? '', /attachment; filename="subscribers-\d{4}-\d{2}-\d{2}\.csv"/);
 		assert.match(r.headers.get('cache-control') ?? '', /no-store/);
 		const text = await r.text();
-		assert.match(text, /email,status,joined \(UTC\)/);
-		assert.match(text, /reader@example\.com,subscribed,2026-09-01 10:00/);
-		assert.match(text, /gone@example\.com,unsubscribed,2026-08-01 10:00/);
+		assert.match(text, /email,status,language,joined \(UTC\)/);
+		assert.match(text, /reader@example\.com,subscribed,en,2026-09-01 10:00/);
+		assert.match(text, /gone@example\.com,unsubscribed,en,2026-08-01 10:00/);
+		assert.match(text, /lecteur@example\.com,subscribed,fr,2026-09-15 10:00/, 'the French list is in it, marked as such');
 	});
 
 	test('it asks Resend for a full page and follows the cursor, rather than taking the first twenty', async () => {
@@ -755,8 +773,13 @@ describe('the library', () => {
 	});
 });
 
+/** One email to one list, as the page sends it. */
+const dispatch = (over: Record<string, string> = {}) => ({ list: 'en', lang: 'en', subject: 'A subject', title: 'A headline', intro: 'An intro for readers.', note: '', ...over });
+/** The fields the newsletter actions take: the article and the emails. */
+const mailOf = (ds: Record<string, string>[] = [dispatch()], slug = 'first-home-nas') => ({ slug, dispatches: JSON.stringify(ds) });
+
 describe('newsletter: test copy and confirmed send', () => {
-	const mail = { slug: 'first-home-nas', subject: 'A subject', title: 'A headline', intro: 'An intro for readers.', note: '' };
+	const mail = mailOf();
 	const sent = (p: string) => fakes.seen.filter((s) => s.method === 'POST' && s.path === p);
 
 	test('a test copy goes to one address, marked as a test, with a real unsubscribe link', async () => {
@@ -790,7 +813,7 @@ describe('newsletter: test copy and confirmed send', () => {
 	});
 
 	test('the old confirmation, the subject typed back, no longer sends', async () => {
-		const r = await portal.action('/newsletter?/send', { ...mail, confirm: mail.subject }, { cookie });
+		const r = await portal.action('/newsletter?/send', { ...mail, confirm: 'A subject' }, { cookie });
 		assert.equal(r.status, 400);
 		assert.equal(sent('/broadcasts').length, 0);
 	});
@@ -808,8 +831,104 @@ describe('newsletter: test copy and confirmed send', () => {
 	});
 });
 
+describe('newsletter: one email per list', () => {
+	const posts = (p: string) => fakes.seen.filter((s) => s.method === 'POST' && s.path === p);
+	const confirmed = (ds: Record<string, string>[]) => ({ ...mailOf(ds), confirm: 'send' });
+	const bodies = () => posts('/broadcasts').map((c) => JSON.parse(c.body ?? '{}'));
+	const fr = (over: Record<string, string> = {}) => dispatch({ list: 'fr', lang: 'fr', subject: 'Un sujet', title: 'Un titre', intro: 'Une intro.', ...over });
+
+	test('English and French are two broadcasts, each to its own list, each in its own words', async () => {
+		const before = bodies().length;
+		const r = await portal.action('/newsletter?/send', confirmed([dispatch(), fr()]), { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const [en, frb] = bodies().slice(before);
+		assert.equal(en.segment_id, SEGMENT_EN);
+		assert.equal(en.subject, 'A subject');
+		assert.equal(frb.segment_id, SEGMENT_FR);
+		assert.equal(frb.subject, 'Un sujet');
+		assert.match(String(frb.html), /<html lang="fr">/);
+		assert.match(String(frb.html), /Lire l'article/);
+		assert.match(String(frb.html), /\/fr\/blog\/first-home-nas\//);
+		assert.ok(String(frb.html).includes('RESEND_UNSUBSCRIBE_URL'));
+		assert.match(String(en.html), /\/en\/blog\/first-home-nas\//);
+	});
+
+	test('what was sent is on record per list, with who was on it', async () => {
+		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
+		assert.match(html, /Un sujet/);
+	});
+
+	test('a list is not sent a language the article does not have: that needs the English version asked for', async () => {
+		const before = bodies().length;
+		// out-the-shadow-3 is written in English only.
+		const r = await portal.action('/newsletter?/send', { ...mailOf([dispatch({ list: 'fr', lang: 'fr', subject: 'x' })], 'out-the-shadow-3'), confirm: 'send' }, { cookie });
+		assert.equal(r.status, 400);
+		assert.match(r.raw, /no FR version/);
+		assert.equal(bodies().length, before);
+	});
+
+	test('the English version can go to the French list when asked for, in English, to that list', async () => {
+		const before = bodies().length;
+		const r = await portal.action('/newsletter?/send', confirmed([dispatch({ list: 'fr', lang: 'en', subject: 'In English' })]), { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const [b] = bodies().slice(before);
+		assert.equal(b.segment_id, SEGMENT_FR);
+		assert.match(String(b.html), /<html lang="en">/);
+		assert.match(String(b.html), /Read the article/);
+	});
+
+	test('a list that does not exist, a language that does not exist, a list twice and nothing at all are all refused', async () => {
+		const before = bodies().length;
+		for (const ds of [[dispatch({ list: 'it', lang: 'it' })], [dispatch({ lang: 'xx' })], [dispatch(), dispatch()], []]) {
+			const r = await portal.action('/newsletter?/send', confirmed(ds), { cookie });
+			assert.equal(r.status, 400, JSON.stringify(ds));
+		}
+		assert.equal(bodies().length, before);
+	});
+
+	test('when one list fails the others still go, and the page is told which did not', async () => {
+		fakes.failFor(SEGMENT_FR);
+		try {
+			const sends = () => fakes.seen.filter((x) => x.method === 'POST' && /^\/broadcasts\/[^/]+\/send$/.test(x.path)).length;
+			const before = sends();
+			const r = await portal.action('/newsletter?/send', confirmed([dispatch({ subject: 'Goes' }), fr({ subject: 'Fails' })]), { cookie });
+			assert.equal(r.type, 'success', r.raw);
+			assert.match(r.raw, /boom|500/, 'the failure is reported, with its reason');
+			assert.equal(sends() - before, 1, 'the English one went, the French one did not');
+		} finally {
+			fakes.failFor(null);
+		}
+	});
+
+	test('a test copy is of one email, in its own language', async () => {
+		const before = posts('/emails').length;
+		const r = await portal.action('/newsletter?/test', { ...mailOf([fr()]), to: 'me@example.com' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		const body = JSON.parse(posts('/emails').slice(before)[0].body ?? '{}');
+		assert.equal(body.subject, '[Test] Un sujet');
+		assert.match(String(body.html), /Lire l'article/);
+	});
+
+	test('the page offers the article\'s languages and how many are on each list', async () => {
+		const html = await (await portal.get('/newsletter?slug=first-home-nas', { cookie })).text();
+		assert.match(html, /Français/);
+		assert.match(html, /Write to the English list|Write to the Français list|Write to the/);
+	});
+
+	test('what exists in each language is read for the article chosen', async () => {
+		const r = await portal.get('/api/newsletter-article/first-home-nas', { cookie });
+		assert.equal(r.status, 200);
+		const a = (await r.json()) as { translations: Record<string, { exists: boolean }>; urls: Record<string, string> };
+		assert.equal(a.translations.en.exists, true);
+		assert.match(a.urls.fr, /\/fr\/blog\/first-home-nas\/$/);
+		assert.equal((await portal.get('/api/newsletter-article/not-an-article', { cookie })).status, 404);
+		assert.notEqual((await portal.get('/api/newsletter-article/first-home-nas')).status, 200);
+	});
+});
+
 describe('newsletter: scheduling from the flow', () => {
-	const mail = { slug: 'first-home-nas', subject: 'Held subject', title: 'A headline', intro: 'An intro for readers.', note: 'A word first.', confirm: 'send' };
+	const mail = { ...mailOf([dispatch({ subject: 'Held subject', note: 'A word first.' })]), confirm: 'send' };
+	const held = (subject: string) => ({ ...mail, ...mailOf([dispatch({ subject, note: 'A word first.' })]) });
 	const broadcasts = () => fakes.seen.filter((s) => s.method === 'POST' && s.path === '/broadcasts').length;
 	const day = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -841,7 +960,7 @@ describe('newsletter: scheduling from the flow', () => {
 	});
 
 	test('scheduling again replaces it rather than doubling it', async () => {
-		await portal.action('/newsletter?/schedule', { ...mail, subject: 'Replaced subject', day: day(4) }, { cookie });
+		await portal.action('/newsletter?/schedule', { ...held('Replaced subject'), day: day(4) }, { cookie });
 		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
 		assert.match(html, /Replaced subject/);
 		assert.doesNotMatch(html, /Held subject/);
@@ -858,6 +977,38 @@ describe('newsletter: scheduling from the flow', () => {
 		const html = await (await portal.get('/newsletter?tab=sent', { cookie })).text();
 		assert.match(html, /resend\.com\/broadcasts\/bc-test-1/);
 		assert.ok(fakes.seen.some((x) => x.method === 'GET' && x.path === '/broadcasts/bc-test-1'), 'Resend was asked how it stands');
+	});
+});
+
+describe('which list a subscriber is on', () => {
+	const ID = 'c1aaaaaa-0000-0000-0000-000000000001';
+	const calls = () => fakes.seen.filter((s) => s.path.startsWith(`/contacts/${ID}/segments/`)).map((s) => `${s.method} ${s.path.split('/').pop()}`);
+
+	test('the list shows each person with their language, and the language of a person can be changed', async () => {
+		const html = await (await portal.get('/newsletter?tab=subscribers', { cookie })).text();
+		assert.match(html, /lecteur@example\.com/);
+		assert.match(html, /reader@example\.com/);
+		assert.match(html, /EN \d+ · FR \d+/, 'a count per list');
+	});
+
+	test('moving someone adds them to the new list first and then takes them off the old one', async () => {
+		const r = await portal.action('/newsletter?/setLanguage', { id: ID, email: 'reader@example.com', lang: 'fr' }, { cookie });
+		assert.equal(r.type, 'success', r.raw);
+		assert.deepEqual(calls(), [`POST ${SEGMENT_FR}`, `DELETE ${SEGMENT_EN}`]);
+	});
+
+	test('the log keeps who was moved and where, never the address', async () => {
+		const log = fs.readdirSync(path.join(portal.state, 'audit')).map((f) => fs.readFileSync(path.join(portal.state, 'audit', f), 'utf8')).join('\n');
+		assert.match(log, /subscriber-language/);
+		assert.doesNotMatch(log.split('\n').filter((l) => l.includes('subscriber-language')).join('\n'), /example\.com/);
+	});
+
+	test('a stale page, a list that does not exist and a move to the same list change nothing', async () => {
+		const before = calls().length;
+		assert.equal((await portal.action('/newsletter?/setLanguage', { id: ID, email: 'someone-else@example.com', lang: 'fr' }, { cookie })).status, 409);
+		assert.equal((await portal.action('/newsletter?/setLanguage', { id: ID, email: 'reader@example.com', lang: 'it' }, { cookie })).status, 400);
+		assert.equal((await portal.action('/newsletter?/setLanguage', { id: ID, email: 'reader@example.com', lang: 'xx' }, { cookie })).status, 400);
+		assert.equal(calls().length, before);
 	});
 });
 
@@ -887,10 +1038,10 @@ describe('visitor numbers', () => {
 			subscribers: { total: number; newThisMonth: number; series: number[] } | null;
 		};
 		assert.ok(r.visitors.summary.series.length >= 7 && r.visitors.summary.series.every((n) => Number.isFinite(n)));
-		// Two contacts on the list, one of whom unsubscribed: one reader.
-		assert.equal(r.subscribers?.total, 1);
+		// Three contacts across the lists, one of whom unsubscribed: two readers.
+		assert.equal(r.subscribers?.total, 2);
 		assert.equal(r.subscribers?.series.length, 30);
-		assert.equal(r.subscribers?.series.at(-1), 1, 'today\'s figure is the whole list');
+		assert.equal(r.subscribers?.series.at(-1), 2, 'today\'s figure is the whole list');
 		assert.ok(r.subscribers!.series.every((n, i, a) => i === 0 || n >= a[i - 1]), 'cumulative, so it never falls');
 	});
 });

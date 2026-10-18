@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
 	whyNotDay, morningOf, todayIn, dueToPublish, dueToAnnounce, forSlug, prune, isSettled, MAX_TRIES,
-	announceTimeOf, tomorrowIn, isHeldNewsletter, type Scheduled
+	announceTimeOf, tomorrowIn, isHeldNewsletter, defaultDispatches, remaining, type Scheduled
 } from '../src/lib/server/schedule/plan.ts';
 
 const NOW = new Date('2026-09-12T12:00:00Z');
@@ -139,5 +139,41 @@ describe('a newsletter held for a morning', () => {
 		const old = held({ createdAt: '2026-06-01T00:00:00Z', publishedAt: '2026-06-01T00:00:00Z', announceAt: '2026-10-01T07:30:00Z' });
 		assert.equal(prune([old], NOW).length, 1);
 		assert.equal(prune([{ ...old, announcedAt: '2026-06-02T00:00:00Z' }], NOW).length, 0, 'once sent long ago it goes');
+	});
+});
+
+describe('what an announcement sends to each list', () => {
+	const t = (fr: boolean, it: boolean) => ({
+		en: { exists: true, title: 'English title', description: 'English intro.' },
+		fr: { exists: fr, title: fr ? 'Titre' : '', description: fr ? 'Intro.' : '' },
+		it: { exists: it, title: it ? 'Titolo' : '', description: it ? 'Intro it.' : '' }
+	});
+
+	test('each list gets the article in its own language, in its own words', () => {
+		assert.deepEqual(defaultDispatches(t(true, true), ['en', 'fr', 'it']).map((d) => [d.list, d.lang, d.subject, d.intro]), [
+			['en', 'en', 'English title', 'English intro.'],
+			['fr', 'fr', 'Titre', 'Intro.'],
+			['it', 'it', 'Titolo', 'Intro it.']
+		]);
+	});
+
+	test('a list whose language has no translation is left out, never sent English', () => {
+		assert.deepEqual(defaultDispatches(t(true, false), ['en', 'fr', 'it']).map((d) => d.list), ['en', 'fr']);
+	});
+
+	test('a language that has no list at all is not offered, translated or not', () => {
+		assert.deepEqual(defaultDispatches(t(true, true), ['en']).map((d) => d.list), ['en']);
+	});
+
+	test('what was written for the English list before there were lists is still what it sends', () => {
+		const [en] = defaultDispatches(t(false, false), ['en'], { subject: 'Mine', title: 'My headline', intro: 'My intro', note: 'Hi' });
+		assert.deepEqual([en.subject, en.title, en.intro, en.note], ['Mine', 'My headline', 'My intro', 'Hi']);
+	});
+
+	test('a retry sends only the lists not yet sent to', () => {
+		const all = defaultDispatches(t(true, true), ['en', 'fr', 'it']);
+		assert.deepEqual(remaining(all, ['en']).map((d) => d.list), ['fr', 'it']);
+		assert.deepEqual(remaining(all, ['en', 'fr', 'it']), []);
+		assert.equal(remaining(all).length, 3);
 	});
 });

@@ -1,7 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient, looksLikeEmail, UNSUBSCRIBE_TOKEN
+	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient, looksLikeEmail, UNSUBSCRIBE_TOKEN,
+	articleUrl, NEWSLETTER_LANGS, LANG_LABEL
 } from '../src/lib/newsletter-email.ts';
 
 const base = {
@@ -108,5 +109,51 @@ describe('single-recipient mail', () => {
 		for (const bad of ['', 'me', 'me@', 'me@example', 'me @example.com', '<me@example.com>', 'me@@example.com']) {
 			assert.equal(looksLikeEmail(bad), false, bad);
 		}
+	});
+});
+
+describe('an email in each language', () => {
+	test('English is the default, and says so', () => {
+		const html = buildBroadcastHtml(base);
+		assert.match(html, /<html lang="en">/);
+		assert.match(html, /Read the article/);
+		assert.match(html, /You are receiving this because you subscribed at Lorenzo Loconsole\./);
+		assert.match(html, />Unsubscribe</);
+	});
+
+	test('French and Italian have their own button, reason and unsubscribe, and say what language they are', () => {
+		const fr = buildBroadcastHtml({ ...base, lang: 'fr' });
+		assert.match(fr, /<html lang="fr">/);
+		assert.match(fr, /Lire l'article/);
+		assert.match(fr, /Se désabonner/);
+		assert.doesNotMatch(fr, /Read the article|Unsubscribe/);
+		const it = buildBroadcastHtml({ ...base, lang: 'it' });
+		assert.match(it, /<html lang="it">/);
+		assert.match(it, /Leggi l'articolo/);
+		assert.match(it, /Annulla l’iscrizione/);
+	});
+
+	test('every language still carries Resend\'s unsubscribe token, in the HTML and the text', () => {
+		for (const lang of NEWSLETTER_LANGS) {
+			assert.ok(buildBroadcastHtml({ ...base, lang }).includes(UNSUBSCRIBE_TOKEN), lang);
+			assert.ok(buildBroadcastText({ ...base, lang }).includes(UNSUBSCRIBE_TOKEN), lang);
+		}
+	});
+
+	test('the plain-text version is in the language too', () => {
+		const text = buildBroadcastText({ ...base, lang: 'fr' });
+		assert.match(text, /À lire : https:/);
+		assert.match(text, /Vous recevez ce message/);
+		assert.doesNotMatch(text, /Read it|You are receiving/);
+	});
+
+	test('a language-specific footer is escaped like any other text', () => {
+		const html = buildBroadcastHtml({ ...base, lang: 'it', siteName: 'A & B' });
+		assert.match(html, /iscritto\/a su A &amp; B\./);
+	});
+
+	test('an article\'s address is in the language of the email', () => {
+		assert.equal(articleUrl('https://lorenzo.loconsole.eu', 'chat-control-eu', 'fr'), 'https://lorenzo.loconsole.eu/fr/blog/chat-control-eu/');
+		assert.deepEqual(NEWSLETTER_LANGS.map((l) => LANG_LABEL[l]), ['English', 'Français', 'Italiano']);
 	});
 });

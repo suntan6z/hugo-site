@@ -2,11 +2,12 @@ import { store, audit } from '../store/kv.ts';
 import { loadPost, savePost, LANGS } from '../content/post.ts';
 import { fetchBuildInfo, recordPublish } from '../integrations/buildinfo.ts';
 import { queueUrls, postUrls } from '../integrations/indexnow.ts';
-import { sendBroadcast, isConfigured as canSend, SITE_NAME } from '../integrations/resend.ts';
+import { sendBroadcast, isConfigured as canSend, configuredLangs, SITE_NAME } from '../integrations/resend.ts';
+import { newsletterArticle } from '../content/newsletter-article.ts';
+import { articleUrl } from '../../newsletter-email.ts';
 import { integrations } from '../env.ts';
-import { thumbnailOf, thumbnailUrl } from '../../thumbnail.ts';
 import { invalidate } from '../cache.ts';
-import { dueToPublish, dueToAnnounce, isHeldNewsletter, prune, type Scheduled } from './plan.ts';
+import { dueToPublish, dueToAnnounce, isHeldNewsletter, prune, defaultDispatches, remaining, type Scheduled } from './plan.ts';
 
 /**
  * Carries out scheduled publishing. Called by the scheduled trigger, and by
@@ -108,29 +109,40 @@ export async function runDue(now = new Date()): Promise<RunReport> {
 			item.tries = (item.tries ?? 0) + 1;
 			try {
 				if (!canSend()) throw new Error('RESEND_API_KEY is not configured');
-				const post = await loadPost(item.slug);
-				if (!post) throw new Error('the article no longer exists');
-				// What the author wrote in the newsletter flow, or else the article's own words.
-				const written = item.broadcast;
-				const title = written?.title ?? post.translations.en.title;
-				const image = thumbnailOf(post.featured_image, post.translations.en.body);
-				const r = await sendBroadcast({
-					slug: item.slug,
-					subject: written?.subject ?? title,
-					title,
-					intro: written?.intro ?? post.translations.en.description,
-					note: written?.note,
-					url: `${integrations.siteUrl}/en/blog/${item.slug}/`,
-					imageUrl: image ? thumbnailUrl(integrations.siteUrl, item.slug, image) : undefined,
-					siteName: SITE_NAME,
-					siteUrl: integrations.siteUrl
-				});
-				if (!r.ok) throw new Error(r.errors.join(' '));
+				const article = await newsletterArticle(item.slug);
+				if (!article) throw new Error('the article no longer exists');
+				// What the author wrote for each list in the newsletter flow, or else the article in each language.
+				const dispatches = item.dispatches ?? defaultDispatches(article.translations, configuredLangs(), item.broadcast);
+				const sentLists = item.sentLists ?? [];
+				const problems: string[] = [];
+				for (const d of remaining(dispatches, sentLists)) {
+					const r = await sendBroadcast({
+						slug: item.slug,
+						list: d.list,
+						lang: d.lang,
+						subject: d.subject,
+						title: d.title,
+						intro: d.intro,
+						note: d.note,
+						url: articleUrl(integrations.siteUrl, item.slug, d.lang),
+						imageUrl: article.imageUrl ?? undefined,
+						siteName: SITE_NAME,
+						siteUrl: integrations.siteUrl
+					}).catch((e: unknown) => ({ ok: false as const, id: undefined, errors: [e instanceof Error ? e.message : String(e)], warnings: [] as string[] }));
+					if (!r.ok) {
+						problems.push(`${d.list.toUpperCase()}: ${r.errors.join(' ')}`);
+						continue;
+					}
+					// Written back at once: a failure on the next list must not send this one again.
+					sentLists.push(d.list);
+					item.sentLists = sentLists;
+					await audit('newsletter-sent', { slug: item.slug, subject: d.subject, id: r.id, list: d.list, scheduled: true });
+				}
+				if (problems.length > 0) throw new Error(problems.join(' '));
 				item.state = 'announced';
 				item.announcedAt = new Date().toISOString();
 				delete item.error;
 				report.announced.push(item.slug);
-				await audit('newsletter-sent', { slug: item.slug, subject: written?.subject ?? title, id: r.id, scheduled: true });
 			} catch (e) {
 				item.error = e instanceof Error ? e.message : String(e);
 				report.failed.push({ slug: item.slug, error: item.error });

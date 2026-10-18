@@ -74,6 +74,7 @@ describe('access control on the running app', () => {
 		['/settings?/saveNav', { title: 'x' }],
 		['/posts/first-home-nas?/share', {}],
 		['/posts/first-home-nas?/unshare', {}],
+		['/newsletter?/setLanguage', { id: 'x', email: 'x@example.com', lang: 'fr' }],
 		['/media?/delete', { path: 'content/blog/first-home-nas/x.png', confirm: 'delete' }],
 		['/api/media', { path: 'static/img/logo.svg' }],
 		['/i18n?/save', {}],
