@@ -15,6 +15,7 @@
 // @ts-nocheck: a stand-alone script; its one pure function is typed by its JSDoc and tested.
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export const LISTS = [
 	{ lang: 'en', name: 'English' },
@@ -119,7 +120,8 @@ function readEnvFile(name) {
 	}
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL encodes the path the same way import.meta.url is, so a folder with a space in it still runs.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	main().catch((e) => {
 		console.error(e.message);
 		process.exit(1);
