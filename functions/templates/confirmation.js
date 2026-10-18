@@ -1,5 +1,5 @@
 // The "we got your message" email sent to someone who used the contact form, in
-// the site's three languages: paste each into Resend as contact-form-confirmation-en,
+// the site's three languages: paste each into Resend as form-confirmation-en,
 // -fr and -it (Templates -> Create -> HTML).
 //
 //   node templates/confirmation.js    writes templates/out/confirmation-<lang>.html

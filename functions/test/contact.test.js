@@ -77,7 +77,7 @@ test('the notification carries the readable subject', async () => {
 });
 
 test('the confirmation uses the template of the form\'s language, English when unknown', async () => {
-  for (const [lang, id] of [['fr', 'contact-form-confirmation-fr'], ['it', 'contact-form-confirmation-it'], ['en', 'contact-form-confirmation-en'], ['de', 'contact-form-confirmation-en'], [undefined, 'contact-form-confirmation-en']]) {
+  for (const [lang, id] of [['fr', 'form-confirmation-fr'], ['it', 'form-confirmation-it'], ['en', 'form-confirmation-en'], ['de', 'form-confirmation-en'], [undefined, 'form-confirmation-en']]) {
     const sent = [];
     await withFetch(
       async (url, init) => {

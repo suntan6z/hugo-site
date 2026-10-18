@@ -130,7 +130,7 @@ export async function handle(event) {
   // Best-effort: the submitter's confirmation email is a nice-to-have —
   // don't fail the whole request if only this part errors.
   //
-  // Values here are passed RAW (not esc()'d): the `contact-form-confirmation-<lang>`
+  // Values here are passed RAW (not esc()'d): the `form-confirmation-<lang>`
   // templates uses double-brace `{{ }}`, which auto-escapes. Pre-escaping would
   // double-escape. This is the opposite of the notification send above — each
   // path is matched to its template's brace style.
@@ -147,7 +147,7 @@ export async function handle(event) {
     body: JSON.stringify({
       from: 'Lorenzo Loconsole (Form submission) <contact@loconsole.eu>',
       to: [email],
-      template: { id: `contact-form-confirmation-${lang}`, variables: { name, subject, message_preview: messagePreview } },
+      template: { id: `form-confirmation-${lang}`, variables: { name, subject, message_preview: messagePreview } },
     }),
   })
     .then((r) => {
