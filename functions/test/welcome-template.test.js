@@ -32,6 +32,11 @@ for (const lang of LANGS) {
     assert.doesNotMatch(html, /Trakt|Apple Music/);
   });
 
+  test(`${lang}: the logo is top left, links home, and its alt text is the name where images are blocked`, () => {
+    assert.match(html, new RegExp(`<a href="https://lorenzo\\.loconsole\\.eu/${lang}/"[^>]*><img src="https://lorenzo\\.loconsole\\.eu/img/email/logo\\.png"[^>]*alt="Lorenzo Loconsole"`));
+    assert.ok(html.indexOf('/img/email/logo.png') < html.indexOf('<h1'), 'above the title');
+  });
+
   test(`${lang}: the profile links are the site's own`, () => {
     assert.match(html, /https:\/\/www\.linkedin\.com\/in\/lloconsole\//);
     assert.match(html, /https:\/\/c\.im\/@lv/);

@@ -5,7 +5,7 @@
 //
 // Email clients ignore most <style> blocks and every web font, so everything is
 // inline, laid out in tables, in a Georgia serif stack; nothing is loaded from a
-// third party. The three icons are PNGs on the site (static/img/email/), because
+// third party. The logo and the three icons are PNGs on the site (static/img/email/), because
 // Gmail and Outlook do not draw SVG; each button also carries its label, so it
 // still works when images are blocked. It has no unsubscribe link of its own: a
 // welcome is a one-to-one message, and Resend gives a link only to broadcasts.
@@ -124,7 +124,7 @@ export function renderWelcome(lang) {
 <tr><td align="center" style="padding:32px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden">
   <tr><td style="padding:40px 40px 8px 40px;font-family:${SERIF}">
-    <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none;font-family:${SERIF};font-size:18px;font-weight:bold">Lorenzo Loconsole</a>
+    <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none;font-family:${SERIF};font-size:18px;font-weight:bold"><img src="${SITE}/img/email/logo.png" width="140" height="72" alt="Lorenzo Loconsole" style="display:block;border:0;width:140px;height:auto;font-family:${SERIF};font-size:18px;color:${ACCENT}"></a>
   </td></tr>
   <tr><td style="padding:16px 40px 0 40px">
     <h1 style="margin:0 0 24px 0;font-family:${SERIF};font-size:34px;line-height:1.2;font-weight:bold;color:#1a1a1a">${esc(c.title)} 👋</h1>
