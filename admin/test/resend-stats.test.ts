@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { summarise, linkStats, STAT_TYPES, type RecipientRow, type StatType } from '../src/lib/server/integrations/resend-stats.ts';
+import { summarise, linkStats, isoDate, STAT_TYPES, type RecipientRow, type StatType } from '../src/lib/server/integrations/resend-stats.ts';
 
 const lists = (over: Partial<Record<StatType, RecipientRow[]>> = {}): Record<StatType, RecipientRow[]> =>
 	Object.fromEntries(STAT_TYPES.map((t) => [t, over[t] ?? []])) as Record<StatType, RecipientRow[]>;
@@ -54,4 +54,16 @@ describe('what happened to a broadcast', () => {
 		assert.deepEqual(linkStats(rows), [{ url: 'https://ok.example/', clicks: 1, people: 1 }]);
 		assert.deepEqual(linkStats([]), []);
 	});
+});
+
+test('isoDate turns the way Resend writes a contact date into something a browser reads', () => {
+	assert.equal(isoDate('2026-10-06 23:47:56.678+00'), '2026-10-06T23:47:56.678+00:00');
+	assert.equal(isoDate('2026-09-01 10:00:00.000000+00'), '2026-09-01T10:00:00.000+00:00');
+	assert.equal(isoDate('2026-09-01T10:00:00Z'), '2026-09-01T10:00:00Z');
+	assert.equal(isoDate('2026-09-01 10:00:00+0200'), '2026-09-01T10:00:00+02:00');
+	assert.ok(!Number.isNaN(Date.parse(isoDate('2026-10-06 23:47:56.678+00'))));
+});
+
+test('isoDate gives nothing for what it cannot read, never a wrong day', () => {
+	for (const v of [undefined, null, 42, '', 'yesterday', '2026-13-45 10:00:00+00']) assert.equal(isoDate(v), '');
 });

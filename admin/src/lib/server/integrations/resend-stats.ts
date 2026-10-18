@@ -10,6 +10,22 @@
  * Free of I/O so the suite can drive it directly.
  */
 
+/**
+ * Resend writes a contact's date as `2026-10-06 23:47:56.678+00` (a space, and an
+ * offset with no minutes), which a browser cannot read: it shows "Invalid Date".
+ * Returns the same instant as ISO 8601, or '' for anything unreadable.
+ */
+export function isoDate(raw: unknown): string {
+	if (typeof raw !== 'string') return '';
+	const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}(?::?\d{2})?)?$/.exec(raw.trim());
+	if (!m) return '';
+	let zone = m[4] ?? 'Z';
+	if (/^[+-]\d{2}$/.test(zone)) zone += ':00';
+	else if (/^[+-]\d{4}$/.test(zone)) zone = `${zone.slice(0, 3)}:${zone.slice(3)}`;
+	const iso = `${m[1]}T${m[2]}${m[3] ? m[3].slice(0, 4) : ''}${zone}`;
+	return Number.isNaN(Date.parse(iso)) ? '' : iso;
+}
+
 export const STAT_TYPES = ['delivered', 'bounced', 'complained', 'unsubscribed', 'opened', 'clicked'] as const;
 export type StatType = (typeof STAT_TYPES)[number];
 

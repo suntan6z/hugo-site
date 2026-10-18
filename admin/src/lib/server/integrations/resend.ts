@@ -3,7 +3,7 @@ import { store } from '../store/kv.ts';
 import { memo, invalidate, mapLimit } from '../cache.ts';
 import { readAll } from './paginate.ts';
 import { LANGS, type Lang } from '../langs.ts';
-import { STAT_TYPES, summarise, type BroadcastStats, type RecipientRow, type StatType } from './resend-stats.ts';
+import { STAT_TYPES, isoDate, summarise, type BroadcastStats, type RecipientRow, type StatType } from './resend-stats.ts';
 import {
 	buildBroadcastHtml, buildBroadcastText, validateBroadcast, forSingleRecipient,
 	type BroadcastInput
@@ -93,7 +93,7 @@ export async function listSubscribers(): Promise<Subscriber[]> {
 			for (const c of rows) {
 				// Someone in two lists (set by hand in Resend) is counted once, under the first language that has them.
 				if (typeof c.id !== 'string' || typeof c.email !== 'string' || byId.has(c.id)) continue;
-				byId.set(c.id, { id: c.id, email: c.email, createdAt: c.created_at ?? '', unsubscribed: !!c.unsubscribed, lang });
+				byId.set(c.id, { id: c.id, email: c.email, createdAt: isoDate(c.created_at), unsubscribed: !!c.unsubscribed, lang });
 			}
 		}
 		return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
