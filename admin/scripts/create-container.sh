@@ -89,11 +89,17 @@ SECRETS=(
   "secret-environment-variables.LITLYX_TOKEN=${LITLYX_TOKEN:-}"
   "secret-environment-variables.LITLYX_SHARE_PASSWORD=${LITLYX_SHARE_PASSWORD:-}"
   "environment-variables.LITLYX_HOST=${LITLYX_HOST:-https://litlyx.loconsole.eu}"
+  # Google Search Console: the service account's key file (base64) and the
+  # property it reads. PageSpeed's key is optional. Alerts go to ALERT_EMAIL.
+  "secret-environment-variables.GSC_SERVICE_ACCOUNT_B64=${GSC_SERVICE_ACCOUNT_B64:-}"
+  "environment-variables.GSC_SITE_URL=${GSC_SITE_URL:-}"
+  "secret-environment-variables.PAGESPEED_API_KEY=${PAGESPEED_API_KEY:-}"
+  "environment-variables.ALERT_EMAIL=${ALERT_EMAIL:-}"
 )
 
 # Report what will and will not be configured, so a silently missing key is
 # visible at the point of deploying rather than as an empty panel later.
-for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY CRON_TOKEN LITLYX_TOKEN; do
+for v in BING_API_KEY RESEND_API_KEY INDEXNOW_KEY DEEPL_API_KEY CRON_TOKEN LITLYX_TOKEN GSC_SERVICE_ACCOUNT_B64 PAGESPEED_API_KEY ALERT_EMAIL; do
   [ -n "${!v:-}" ] && echo "  $v: set" || echo "  $v: not set (feature stays disabled)"
 done
 

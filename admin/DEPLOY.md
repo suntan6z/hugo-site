@@ -110,7 +110,27 @@ Each is off until its key is in `admin/.env`, then `./scripts/create-container.s
 | `RESEND_API_KEY` | Newsletter broadcasts | Resend → API keys (full access, for broadcasts) |
 | `DEEPL_API_KEY` | "Draft from English" in the FR/IT tabs | deepl.com → API plans → *DeepL API Free* → Account → API keys. Free keys end in `:fx`. Settings shows the month's allowance and what is left of it |
 | `LITLYX_TOKEN` | The Visitors page, view counts in the article list, and the home screen's visitor line | The self-hosted dashboard has no API keys; it reads data for a **shareable link**. In Litlyx → Shareable links, create one for all domains and copy its id (after `/shared/`). If you give the link a password, also set `LITLYX_SHARE_PASSWORD`. `LITLYX_HOST` defaults to `https://litlyx.loconsole.eu` — the dashboard, not the `analytics.` collector the site reports to |
+| `GSC_SERVICE_ACCOUNT_B64` + `GSC_SITE_URL` | The Google half of the Search page (queries, pages, sitemaps), and "Is it on Google?" in the article editor | Google Cloud: create a project, enable the **Google Search Console API**, create a **service account** and download its JSON key. In Search Console → Settings → Users and permissions, add the service account's email as a user (Restricted is enough; it only reads). `GSC_SERVICE_ACCOUNT_B64` is `base64 -i key.json \| tr -d '\n'`; `GSC_SITE_URL` is the property exactly as Search Console names it (`sc-domain:loconsole.eu`, or `https://lorenzo.loconsole.eu/`). A 403 on the Search page means the email has not been added as a user |
+| `PAGESPEED_API_KEY` | Optional. "Check speed" in the article editor works without it at a low daily quota | Google Cloud → APIs → *PageSpeed Insights API* → Credentials |
+| `ALERT_EMAIL` | Optional. An email when the daily health check finds something new wrong (needs `RESEND_API_KEY`) | Your own address. Without it the home screen is the only place the check shows |
 | `CRON_TOKEN` | Scheduled publishing, and sending its newsletter once the site is live | `openssl rand -hex 32`. `create-container.sh` gives it to the container and to the Scaleway cron trigger that presents it, so it lives nowhere else. Without it there is no trigger and the endpoint answers 404 to everyone; scheduled articles then wait until you open the portal |
+
+## Daily health check
+
+The morning trigger also runs `runHealth` (`src/lib/server/integrations/uptime.ts`), at
+most once every 20 hours. It looks at the home page, `/en/build-info.json`, the two form
+functions (the CORS preflight a browser would send) and the TLS certificates of the site, the
+portal and the Litlyx dashboard. A certificate within 14 days of its end counts as a
+problem, and one within 30 days is mentioned on the home screen. The result is kept in
+`state/health` (the last 60 runs) and shown on the home screen, which also has a "Check now"
+button. With `ALERT_EMAIL` set, an email goes out when something is wrong that was not wrong
+at the last look; the same fault is not repeated every morning.
+
+**It is a daily look, not live monitoring**: it cannot see an outage that begins and ends
+between two runs. More runs are not the answer: each wakes the container for about fifteen
+minutes, and the bill is sensitive to exactly that (see "What it costs"). For five-minute
+checks, point a free external pinger (UptimeRobot, Better Stack, a self-hosted Uptime Kuma)
+at `https://lorenzo.loconsole.eu/en/`.
 
 ## Scheduled publishing
 
@@ -143,7 +163,9 @@ Things worth knowing:
   shows the article is actually live. Otherwise the link in the email 404s for
   every subscriber until StaticHost finishes. A build slower than half an hour
   pushes the email to the next morning (or to whenever you open the portal).
-- **A newsletter can be held for a later morning on its own**, for an article that is already live: the Newsletter page stores it as a `published` item with `announceAt` (9:30 Paris on the chosen day) and the words the author wrote, and the 9:30 pass sends it. Resend's API reports no opens or clicks, and a webhook for them would wake the container on every event, so the page links to Resend's dashboard instead.
+- **A newsletter can be held for a later morning on its own**, for an article that is already live: the Newsletter page stores it as a `published` item with `announceAt` (9:30 Paris on the chosen day) and the words the author wrote, and the 9:30 pass sends it. The Sent tab shows what happened to the latest five broadcasts (delivered, bounced, marked as spam, unsubscribed, and opened and clicked when Resend recorded any), read from Resend's per-recipient lists when the tab is opened. A webhook would wake the container on every event, so nothing is pushed. Opens and clicks exist only if tracking is switched on for the sending domain in Resend; the privacy policy says they are not tracked, so leave it off or amend the policy.
+
+- **Resend has deprecated its Audiences API** (to be removed in the future, no date given) in favour of Segments. The portal and `functions/newsletter.js` still use `/audiences/{id}/contacts` and `audience_id`, which keep working; when Resend announces a date, move both to Contacts and Segments together.
 - **Opening the portal also runs anything due**, so a missed trigger delays
   publishing rather than losing it.
 - Scheduling used to run from a GitHub Actions workflow. It was dropped
