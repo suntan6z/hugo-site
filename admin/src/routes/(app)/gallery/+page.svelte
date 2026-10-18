@@ -5,11 +5,6 @@
 	let showAdd = $state(false);
 	let name = $state('');
 	let flag = $state('');
-	let slug = $state('');
-	const autoSlug = $derived(
-		name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-	);
 </script>
 
 <div class="head">
@@ -18,17 +13,15 @@
 </div>
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
-{#if form?.success}<p class="msg ok">Added “{form.slug}”. Upload its photos below.</p>{/if}
+{#if form?.success}<p class="msg ok">Added the city. Open it below to add its photos.</p>{/if}
 
 {#if showAdd}
 	<form class="add" method="POST" action="?/add" use:enhance>
 		<label>City name<input name="name" bind:value={name} placeholder="Câmara de Lobos" required /></label>
 		<label>Flag<input name="flag" bind:value={flag} placeholder="🇵🇹" maxlength="8" required /></label>
-		<label>Slug<input name="slug" bind:value={slug} placeholder={autoSlug || 'auto'} /></label>
 		<button type="submit" class="btn-primary">Create</button>
 		<p class="note">
-			Creates <code>content/gallery/{slug || autoSlug || '<slug>'}/</code> with the three language
-			stubs and adds the filter pill — one commit.
+			Adds the city and its filter button on the homepage. You add its photos next.
 		</p>
 	</form>
 {/if}
@@ -53,12 +46,11 @@
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
-	.add { display: grid; grid-template-columns: 2fr 0.6fr 1.2fr auto; gap: 0.6rem; align-items: end;
+	.add { display: grid; grid-template-columns: 2fr 0.6fr auto; gap: 0.6rem; align-items: end;
 		background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1.25rem; }
 	.add label { font-size: 0.8rem; color: var(--muted-foreground); }
 	.add input { display: block; width: 100%; margin-top: 0.25rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--background); }
 	.add .note { grid-column: 1 / -1; font-size: 0.78rem; color: var(--muted-foreground); margin: 0; }
-	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
 	.cities { list-style: none; padding: 0; margin: 0; }
 	.cities li { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid var(--border); }
 	.cities a { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: inherit; font-weight: 550; }

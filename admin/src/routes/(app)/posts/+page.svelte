@@ -29,7 +29,7 @@
 </div>
 
 <div class="filters">
-	<input type="search" placeholder="Search title or slug…" bind:value={q} />
+	<input type="search" placeholder="Search articles…" bind:value={q} />
 	<div class="pills" role="group" aria-label="Filter by status">
 		{#each STATES as [k, label]}
 			<button type="button" class="pill" class:active={status === k} onclick={() => (status = k)}>

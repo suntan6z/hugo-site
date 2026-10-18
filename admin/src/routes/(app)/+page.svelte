@@ -226,7 +226,7 @@
 				<button class="btn-ghost btn-sm" type="submit" disabled={checkingLinks}>{checkingLinks ? 'Checking…' : 'Check now'}</button>
 			</form>
 			<form method="POST" action="?/checkhealth" use:enhance={() => { checkingHealth = true; return async ({ update }) => { await update(); checkingHealth = false; }; }}>
-				<span title={data.health.alerts ? 'You are emailed when something new goes wrong' : 'Set ALERT_EMAIL to be emailed when something goes wrong'}>{data.health.at ? `${data.health.total} health checks ${daysAgo(data.health.at)}` : 'Site health not checked yet'}</span>
+				<span title={data.health.alerts ? 'You are emailed when something new goes wrong' : 'Connect health emails in Settings to be told when something goes wrong'}>{data.health.at ? `${data.health.total} health checks ${daysAgo(data.health.at)}` : 'Site health not checked yet'}</span>
 				<button class="btn-ghost btn-sm" type="submit" disabled={checkingHealth}>{checkingHealth ? 'Checking…' : 'Check now'}</button>
 			</form>
 			{#if data.indexNow.configured && data.indexNow.queued.length > 0}

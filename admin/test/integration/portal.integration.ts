@@ -867,23 +867,24 @@ describe('the activity log and the form health check', () => {
 		assert.equal((await portal.send('GET', '/api/health/functions')).status, 401);
 	});
 
-	test('the log records what the portal did, newest first', async () => {
+	test('the log says what the portal did in plain sentences, not event codes', async () => {
 		const html = await (await portal.get('/audit', { cookie })).text();
-		// Everything these tests have done should be in here.
-		for (const event of ['create-post', 'rename-post', 'save', 'translate', 'delete-post']) {
-			assert.match(html, new RegExp(event), `missing ${event}`);
+		const list = html.split(/<ul class="log[^"]*">/)[1] ?? '';
+		// Everything these tests have done should be in here, as a sentence.
+		for (const sentence of [/Started the article/, /Changed the web address of|Moved “/, /Saved “/, /Machine-translated/, /Deleted “/]) {
+			assert.match(list, sentence, `missing ${sentence}`);
 		}
-		const first = html.indexOf('rename-post');
-		const createdAt = html.indexOf('create-post');
-		assert.ok(first > 0 && createdAt > 0);
+		assert.doesNotMatch(list, />(create-post|rename-post|delete-post|translate)</, 'no raw event code on screen');
 	});
 
-	test('the log filters by event, and an unknown event shows nothing', async () => {
-		const filtered = await (await portal.get('/audit?event=rename-post', { cookie })).text();
-		assert.match(filtered, /rename-post/);
-		assert.doesNotMatch(filtered.split('<ul class="log">')[1] ?? '', /translate/);
-		const none = await (await portal.get('/audit?event=nothing-like-this', { cookie })).text();
-		assert.match(none, /Nothing recorded/);
+	test('the log filters by heading, and a heading with nothing under it says so', async () => {
+		const writing = await (await portal.get('/audit?group=writing', { cookie })).text();
+		assert.match(writing.split(/<ul class="log[^"]*">/)[1] ?? '', /Started the article/);
+		const none = await (await portal.get('/audit?group=newsletter', { cookie })).text();
+		assert.match(none, /Nothing recorded under “Newsletter” yet/);
+		// A heading that does not exist is ignored, not an empty page.
+		const unknown = await (await portal.get('/audit?group=nothing-like-this', { cookie })).text();
+		assert.match(unknown.split(/<ul class="log[^"]*">/)[1] ?? '', /Started the article/);
 	});
 
 	test('a healthy form and an unreachable one are told apart', async () => {

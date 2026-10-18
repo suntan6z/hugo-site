@@ -182,7 +182,7 @@
 						</button>
 						<span>Then correct it — nothing is published until you leave.</span>
 					{:else}
-						<span>Add DEEPL_API_KEY to draft this automatically.</span>
+						<span>Machine translation isn’t connected yet — <a href="/settings#connections">connect it in Settings</a>.</span>
 					{/if}
 				</div>
 				{#if mtError}<p class="msg err">{mtError}</p>{/if}

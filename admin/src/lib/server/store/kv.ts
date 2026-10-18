@@ -135,8 +135,9 @@ export const store: Store = IS_LOCAL
 export async function audit(event: string, detail: Record<string, unknown> = {}): Promise<void> {
 	const ts = new Date().toISOString().replace(/[:.]/g, '-');
 	await store.put(`audit/${ts}-${crypto.randomBytes(4).toString('hex')}`, {
+		// The facts go first so none of them can overwrite when it happened or what it was.
+		...detail,
 		at: new Date().toISOString(),
-		event,
-		...detail
+		event
 	});
 }

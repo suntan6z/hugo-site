@@ -76,7 +76,9 @@ export const load: PageServerLoad = async () => {
 			return { title: readTitle(raw), menu: readMenu(raw), error: null };
 		})
 		.catch((e: unknown) => ({ title: '', menu: null, error: e instanceof Error ? e.message : String(e) }));
-	const articles = (await listPosts()).filter((p) => !p.draft).map((p) => ({ slug: p.slug, title: p.title }));
+	const allPosts = await listPosts();
+	const articles = allPosts.filter((p) => !p.draft).map((p) => ({ slug: p.slug, title: p.title }));
+	const titles = Object.fromEntries(allPosts.map((p) => [p.slug, p.title]));
 	const redirects = (await repo.listTree('content/redirects')).filter((p) => p.endsWith('.md') && !p.endsWith('/_index.md')).length;
 	const auditKeys = await store.list('audit');
 	const recent = await Promise.all(
@@ -96,6 +98,7 @@ export const load: PageServerLoad = async () => {
 		socials: { fields: SOCIALS, ...socials },
 		nav: { ...nav, titleMax: TITLE_MAX, labelMax: MENU_LABEL_MAX },
 		backup: { links: backupLinks(github.owner, github.repo, github.branch), facts: await repoFacts(), subscribers: !!integrations.resendApiKey },
+		titles,
 		site: { ...site, articles, ideal: DESCRIPTION_IDEAL, canReplaceResume: !!resumePath(site.resumeUrl) },
 		redirects,
 		integrations: {

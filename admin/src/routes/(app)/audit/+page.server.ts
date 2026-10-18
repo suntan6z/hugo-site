@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { store } from '$lib/server/store/kv.ts';
 import { mapLimit } from '$lib/server/cache.ts';
+import { listPosts } from '$lib/server/content/post.ts';
+import { GROUPS, groupOf, type Group } from '$lib/activity.ts';
 
 /**
  * The full audit trail. Settings shows the last handful; this is the page you
@@ -20,28 +22,30 @@ export interface AuditEntry {
 
 export const load: PageServerLoad = async ({ url }) => {
 	const keys = (await store.list('audit')).reverse(); // newest first
-	const event = url.searchParams.get('event') ?? '';
+	const asked = url.searchParams.get('group') ?? '';
+	const group: Group | '' = GROUPS.some((g) => g.id === asked) ? (asked as Group) : '';
 	const page = Math.max(0, Number(url.searchParams.get('p') ?? 0) || 0);
 
 	// Filtering by event has to look inside the objects, so it reads a wider
 	// window rather than the whole trail.
-	const window = event ? keys.slice(0, Math.max(PAGE * 10, (page + 1) * PAGE * 4)) : keys;
-	const slice = event ? window : window.slice(page * PAGE, (page + 1) * PAGE);
+	const window = group ? keys.slice(0, Math.max(PAGE * 10, (page + 1) * PAGE * 4)) : keys;
+	const slice = group ? window : window.slice(page * PAGE, (page + 1) * PAGE);
 
 	const loaded = (await mapLimit(slice, 8, (k) => store.get<AuditEntry>(k))).filter(
 		(e): e is AuditEntry => !!e?.event
 	);
-	const filtered = event ? loaded.filter((e) => e.event === event) : loaded;
-	const shown = event ? filtered.slice(page * PAGE, (page + 1) * PAGE) : filtered;
+	const filtered = group ? loaded.filter((e) => groupOf(e.event) === group) : loaded;
+	const shown = group ? filtered.slice(page * PAGE, (page + 1) * PAGE) : filtered;
+
+	// Articles are named by title in the sentences, not by address.
+	const titles = Object.fromEntries((await listPosts().catch(() => [])).map((p) => [p.slug, p.title]));
 
 	return {
 		entries: shown,
 		page,
-		hasMore: event ? filtered.length > (page + 1) * PAGE : keys.length > (page + 1) * PAGE,
+		hasMore: group ? filtered.length > (page + 1) * PAGE : keys.length > (page + 1) * PAGE,
 		total: keys.length,
-		event,
-		// Only the events actually recorded so far, so the filter can never offer
-		// something that returns nothing.
-		events: [...new Set(loaded.map((e) => e.event))].sort()
+		group,
+		titles
 	};
 };

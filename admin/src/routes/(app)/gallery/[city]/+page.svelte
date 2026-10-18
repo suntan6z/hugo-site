@@ -88,12 +88,11 @@
 	<div>
 		<a class="back" href="/gallery">← Gallery</a>
 		<h1><span class="flag">{data.city.flag}</span> {data.city.name}</h1>
-		<code>content/gallery/{data.city.slug}/</code>
 	</div>
 </div>
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
-{#if form?.success}<p class="msg ok">Saved. Commit <code>{form.sha}</code>.</p>{/if}
+{#if form?.success}<p class="msg ok">Saved. The photos update on the site in a minute or two.</p>{/if}
 
 <form
 	method="POST"
@@ -129,15 +128,15 @@
 		<span class="stats">
 			{live.length} photo{live.length === 1 ? '' : 's'}
 			· {captionCount} captioned
-			{#if missingAlt > 0}<em>· {missingAlt} without alt text</em>{/if}
+			{#if missingAlt > 0}<em>· {missingAlt} without a description</em>{/if}
 			{#if pendingCount > 0}<strong>· {pendingCount} to upload</strong>{/if}
 		</span>
 		<button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
 	</div>
 	{#if imgError}<p class="hint">{imgError}</p>{/if}
 	<p class="note">
-		Drag to reorder — display order comes from the numeric filename prefix, so saving renames the
-		files to match. Captions follow their photo across a rename.
+		Drag a photo, or use the arrows, to change the order it appears in on the site. Photos and
+		their captions move together. Nothing changes on the site until you press Save.
 	</p>
 
 	<ul class="photos">
@@ -153,11 +152,11 @@
 				<span class="pos">{i + 1}</span>
 				<img src={r.url} alt="" loading="lazy" />
 				<div class="fields">
-					<code>{r.filename}{#if r.pending}<em> · {r.pending.width}×{r.pending.height} · {formatBytes(r.pending.blob.size)}</em>{/if}</code>
+					{#if r.pending}<span class="newtag">New · {r.pending.width}×{r.pending.height} · {formatBytes(r.pending.blob.size)}</span>{/if}
 					<input placeholder="Caption (shown under the photo)" bind:value={r.caption} />
 					<input
 						class:missing={!r.altText.trim()}
-						placeholder="Alt text (screen readers, SEO)"
+						placeholder="Describe the photo, for people who cannot see it"
 						bind:value={r.altText}
 					/>
 				</div>
@@ -185,8 +184,8 @@
 	{#if showDanger}
 		<form method="POST" action="?/remove" use:enhance>
 			<p>
-				Deletes the bundle, all {live.length} photos, the filter pill and every caption for
-				<strong>{data.city.slug}</strong>. Type the slug to confirm.
+				Deletes this city with its {live.length} photos, its filter button and every caption.
+				Type <strong>{data.city.slug}</strong> to confirm.
 			</p>
 			<input name="confirm" bind:value={confirmSlug} placeholder={data.city.slug} />
 			<button type="submit" class="btn-danger" disabled={confirmSlug !== data.city.slug}>
@@ -201,7 +200,6 @@
 	.back { font-size: 0.85rem; text-decoration: none; color: var(--muted-foreground); }
 	h1 { font-size: 1.4rem; margin: 0.35rem 0 0.15rem; letter-spacing: -0.015em; }
 	.flag { margin-right: 0.25rem; }
-	code { font-size: 0.78rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
 	.msg { padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	.msg.err { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 	.msg.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
@@ -228,7 +226,6 @@
 	.pos { font-size: 0.75rem; color: var(--muted-foreground); text-align: center; font-variant-numeric: tabular-nums; }
 	.photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 5px; background: var(--background); }
 	.fields { display: grid; gap: 0.3rem; min-width: 0; }
-	.fields code em { font-style: normal; opacity: 0.8; }
 	.fields input { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border);
 		border-radius: 6px; background: var(--background); font-size: 0.82rem; }
 	.fields input.missing { border-color: color-mix(in srgb, var(--warn) 50%, var(--border)); }
@@ -243,4 +240,5 @@
 	.danger-zone form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 30rem; }
 	.danger-zone p { font-size: 0.85rem; color: var(--muted-foreground); margin: 0; }
 	.danger-zone input { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+	.newtag { font-size: 0.72rem; color: var(--muted-foreground); }
 </style>

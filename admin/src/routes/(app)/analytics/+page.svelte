@@ -25,7 +25,7 @@
 </script>
 
 <div class="head">
-	<h1>Search</h1>
+	<h1>Google &amp; Bing</h1>
 	<nav class="jump" aria-label="Search engines"><a href="#bing">Bing</a><a href="#google">Google</a></nav>
 	{#if bing.configured || data.google.configured}
 		<form method="POST" action="?/refresh" use:enhance>
@@ -37,7 +37,9 @@
 <h2 id="bing" class="engine">Bing</h2>
 {#if !bing.configured}
 	<section class="setup">
-		<h2>Bing Webmaster Tools is not connected</h2>
+		<h2>Bing isn’t connected yet</h2>
+		<p>Connect it to see how often your pages appear in Bing and which searches bring people.</p>
+		<details><summary>How to connect</summary>
 		<ol>
 			<li>Open <a href="https://www.bing.com/webmasters/" target="_blank" rel="noreferrer">Bing Webmaster Tools</a> → Settings → API Access → API Key.</li>
 			<li>Add it to <code>admin/.env</code> as <code>BING_API_KEY=…</code>.</li>
@@ -47,6 +49,7 @@
 			The key is account-scoped, and <code>{data.siteUrl}</code> must already be verified under
 			that account.
 		</p>
+		</details>
 	</section>
 {:else if bing.error}
 	<p class="msg err">{bing.error}</p>
@@ -232,7 +235,9 @@
 <h2 id="google" class="engine">Google</h2>
 {#if !data.google.configured}
 	<section class="setup">
-		<h2>Google Search Console is not connected</h2>
+		<h2>Google isn’t connected yet</h2>
+		<p>Connect it to see how often your pages appear in Google and which searches bring people.</p>
+		<details><summary>How to connect</summary>
 		<ol>
 			<li>In <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer">Google Cloud Console</a>, create a project, enable the <strong>Google Search Console API</strong>, then create a <strong>service account</strong> and download a JSON key for it.</li>
 			<li>In <a href="https://search.google.com/search-console/users" target="_blank" rel="noreferrer">Search Console → Settings → Users and permissions</a>, add the service account’s email address as a user (Restricted is enough: it only reads).</li>
@@ -240,6 +245,7 @@
 			<li>Run <code>cd admin && ./scripts/create-container.sh</code>.</li>
 		</ol>
 		<p class="note">The key can only read search numbers; it cannot change anything in Search Console.</p>
+		</details>
 	</section>
 {:else if data.google.error}
 	<p class="msg err">{data.google.error}</p>
@@ -345,6 +351,8 @@
 
 	.setup { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
 	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--foreground); }
+	.setup summary { cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--primary); width: max-content; }
+	.setup details ol { margin-top: 0.7rem; }
 	.setup ol { margin: 0 0 0.75rem; padding-left: 1.2rem; font-size: 0.88rem; }
 	.setup li { margin-bottom: 0.35rem; }
 	.note { font-size: 0.82rem; color: var(--muted-foreground); margin: 0; }

@@ -189,13 +189,15 @@
 
 {#if !data.configured}
 	<section class="setup">
-		<h2>Resend is not connected</h2>
-		<p>You can write and preview an email here, but test copies and sending need Resend.</p>
+		<h2>Email sending isn’t connected yet</h2>
+		<p>You can write and preview an email here, but test copies and sending need it.</p>
+		<details><summary>How to connect</summary>
 		<ol>
 			<li>Use the same API key the contact form already uses, from <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer">resend.com/api-keys</a>.</li>
 			<li>Add it to <code>admin/.env</code> as <code>RESEND_API_KEY=…</code>.</li>
 			<li>Run <code>cd admin && ./scripts/create-container.sh</code>.</li>
 		</ol>
+		</details>
 	</section>
 {/if}
 
@@ -754,6 +756,8 @@
 
 	.setup { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
 	.setup h2 { margin: 0 0 0.3rem; font-size: 1.05rem; color: var(--warn); }
+	.setup summary { cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--primary); width: max-content; }
+	.setup details ol { margin-top: 0.7rem; }
 	.setup p { margin: 0 0 0.6rem; font-size: 0.9rem; }
 	.setup ol { margin: 0; padding-left: 1.2rem; font-size: 0.88rem; }
 	.setup li { margin-bottom: 0.3rem; }

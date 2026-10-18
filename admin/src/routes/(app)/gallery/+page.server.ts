@@ -17,7 +17,7 @@ export const actions: Actions = {
 		const slug = slugifyCity(String(f.get('slug') ?? '') || name);
 
 		if (!name) return fail(400, { message: 'Name is required.' });
-		if (!slug) return fail(400, { message: 'That name produces an empty slug — set one manually.' });
+		if (!slug) return fail(400, { message: 'That name needs at least one letter or number.' });
 		if (!flag) return fail(400, { message: 'Pick a flag emoji — the filter pills show it.' });
 
 		try {

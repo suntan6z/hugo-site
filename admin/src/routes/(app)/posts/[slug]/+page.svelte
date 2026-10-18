@@ -473,7 +473,7 @@
 			{#if data.renamedRedirect}redirects here once the site rebuilds.{:else}is no longer served by this article.{/if}
 		</p>
 	{/if}
-	{#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. Commit <code>{form.sha}</code>.</p>{/if}
+	{#if form?.success}<p class="msg ok">Saved{form.published ? ' and published' : ''}. The site updates in a minute or two.</p>{/if}
 	{#if form?.scheduled}<p class="msg ok">Scheduled for {whenLocal(form.at)}{form.newsletter ? ', newsletter included' : ''}.</p>{/if}
 	{#if form?.unscheduled}<p class="msg ok">No longer scheduled.</p>{/if}
 {/snippet}
@@ -504,7 +504,6 @@
 			<a class="back" href="/posts">← Articles</a>
 			<h1>{post.translations.en.title || post.slug}</h1>
 			<div class="sub">
-				<code>content/blog/{post.slug}/</code>
 				<span class="chip" class:draft={post.draft}>{post.draft ? 'Draft' : 'Published'}</span>
 				{#if data.scheduled?.state === 'pending'}
 					<span class="chip sched">Publishing {whenLocal(data.scheduled.at)}</span>
@@ -544,14 +543,14 @@
 		{@const r = form.review}
 		<section class="review">
 			<h2>
-				{r.changes.length === 0 ? 'Nothing to commit' : `${r.changes.length} file${r.changes.length === 1 ? '' : 's'} would change`}
+				{r.changes.length === 0 ? 'Nothing to save' : `${r.changes.length} file${r.changes.length === 1 ? '' : 's'} would change`}
 				<span class="msgline">{r.message}{r.draft ? ' · stays a draft' : ''}</span>
 			</h2>
 			{#if r.changes.length === 0}
 				<p class="hint">This article is already exactly as written here.</p>
 			{/if}
 			<FileChanges changes={r.changes} />
-			<p class="hint">Nothing has been written yet — this is what Save or Publish would commit.</p>
+			<p class="hint">Nothing has been saved yet — this is what Save or Publish would change on the site.</p>
 		</section>
 	{/if}
 
@@ -717,7 +716,7 @@
 						</button>
 						<span>DeepL · a starting point to review, never saved on its own</span>
 					{:else}
-						<span>Machine translation is off — add <code>DEEPL_API_KEY</code> to enable “Draft from English”.</span>
+						<span>Machine translation isn’t connected yet — <a href="/settings#connections">connect it in Settings</a> to draft from English.</span>
 					{/if}
 				</div>
 				{#if mtNote[l]}<p class="mt-note" class:err={!mtNote[l]?.ok} role="status">{mtNote[l]?.text}</p>{/if}
@@ -766,8 +765,8 @@
 			{#if l !== 'en'}
 				{#if !post.translations[l].exists}
 					<p class="hint">
-						No {LANG_NAMES[l]} file yet. Leaving the title empty keeps it that way — Hugo generates
-						the “not yet translated” page automatically.
+						There is no {LANG_NAMES[l]} version yet. Leave the title empty and visitors see a notice
+						that this article is not translated yet.
 					</p>
 				{/if}
 				<div class="tr-options">
@@ -784,8 +783,8 @@
 				</div>
 				{#if removeTranslation[l]}
 					<p class="hint">
-						<strong>{LANG_NAMES[l]} will be deleted.</strong> Hugo will fall back to the
-						“not yet translated” page. Recoverable only from git history.
+						<strong>{LANG_NAMES[l]} will be deleted.</strong> Visitors will see a notice that this
+						article is not translated yet. It can be brought back from History.
 					</p>
 				{/if}
 			{/if}
@@ -860,7 +859,7 @@
 					<p class="hint">
 						Goes live at 9:00 (Paris time) on the day you pick.
 						{#if !data.canSendNewsletter}
-							Sending needs RESEND_API_KEY.
+							Sending email isn’t connected yet.
 						{:else if alsoNewsletter}
 							The newsletter follows at 9:30, once the site has rebuilt, so the link in it works.
 							<a href="/newsletter?slug={post.slug}" target="_blank" rel="noopener">See what the email looks like</a>.
@@ -869,7 +868,7 @@
 						{/if}
 					</p>
 					{#if !data.canRunOnSchedule}
-						<p class="hint">Automatic publishing needs CRON_TOKEN; until then it happens the next time you open the portal.</p>
+						<p class="hint">Automatic publishing isn’t set up yet, so it happens the next time you open the portal on or after that day.</p>
 					{/if}
 					<button type="submit" class="btn-primary btn-sm">Schedule it</button>
 				</form>
@@ -882,8 +881,8 @@
 		<div class="body">
 			<form method="POST" action="?/rename" use:enhance={() => { renaming = true; return async ({ update }) => { await update(); renaming = false; }; }} class="stack">
 				<p>
-					Moves the whole bundle — every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'} —
-					and updates any article that links here, in one commit.
+					Moves the article in every language, with its {post.images.length} picture{post.images.length === 1 ? '' : 's'},
+					and updates any article that links to it.
 				</p>
 				<label>New address
 					<input name="slug" bind:value={newSlug} autocomplete="off" spellcheck="false" placeholder={post.slug} />
@@ -906,8 +905,7 @@
 					{#if keepRedirect}
 						Anyone following an old link — a newsletter, a search result, someone else's page — lands on the new one.
 					{:else}
-						<strong>Old links break.</strong> The old address keeps serving the old copy until the host is cleaned out,
-						because a build never removes files it no longer produces.
+						<strong>Old links break.</strong> For a while the old address may still show the old copy, then stop working.
 					{/if}
 				</p>
 				<button type="submit" class="btn-primary btn-sm" disabled={!slugOk || renaming}>
@@ -928,9 +926,9 @@
 		<div class="body">
 			<form method="POST" action="?/delete" use:enhance class="stack">
 				<p>
-					Deletes every language file and all {post.images.length} image{post.images.length === 1 ? '' : 's'}
-					in <code>content/blog/{post.slug}/</code>. Recoverable only from git history. Type the slug
-					to confirm.
+					Deletes the article in every language, with its {post.images.length} picture{post.images.length === 1 ? '' : 's'}.
+					It can be brought back only by a developer, from the saved versions on GitHub. Type
+					<strong>{post.slug}</strong> to confirm.
 				</p>
 				<input name="confirm" bind:value={confirmSlug} placeholder={post.slug} autocomplete="off" />
 				<button type="submit" class="btn-danger btn-sm" disabled={confirmSlug !== post.slug}>

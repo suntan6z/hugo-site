@@ -80,8 +80,9 @@
 
 {#if !data.visitors.configured}
 	<section class="setup">
-		<h2>Litlyx is not connected</h2>
-		<p>The site already counts visits with your own Litlyx. To read those numbers here:</p>
+		<h2>Visitor numbers aren’t connected yet</h2>
+		<p>The site already counts its visits. Connect the counter to read the numbers here: pages, sources, countries and devices.</p>
+		<details><summary>How to connect</summary>
 		<ol>
 			<li>
 				In the dashboard at <a href={data.litlyxHost} target="_blank" rel="noreferrer">{data.litlyxHost.replace(/^https?:\/\//, '')}</a>,
@@ -91,6 +92,7 @@
 			<li>Run <code>cd admin && ./scripts/create-container.sh</code>.</li>
 		</ol>
 		<p class="note">A shareable link can only read numbers: it cannot change anything in Litlyx.</p>
+		</details>
 	</section>
 {:else if data.visitors.error}
 	<p class="msg err">{data.visitors.error}</p>
@@ -260,6 +262,8 @@
 
 	.setup { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; max-width: 46rem; }
 	.setup h2 { font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--foreground); }
+	.setup summary { cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--primary); width: max-content; }
+	.setup details ol { margin-top: 0.7rem; }
 	.setup p { font-size: 0.88rem; margin: 0 0 0.6rem; }
 	.setup ol { margin: 0 0 0.75rem; padding-left: 1.2rem; font-size: 0.88rem; }
 	.setup li { margin-bottom: 0.35rem; }

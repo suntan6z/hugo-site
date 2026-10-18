@@ -138,10 +138,10 @@
 
 {#if form?.review}
 	<section class="review">
-		<h2>{form.review.changes.length === 0 ? 'Nothing to commit' : `${form.review.changes.length} file${form.review.changes.length === 1 ? '' : 's'} would change`}</h2>
+		<h2>{form.review.changes.length === 0 ? 'Nothing to save' : `${form.review.changes.length} file${form.review.changes.length === 1 ? '' : 's'} would change`}</h2>
 		{#if form.review.changes.length === 0}<p class="note">The page is already exactly as written here.</p>{/if}
 		<FileChanges changes={form.review.changes} />
-		<p class="note">Nothing has been written yet — this is what Save would commit.</p>
+		<p class="note">Nothing has been written yet — this is what Save would change on the site.</p>
 	</section>
 {/if}
 
@@ -203,7 +203,7 @@
 						</button>
 						<span>DeepL keeps the HTML and translates the words</span>
 					{:else}
-						<span>Machine translation is off — add <code>DEEPL_API_KEY</code> to enable it.</span>
+						<span>Machine translation isn’t connected yet — <a href="/settings#connections">connect it in Settings</a>.</span>
 					{/if}
 				</div>
 				{#if mtNote[l]}<p class="mt-note" class:err={!mtNote[l]?.ok} role="status">{mtNote[l]?.text}</p>{/if}

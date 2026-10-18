@@ -49,7 +49,7 @@
 
 {#if form?.message}<p class="msg err">{form.message}</p>{/if}
 {#if form?.success}
-	<p class="msg ok">Saved {form.changes} change{form.changes === 1 ? '' : 's'}. Commit <code>{form.sha}</code>.</p>
+	<p class="msg ok">Saved {form.changes} change{form.changes === 1 ? '' : 's'}. The site updates in a minute or two.</p>
 {/if}
 
 {#if flagged.size > 0}
@@ -103,7 +103,7 @@
 
 	<div class="actions">
 		<button type="submit" class="btn-primary btn-lg" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
-		<span class="note">Writes all three files in one commit, and refuses to save if their key sets would diverge.</span>
+		<span class="note">Saves English, French and Italian together, and refuses if one language would be left without a line the others have.</span>
 	</div>
 </form>
 

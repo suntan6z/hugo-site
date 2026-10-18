@@ -35,7 +35,7 @@
 			label: 'Insights',
 			items: [
 				{ href: '/visitors', label: 'Visitors', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
-				{ href: '/analytics', label: 'Search', icon: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3' }
+				{ href: '/analytics', label: 'Google & Bing', icon: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3' }
 			]
 		},
 		{

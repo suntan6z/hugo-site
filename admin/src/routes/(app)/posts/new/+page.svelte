@@ -12,6 +12,8 @@
 	let description = $state(untrack(() => form?.values?.description ?? ''));
 	let date = $state(untrack(() => form?.values?.date ?? data.today));
 	let busy = $state(false);
+	// The web address follows the title. Editing it is possible, but not the usual road.
+	let editAddress = $state(untrack(() => !!(form?.values?.slug ?? '')));
 
 	const auto = $derived(
 		title.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -39,14 +41,25 @@
 		<input name="title" bind:value={title} placeholder="What the article is called" required />
 	</label>
 
-	<label>
-		Slug
-		<input name="slug" bind:value={slug} placeholder={auto || 'from-the-title'} />
-		<span class="path" class:bad={taken}>
-			content/blog/{effective || '…'}/
-			{#if taken}· already exists{/if}
-		</span>
-	</label>
+	<div class="address">
+		{#if editAddress}
+			<label>
+				Web address
+				<input name="slug" bind:value={slug} placeholder={auto || 'from-the-title'} autocomplete="off" spellcheck="false" />
+			</label>
+		{:else}
+			<input type="hidden" name="slug" value={slug} />
+		{/if}
+		<p class="path" class:bad={taken}>
+			{#if taken}An article already has this address{editAddress ? '' : '. Change the title a little'}.
+			{:else if effective}
+				Web address: <strong>/blog/{effective}/</strong>
+				{#if !editAddress}<button type="button" class="linkish" onclick={() => (editAddress = true)}>Change</button>{/if}
+			{:else}
+				The web address is made from the title.
+			{/if}
+		</p>
+	</div>
 
 	<div class="row">
 		<label>Date<input name="date" bind:value={date} placeholder="YYYY-MM-DD" /></label>
@@ -72,9 +85,9 @@
 	</button>
 
 	<p class="note">
-		Created as a <strong>draft</strong>, so it stays off the live site until you publish. Only
-		the English file is written — Hugo generates the “not yet translated” pages for French and
-		Italian on its own, so there is nothing to create for them.
+		It starts as a <strong>draft</strong>, so nobody sees it until you publish. You write it in
+		English; French and Italian visitors see a notice that it is not translated yet, until you add
+		a translation.
 	</p>
 </form>
 
@@ -86,7 +99,10 @@
 		padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.88rem; margin: 0 0 1rem; }
 	form { display: grid; gap: 1rem; max-width: 38rem; }
 	.row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-	.path { display: block; margin-top: 0.3rem; font-size: 0.75rem; color: var(--muted-foreground); font-family: ui-monospace, monospace; }
+	.address { display: grid; gap: 0.3rem; }
+	.path { margin: 0; font-size: 0.8rem; color: var(--muted-foreground); }
+	.path strong { color: var(--foreground); font-weight: 500; }
+	.linkish { background: none; border: 0; padding: 0 0 0 0.4rem; font-size: 0.8rem; color: var(--primary); cursor: pointer; justify-self: auto; }
 	.path.bad { color: var(--danger); }
 	.count { display: block; margin-top: 0.3rem; font-size: 0.72rem; color: var(--muted-foreground); }
 	.count.warn { color: var(--warn); }

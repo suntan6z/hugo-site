@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { describe, type Entry } from '$lib/activity';
 	import { enhance } from '$app/forms';
 	import { enroll } from '$lib/client/passkey';
 	import { invalidateAll } from '$app/navigation';
@@ -71,6 +72,26 @@
 
 	const when = (s: unknown) =>
 		typeof s === 'string' ? new Date(s).toLocaleString('en-GB') : '';
+
+	const connections = $derived([
+		{ name: 'Where your work is saved', on: data.mode === 'github', onText: 'GitHub, one saved version per change', offText: 'This computer only: changes edit the local copy', how: '' },
+		{ name: 'Bing', on: data.integrations.bing, onText: 'Search numbers from Bing', offText: 'Not connected', how: 'Create an API key in Bing Webmaster Tools (Settings → API Access), add it to admin/.env as BING_API_KEY, then run ./scripts/create-container.sh.' },
+		{ name: 'Google', on: data.integrations.google, onText: 'Search numbers and “is it indexed?” from Google', offText: 'Not connected', how: 'Needs GSC_SERVICE_ACCOUNT_B64 and GSC_SITE_URL in admin/.env; the steps are on the Google & Bing screen.' },
+		{ name: 'Telling search engines about new pages', on: data.integrations.indexNow, onText: data.integrations.indexNowQueued > 0 ? `${data.integrations.indexNowQueued} page${data.integrations.indexNowQueued === 1 ? '' : 's'} waiting to be announced` : 'On', offText: 'Off', how: 'Set INDEXNOW_KEY in admin/.env (see admin/DEPLOY.md).' },
+		{ name: 'Sending email', on: data.integrations.resend, onText: 'Newsletter and subscriber list', offText: 'Not connected', how: 'Add RESEND_API_KEY to admin/.env, then run ./scripts/create-container.sh.' },
+		{ name: 'Visitor numbers', on: data.integrations.litlyx, onText: 'Pages, sources, countries and devices', offText: 'Not connected', how: 'Create a shareable link in Litlyx, add its id to admin/.env as LITLYX_TOKEN, then run ./scripts/create-container.sh.' },
+		{ name: 'Page speed', on: data.integrations.pagespeedKey, onText: 'With a key: higher daily allowance', offText: 'Works, with a small daily allowance', how: 'Add PAGESPEED_API_KEY to admin/.env to raise the allowance.' },
+		{ name: 'Health check emails', on: data.integrations.alerts, onText: 'You are emailed when something goes wrong', offText: 'Off: problems only show on the home screen', how: 'Set ALERT_EMAIL in admin/.env.' },
+		{
+			name: 'Machine translation (DeepL)',
+			on: data.integrations.deepl,
+			onText: data.integrations.deeplUsage
+				? `${data.integrations.deeplUsage.used.toLocaleString('en-GB')} of ${data.integrations.deeplUsage.limit.toLocaleString('en-GB')} characters used this month`
+				: 'On',
+			offText: 'Not connected',
+			how: 'Add DEEPL_API_KEY to admin/.env, then run ./scripts/create-container.sh.'
+		}
+	]);
 </script>
 
 <h1>Settings</h1>
@@ -276,8 +297,8 @@
 	<h2>Passkeys</h2>
 	{#if data.credentials.length === 1}
 		<p class="warn">
-			Only one passkey. If you lose access to it, getting back in means rotating
-			<code>BOOTSTRAP_TOKEN</code> in the Scaleway console.
+			You have only one passkey. If you lose the device that holds it you are locked out, so add
+			a second one on another device.
 		</p>
 	{/if}
 	<ul class="creds">
@@ -292,7 +313,7 @@
 		{/each}
 	</ul>
 	<button class="btn-outline" onclick={addPasskey} disabled={adding}>{adding ? 'Waiting for passkey…' : 'Add a passkey'}</button>
-	<p class="note">Passkeys are bound to <code>{data.rpId}</code> and cannot be used on another domain.</p>
+	<p class="note">A passkey only works on this address: <code>{data.rpId}</code>.</p>
 </section>
 
 <section>
@@ -303,28 +324,22 @@
 	<p class="note">Invalidates every signed-in session on every device. You stay signed in here.</p>
 </section>
 
-<section>
+<section id="connections">
 	<h2>Connections</h2>
+	<p class="note">The outside services the portal talks to. Green means working.</p>
 	<ul class="status">
-		<li><i class:on={data.mode === 'github'}></i> Content source — <strong>{data.mode === 'github' ? 'GitHub' : 'local working copy'}</strong></li>
-		<li><i class:on={data.integrations.bing}></i> Bing Webmaster Tools {#if !data.integrations.bing}<span>— set BING_API_KEY</span>{/if}</li>
-		<li>
-			<i class:on={data.integrations.indexNow}></i> IndexNow
-			{#if data.integrations.indexNowQueued > 0}<span>— {data.integrations.indexNowQueued} URL(s) queued</span>{/if}
-		</li>
-		<li><i class:on={data.integrations.resend}></i> Resend {#if !data.integrations.resend}<span>— not configured</span>{/if}</li>
-		<li><i class:on={data.integrations.litlyx}></i> Litlyx visitor numbers {#if !data.integrations.litlyx}<span>— set LITLYX_TOKEN</span>{/if}</li>
-		<li><i class:on={data.integrations.google}></i> Google Search Console {#if !data.integrations.google}<span>— set GSC_SERVICE_ACCOUNT_B64 and GSC_SITE_URL</span>{/if}</li>
-		<li><i class:on={data.integrations.pagespeedKey}></i> PageSpeed Insights <span>{data.integrations.pagespeedKey ? '— with a key' : '— works without a key at a low quota; PAGESPEED_API_KEY lifts it'}</span></li>
-		<li><i class:on={data.integrations.alerts}></i> Health check emails {#if !data.integrations.alerts}<span>— set ALERT_EMAIL; until then the home screen is the only place it shows</span>{/if}</li>
-		<li>
-			<i class:on={data.integrations.deepl}></i> DeepL translation
-			{#if !data.integrations.deepl}<span>— set DEEPL_API_KEY</span>
-			{:else if data.integrations.deeplUsage}
-				{@const u = data.integrations.deeplUsage}
-				<span>— {u.used.toLocaleString('en-GB')} of {u.limit.toLocaleString('en-GB')} characters used this month</span>
-			{/if}
-		</li>
+		{#each connections as c}
+			<li>
+				<i class:on={c.on}></i>
+				<div>
+					<strong>{c.name}</strong>
+					<span>{c.on ? c.onText : c.offText}</span>
+					{#if !c.on && c.how}
+						<details><summary>How to connect</summary><p>{c.how}</p></details>
+					{/if}
+				</div>
+			</li>
+		{/each}
 	</ul>
 	<p class="note">Site: <code>{data.siteUrl}</code> · Portal: <code>{data.origin}</code></p>
 </section>
@@ -337,9 +352,8 @@
 		<ul class="audit">
 			{#each data.audit as e}
 				<li>
-					<span class="ev">{e.event}</span>
-					<span class="detail">{[e.slug, e.credential, e.sha].filter(Boolean).join(' · ')}</span>
-					<span class="at">{when(e.at)}</span>
+					<span class="ev">{describe(e as Entry, data.titles)}</span>
+					<span class="at">{when(e.at as string)}</span>
 				</li>
 			{/each}
 		</ul>
@@ -407,15 +421,19 @@
 	.picker span { display: inline-block; padding: 0.45rem 0.9rem; border: 1px dashed var(--border); border-radius: 8px; font-size: 0.85rem; font-weight: 600; }
 	.picker:hover span { border-color: var(--primary); color: var(--primary); }
 	@media (max-width: 520px) { .hero { flex-direction: column; } }
-	.status { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.35rem; font-size: 0.87rem; }
+	.status { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.7rem; font-size: 0.87rem; }
+	.status li { display: flex; gap: 0.6rem; align-items: flex-start; }
 	.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--border);
-		display: inline-block; margin-right: 0.5rem; }
+		flex: none; margin-top: 0.4rem; }
 	.status i.on { background: var(--ok); }
 	.status span { color: var(--muted-foreground); font-size: 0.82rem; }
 	.audit { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; }
 	.audit li { display: flex; gap: 0.6rem; padding: 0.32rem 0; border-bottom: 1px solid var(--border); }
-	.audit .ev { font-weight: 600; min-width: 9rem; }
-	.audit .detail { color: var(--muted-foreground); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.audit .ev { flex: 1; min-width: 0; }
 	.audit .at { color: var(--muted-foreground); white-space: nowrap; }
 	code { font-size: 0.85em; background: color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.05em 0.3em; border-radius: 3px; }
+	.status li > div { display: flex; flex-direction: column; gap: 0.1rem; }
+	.status li > div span { color: var(--muted-foreground); font-size: 0.82rem; }
+	.status details summary { cursor: pointer; font-size: 0.8rem; color: var(--primary); width: max-content; }
+	.status details p { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--muted-foreground); }
 </style>

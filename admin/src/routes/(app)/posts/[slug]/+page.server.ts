@@ -296,7 +296,7 @@ export const actions: Actions = {
 			state: 'pending',
 			createdAt: new Date().toISOString()
 		});
-		await audit('schedule', { slug: params.slug, at, newsletter });
+		await audit('schedule', { slug: params.slug, goesLiveAt: at, newsletter });
 		return { scheduled: true, at, newsletter };
 	},
 
