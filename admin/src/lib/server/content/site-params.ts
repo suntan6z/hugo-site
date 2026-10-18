@@ -23,7 +23,7 @@ import { LANGS, type Lang } from '../langs.ts';
 export const SOCIALS = [
 	{ key: 'linkedin', label: 'LinkedIn' },
 	{ key: 'mastodon', label: 'Mastodon' },
-	{ key: 'thunderbolt', label: 'Thunderbolt' },
+	{ key: 'github', label: 'GitHub' },
 	{ key: 'trakt', label: 'Trakt' },
 	{ key: 'appleMusic', label: 'Apple Music' }
 ] as const;

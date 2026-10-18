@@ -50,7 +50,7 @@ describe('only the top-level [params] table', () => {
 		'[params]',
 		'  linkedin = "https://www.linkedin.com/in/x/"',
 		'  mastodon = "https://c.im/@lv"  # verified with rel=me',
-		'  thunderbolt = ""',
+		'  github = ""',
 		'  trakt = "https://trakt.tv/users/x"',
 		'  appleMusic = "https://music.apple.com/profile/x"',
 		'',
