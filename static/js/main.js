@@ -173,14 +173,21 @@ if (document.getElementById('contact-form')) {
   const trigger = document.querySelector('[data-rss-open]');
   const dialog = document.getElementById('rss-dialog');
   if (!trigger || !dialog || typeof dialog.showModal !== 'function') return;
-  const feed = trigger.dataset.feedUrl;
-  const enc = encodeURIComponent(feed);
   const $ = (id) => document.getElementById(id);
-  $('rss-open-app').href = 'feed:' + feed;
-  $('rss-feedly').href = 'https://feedly.com/i/subscription/feed/' + enc;
-  $('rss-inoreader').href = 'https://www.inoreader.com/?add_feed=' + enc;
-  $('rss-newsblur').href = 'https://www.newsblur.com/?url=' + enc;
-  $('rss-raw').href = feed;
+  // The feed is whichever language is ticked; the page's own is ticked first.
+  const radios = dialog.querySelectorAll('input[name="rss-lang"]');
+  const chosen = () => (dialog.querySelector('input[name="rss-lang"]:checked') || radios[0]).value;
+  const point = () => {
+    const feed = chosen();
+    const enc = encodeURIComponent(feed);
+    $('rss-open-app').href = 'feed:' + feed;
+    $('rss-feedly').href = 'https://feedly.com/i/subscription/feed/' + enc;
+    $('rss-inoreader').href = 'https://www.inoreader.com/?add_feed=' + enc;
+    $('rss-newsblur').href = 'https://www.newsblur.com/?url=' + enc;
+    $('rss-raw').href = feed;
+  };
+  radios.forEach((r) => r.addEventListener('change', () => { $('rss-hint').hidden = true; point(); }));
+  point();
 
   trigger.addEventListener('click', (e) => {
     e.preventDefault();
@@ -203,11 +210,11 @@ if (document.getElementById('contact-form')) {
     const btn = e.currentTarget;
     const label = btn.textContent;
     try {
-      await navigator.clipboard.writeText(feed);
+      await navigator.clipboard.writeText(chosen());
       btn.textContent = btn.dataset.copied;
       setTimeout(() => { btn.textContent = label; }, 2000);
     } catch (err) {
-      window.prompt(label, feed);
+      window.prompt(label, chosen());
     }
   });
 })();

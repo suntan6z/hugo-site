@@ -5,7 +5,7 @@
 {{- $pages = where $pages "Params.untranslated" "!=" true -}}
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>{{ if eq .Title .Site.Title }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} – {{ end }}{{ .Site.Title }}{{ end }}</title>
+    <title>{{ .Site.Title }} – {{ i18n "rss_channel_title" }}</title>
     <link>{{ .Permalink }}</link>
     <description>{{ with .Site.Params.description }}{{ . }}{{ else }}Recent content on {{ .Site.Title }}{{ end }}</description>
     <managingEditor>{{ .Site.Params.email }} ({{ .Site.Params.author }})</managingEditor>

@@ -242,6 +242,10 @@ other = "Copiato"
 other = "Vedi il feed grezzo"
 [rss_close]
 other = "Chiudi"
+[rss_channel_title]
+other = "Blog (Italiano)"
+[rss_language]
+other = "Lingua degli articoli"
 
 # ── Varie ────────────────────────────────────────────────────────
 [toggle_dark_mode]

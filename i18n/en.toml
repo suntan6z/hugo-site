@@ -243,6 +243,10 @@ other = "Copied"
 other = "View the raw feed"
 [rss_close]
 other = "Close"
+[rss_channel_title]
+other = "Blog (English)"
+[rss_language]
+other = "Language of the articles"
 
 # ── Misc ─────────────────────────────────────────────────────────
 [toggle_dark_mode]

@@ -242,6 +242,10 @@ other = "Copié"
 other = "Voir le flux brut"
 [rss_close]
 other = "Fermer"
+[rss_channel_title]
+other = "Blog (Français)"
+[rss_language]
+other = "Langue des articles"
 
 # ── Divers ───────────────────────────────────────────────────────
 [toggle_dark_mode]

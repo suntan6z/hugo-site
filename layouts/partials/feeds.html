@@ -1,0 +1,13 @@
+{{- /*
+  The blog's RSS feed in every language, the current page's language first:
+  a slice of { lang, label, url, current }. There is one feed per language
+  (Hugo's section RSS output, filtered to real translations in
+  layouts/_default/rss.xml), so a reader who wants French follows
+  /fr/blog/feed.xml. Used by the <link rel="alternate"> tags in baseof.html and
+  the RSS dialog in footer.html, so both always list the same feeds.
+*/ -}}
+{{- $feeds := slice -}}
+{{- range hugo.Sites -}}
+  {{- $feeds = $feeds | append (dict "lang" .Language.Lang "label" .Language.Label "url" (printf "/%s/blog/feed.xml" .Language.Lang | absURL) "current" (eq .Language.Lang site.Language.Lang)) -}}
+{{- end -}}
+{{- return (where $feeds "current" true | append (where $feeds "current" false)) -}}
