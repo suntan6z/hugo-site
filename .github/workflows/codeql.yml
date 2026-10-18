@@ -1,0 +1,41 @@
+name: CodeQL
+
+# The code worth scanning is the admin portal, the two form functions and the
+# site's own JavaScript. Content pushes (articles, photos) change none of it, so
+# they skip this; a weekly run still catches newly published query rules.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "admin/**"
+      - "functions/**"
+      - "static/js/**"
+      - ".github/workflows/codeql.yml"
+  pull_request:
+    paths:
+      - "admin/**"
+      - "functions/**"
+      - "static/js/**"
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

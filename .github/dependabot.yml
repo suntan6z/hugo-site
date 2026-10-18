@@ -1,0 +1,25 @@
+# Monthly and grouped on purpose: every merged change under admin/ costs a
+# StaticHost build (it cannot filter by path), so updates arrive in one batch
+# rather than as a trickle. functions/ has no dependencies to update.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /admin
+    schedule:
+      interval: monthly
+    groups:
+      admin-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /admin
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
