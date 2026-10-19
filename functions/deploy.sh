@@ -19,13 +19,13 @@ cd "$(dirname "$0")"
 # they go in as plain environment variables, and only the ones that are set:
 # English defaults to the list that existed before there were languages, and a
 # language with no segment joins English (see newsletter.js).
+# (Plain variables are a map in the scw CLI, `environment-variables.NAME=value`;
+# only the secret ones are a list of key/value pairs.)
 ENV_ARGS=()
-i=0
 for name in RESEND_SEGMENT_EN RESEND_SEGMENT_FR RESEND_SEGMENT_IT; do
   value="${!name:-}"
   if [ -n "$value" ]; then
-    ENV_ARGS+=("environment-variables.$i.key=$name" "environment-variables.$i.value=$value")
-    i=$((i + 1))
+    ENV_ARGS+=("environment-variables.$name=$value")
   fi
 done
 
