@@ -326,7 +326,8 @@ if (document.getElementById('newsletter-form')) {
    the link does not do. */
 if (document.getElementById('newsletter-confirm')) {
   const states = ['nlc-working', 'nlc-done', 'nlc-failed', 'nlc-error'];
-  const show = (id) => states.forEach((s) => { document.getElementById(s).hidden = s !== id; });
+  const show = (id) => { states.forEach((s) => { document.getElementById(s).hidden = s !== id; }); showHint(id); };
+  const showHint = (id) => { const h = document.getElementById('nlc-hint'); if (h) h.hidden = id !== 'nlc-done'; };
   const token = location.hash.slice(1);
 
   if (!token) {

@@ -257,7 +257,12 @@ body {
   color: var(--foreground);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* A short page (a confirmation, a 404) still ends with the footer at the bottom of the window. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+main { flex: 1 0 auto; }
 
 h1,h2,h3,h4,h5,h6 {
   font-family: 'Fraunces', Georgia, serif;
