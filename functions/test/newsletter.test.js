@@ -14,7 +14,7 @@ const post = (body, headers) => sitePost(handle, body, headers);
  * A stand-in for Resend: `contacts` is who is on the list (address -> unsubscribed),
  * and everything sent to it is recorded.
  */
-function resend({ contacts = {}, failEmails = false, failLookup = false } = {}) {
+function resend({ contacts = {}, failEmails = false, failLookup = false, failTemplates = false } = {}) {
   const calls = [];
   const stub = async (url, init = {}) => {
     const body = init.body ? JSON.parse(init.body) : undefined;
@@ -37,6 +37,7 @@ function resend({ contacts = {}, failEmails = false, failLookup = false } = {}) 
       contacts[body.email] = false;
       return new Response('{}', { status: 201 });
     }
+    if (failTemplates && body?.template?.id?.startsWith('newsletter-confirm')) return new Response('{}', { status: 404 });
     return new Response('{}', { status: failEmails ? 500 : 200 });
   };
   return { stub, calls, contacts };
@@ -55,20 +56,35 @@ test('subscribing sends a confirmation email and adds nobody', async () => {
   assert.equal(added(r.calls).length, 0);
   const [mail] = emails(r.calls);
   assert.deepEqual(mail.body.to, ['li@example.com']);
-  assert.match(mail.body.text, /https:\/\/lorenzo\.loconsole\.eu\/fr\/newsletter-confirm\/#[\w-]+\.[\w-]+/);
-  assert.equal(mail.body.subject, 'Confirmez votre inscription');
+  assert.equal(mail.body.template.id, 'newsletter-confirm-fr');
+  assert.match(mail.body.template.variables.confirm_url, /^https:\/\/lorenzo\.loconsole\.eu\/fr\/newsletter-confirm\/#[\w-]+\.[\w-]+$/);
+  assert.equal(emails(r.calls).length, 1, 'one email, no fallback when the template works');
+});
+
+test('when Resend refuses the template, the built-in email goes out instead and signup still works', async () => {
+  const r = resend({ failTemplates: true });
+  await withFetch(r.stub, async () => {
+    const res = await post({ email: 'Li@Example.com', lang: 'fr', altcha: freshPayload() });
+    assert.equal(res.statusCode, 200);
+  });
+  const mails = emails(r.calls);
+  assert.equal(mails.length, 2);
+  assert.equal(mails[0].body.template.id, 'newsletter-confirm-fr');
+  assert.equal(mails[1].body.subject, 'Confirmez votre inscription');
+  assert.match(mails[1].body.text, /\/fr\/newsletter-confirm\/#/);
 });
 
 test('the link points at the site the form was on', async () => {
   const r = resend();
   await withFetch(r.stub, () => post({ email: 'a@example.com', altcha: freshPayload() }, { origin: 'http://localhost:1313' }));
-  assert.match(emails(r.calls)[0].body.text, /^[\s\S]*http:\/\/localhost:1313\/en\/newsletter-confirm\/#/);
+  assert.match(emails(r.calls)[0].body.template.variables.confirm_url, /^http:\/\/localhost:1313\/en\/newsletter-confirm\/#/);
 });
 
 test('an unknown language falls back to English', async () => {
   const r = resend();
   await withFetch(r.stub, () => post({ email: 'a@example.com', lang: '../x', altcha: freshPayload() }));
-  assert.match(emails(r.calls)[0].body.text, /\/en\/newsletter-confirm\/#/);
+  assert.equal(emails(r.calls)[0].body.template.id, 'newsletter-confirm-en');
+  assert.match(emails(r.calls)[0].body.template.variables.confirm_url, /\/en\/newsletter-confirm\/#/);
 });
 
 test('an address already on the list gets the same answer and no email', async () => {
@@ -282,7 +298,7 @@ test('coming back in another language moves a known contact to that list and off
 test('the language travels from the form into the signed link', async () => {
   const r = resend();
   await withFetch(r.stub, () => post({ email: 'fr@example.com', lang: 'fr', altcha: freshPayload() }));
-  const token = emails(r.calls)[0].body.text.match(/#([\w.-]+)/)[1];
+  const token = emails(r.calls)[0].body.template.variables.confirm_url.match(/#([\w.-]+)/)[1];
   assert.equal(verifyToken(token, { secret: 'confirm-secret' }).lang, 'fr');
 });
 

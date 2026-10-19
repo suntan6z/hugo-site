@@ -25,6 +25,9 @@ const segments = () => ({
 const segmentFor = (lang) => segments()[lang] || segments().en;
 
 // Dashboard templates, one per language; a language without its own falls back to English.
+// The confirmation request is a template too (the link is its one variable); lib/confirm-email.js is the
+// fallback if Resend refuses it, because a missing template must never stop someone subscribing.
+const CONFIRM = { en: 'newsletter-confirm-en', fr: 'newsletter-confirm-fr', it: 'newsletter-confirm-it' };
 const WELCOME = { en: 'newsletter-welcome-en', fr: 'newsletter-welcome-fr', it: 'newsletter-welcome-it' };
 
 // Where a reply to either email goes: the owner reads it, rather than a no-reply address.
@@ -108,12 +111,18 @@ async function subscribe(event, body) {
 
   const lang = normalizeLang(body.lang);
   const link = `${resolveOrigin(event)}/${lang}/newsletter-confirm/#${signToken(email, { secret, lang })}`;
-  const mail = confirmationEmail(lang, link);
-  const sent = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [email], subject: mail.subject, html: mail.html, text: mail.text }),
-  });
+  const send = (payload) =>
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [email], ...payload }),
+    });
+  let sent = await send({ template: { id: CONFIRM[lang], variables: { confirm_url: link } } }).catch(() => null);
+  if (!sent?.ok) {
+    console.error(`newsletter: confirmation template ${CONFIRM[lang]} failed (${sent?.status ?? 'no answer'}), sending the built-in email`);
+    const mail = confirmationEmail(lang, link);
+    sent = await send({ subject: mail.subject, html: mail.html, text: mail.text });
+  }
   if (!sent.ok) {
     console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
     return json(event, { error: 'Subscribe failed' }, 502);
