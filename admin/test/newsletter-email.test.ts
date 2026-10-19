@@ -41,13 +41,27 @@ describe('broadcast HTML', () => {
 	});
 
 	test('the image is included only when there is one', () => {
-		assert.ok(!buildBroadcastHtml(base).includes('<img'));
-		assert.ok(buildBroadcastHtml({ ...base, imageUrl: 'https://x.eu/a.webp' }).includes('<img'));
+		assert.ok(!buildBroadcastHtml(base).includes('a.webp'));
+		assert.ok(buildBroadcastHtml({ ...base, imageUrl: 'https://x.eu/a.webp' }).includes('<img src="https://x.eu/a.webp"'));
+	});
+
+	test('it carries the site\'s logo top left, linking to the home page in its language, above the headline', () => {
+		for (const lang of ['en', 'fr', 'it'] as const) {
+			const html = buildBroadcastHtml({ ...base, lang });
+			assert.match(html, new RegExp(`<a href="${base.siteUrl}/${lang}/"[^>]*><img src="${base.siteUrl}/img/email/logo\\.png"[^>]*alt="${base.siteName}"`));
+			assert.ok(html.indexOf('/img/email/logo.png') < html.indexOf('<h1'));
+		}
+	});
+
+	test('the card is a centred table, not a div (Apple Mail ignores margin auto on a div)', () => {
+		const html = buildBroadcastHtml(base);
+		assert.match(html, /<table role="presentation" width="600" align="center"[^>]*margin:0 auto/);
+		assert.doesNotMatch(html, /<div/);
 	});
 
 	test('an optional note appears above the article card', () => {
 		const html = buildBroadcastHtml({ ...base, note: 'A quick word first.' });
-		assert.ok(html.indexOf('A quick word first.') < html.indexOf(base.title));
+		assert.ok(html.indexOf('A quick word first.') < html.indexOf('<h1'));
 	});
 
 	test('styles are inline — email clients drop stylesheets', () => {
@@ -115,7 +129,7 @@ describe('single-recipient mail', () => {
 describe('an email in each language', () => {
 	test('English is the default, and says so', () => {
 		const html = buildBroadcastHtml(base);
-		assert.match(html, /<html lang="en">/);
+		assert.match(html, /<html lang="en"/);
 		assert.match(html, /Read the article/);
 		assert.match(html, /You are receiving this because you subscribed at Lorenzo Loconsole\./);
 		assert.match(html, />Unsubscribe</);
@@ -123,12 +137,12 @@ describe('an email in each language', () => {
 
 	test('French and Italian have their own button, reason and unsubscribe, and say what language they are', () => {
 		const fr = buildBroadcastHtml({ ...base, lang: 'fr' });
-		assert.match(fr, /<html lang="fr">/);
+		assert.match(fr, /<html lang="fr"/);
 		assert.match(fr, /Lire l'article/);
 		assert.match(fr, /Se désabonner/);
 		assert.doesNotMatch(fr, /Read the article|Unsubscribe/);
 		const it = buildBroadcastHtml({ ...base, lang: 'it' });
-		assert.match(it, /<html lang="it">/);
+		assert.match(it, /<html lang="it"/);
 		assert.match(it, /Leggi l'articolo/);
 		assert.match(it, /Annulla l’iscrizione/);
 	});

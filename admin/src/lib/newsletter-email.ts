@@ -2,9 +2,9 @@
  * Builds the HTML for a newsletter broadcast.
  *
  * Email clients are not browsers: no external stylesheets, no flexbox or grid
- * worth relying on, and Outlook still renders through Word. So this is a
- * table-free, inline-styled, single-column layout with generous fallbacks
- * rather than anything clever.
+ * worth relying on, and Outlook still renders through Word. So this is an
+ * inline-styled single-column card laid out in tables (a div cannot be centred
+ * reliably in Apple Mail), with the same look as the welcome email.
  *
  * Free of SvelteKit imports so the suite can drive it directly, and kept out
  * of lib/server/ because the newsletter page runs it in the browser too: the
@@ -76,46 +76,63 @@ function paragraphs(text: string, style: string): string {
 
 export function buildBroadcastHtml(input: BroadcastInput): string {
 	// The site's tokens (static/css/main.css), as hex: email clients ignore
-	// CSS variables and most of hsl().
-	const ink = '#202429'; // --foreground
+	// CSS variables and most of hsl(). The same card as the welcome and confirmation
+	// emails (functions/templates/): a table, because Apple Mail and Outlook ignore
+	// `margin: 0 auto` on a div and put an inline image on its own line.
+	const ink = '#21242c'; // --foreground
 	const muted = '#676f7e'; // --muted-foreground
 	const accent = '#943847'; // --primary
 	const line = '#e5e0dc'; // --border
 	const ground = '#f9f7f5'; // --background
-	const serif = "Fraunces,Georgia,'Times New Roman',serif";
-	const body = `margin:0 0 1em;font-size:16px;line-height:1.6;color:${ink}`;
+	const card = '#fdfcfc'; // --card
+	const tint = '#f2e3e6'; // --accent
+	const serif = "Georgia,'Times New Roman',serif";
+	const sans = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
 	const lang = input.lang ?? 'en';
 	const w = WORDS[lang];
+	const home = `${input.siteUrl}/${lang}/`;
+	const noteStyle = `margin:0 0 12px 0;font-family:${sans};font-size:16px;line-height:26px;color:${ink}`;
 
 	return `<!doctype html>
-<html lang="${lang}">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
-<body style="margin:0;padding:0;background:${ground};">
-  <div style="max-width:600px;margin:0 auto;padding:32px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-
-    <a href="${esc(input.siteUrl)}" style="text-decoration:none;color:${accent};font-family:${serif};font-weight:600;font-size:17px;">${esc(input.siteName)}</a>
-
-    ${input.note ? `<div style="margin-top:24px;">${paragraphs(input.note, body)}</div>` : ''}
-
-    <div style="margin-top:24px;padding-top:24px;border-top:1px solid ${line};">
-      ${
-				input.imageUrl
-					? `<a href="${esc(input.url)}"><img src="${esc(input.imageUrl)}" alt="" width="552" style="width:100%;max-width:552px;height:auto;border-radius:8px;display:block;margin-bottom:20px;" /></a>`
-					: ''
-			}
-      <h1 style="margin:0 0 12px;font-family:${serif};font-size:26px;font-weight:600;line-height:1.25;color:${ink};">
-        <a href="${esc(input.url)}" style="color:${ink};text-decoration:none;">${esc(input.title)}</a>
-      </h1>
-      ${paragraphs(input.intro, `margin:0 0 20px;font-size:16px;line-height:1.6;color:${muted}`)}
-      <a href="${esc(input.url)}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">${esc(w.read)}</a>
-    </div>
-
-    <div style="margin-top:36px;padding-top:20px;border-top:1px solid ${line};font-size:13px;line-height:1.6;color:${muted};">
-      <p style="margin:0 0 8px;">${esc(w.why(input.siteName))}</p>
-      <p style="margin:0;"><a href="${UNSUBSCRIBE_TOKEN}" style="color:${muted};">${esc(w.unsubscribe)}</a></p>
-    </div>
-
-  </div>
+<html lang="${lang}" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="color-scheme" content="light" />
+<title>${esc(input.title)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${ground};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${ground};">
+<tr><td align="center" style="padding:32px 12px;">
+<table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;margin:0 auto;background-color:${card};border-radius:12px;overflow:hidden;">
+  <tr><td style="padding:40px 40px 8px 40px;">
+    <a href="${esc(home)}" style="color:${accent};text-decoration:none;font-family:${serif};font-size:18px;font-weight:bold;"><img src="${esc(input.siteUrl)}/img/email/logo.png" width="140" height="72" alt="${esc(input.siteName)}" style="display:block;border:0;width:140px;height:auto;font-family:${serif};font-size:18px;color:${accent};" /></a>
+  </td></tr>
+${
+	input.note
+		? `  <tr><td style="padding:16px 40px 0 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 20px;background-color:${tint};border-left:4px solid ${accent};border-radius:0 8px 8px 0;">${paragraphs(input.note, noteStyle.replace('margin:0 0 12px 0', 'margin:0 0 8px 0'))}</td></tr></table>
+  </td></tr>\n`
+		: ''
+}  <tr><td style="padding:24px 40px 0 40px;">
+${
+	input.imageUrl
+		? `    <a href="${esc(input.url)}"><img src="${esc(input.imageUrl)}" alt="" width="520" style="display:block;border:0;width:100%;max-width:520px;height:auto;border-radius:8px;margin:0 0 24px 0;" /></a>\n`
+		: ''
+}    <h1 style="margin:0 0 16px 0;font-family:${serif};font-size:30px;line-height:1.2;font-weight:bold;color:${ink};"><a href="${esc(input.url)}" style="color:${ink};text-decoration:none;">${esc(input.title)}</a></h1>
+    ${paragraphs(input.intro, `margin:0 0 16px 0;font-family:${sans};font-size:16px;line-height:26px;color:${muted}`)}
+  </td></tr>
+  <tr><td align="center" style="padding:16px 40px 44px 40px;">
+    <a href="${esc(input.url)}" target="_blank" style="display:inline-block;padding:14px 28px;background-color:${accent};border-radius:8px;color:#ffffff;text-decoration:none;font-family:${sans};font-size:16px;font-weight:600;line-height:20px;">${esc(w.read)} →</a>
+  </td></tr>
+  <tr><td align="center" style="padding:28px 40px;background-color:${ground};border-top:1px solid ${line};">
+    <p style="margin:0 0 8px 0;font-family:${sans};font-size:13px;line-height:21px;color:${muted};">${esc(w.why(input.siteName))}</p>
+    <p style="margin:0;font-family:${sans};font-size:13px;line-height:21px;color:${muted};"><a href="${UNSUBSCRIBE_TOKEN}" style="color:${accent};text-decoration:underline;">${esc(w.unsubscribe)}</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 }
