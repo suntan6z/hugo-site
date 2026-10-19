@@ -34,7 +34,7 @@ for (const lang of LANGS) {
   });
 
   test(`${lang}: the three profile buttons carry their label as text, not only an icon`, () => {
-    for (const label of ['LinkedIn', 'Mastodon', 'GitHub']) assert.match(html, new RegExp(`>${label}</td>`));
+    for (const label of ['LinkedIn', 'Mastodon', 'GitHub']) assert.match(html, new RegExp(`color:#ffffff;text-decoration:none">${label}</span></td>`));
     for (const icon of ['linkedin', 'mastodon', 'github']) assert.match(html, new RegExp(`/img/email/${icon}\\.png`));
     assert.doesNotMatch(html, /Trakt|Apple Music/);
   });

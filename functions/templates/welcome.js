@@ -111,7 +111,7 @@ export function renderWelcome(lang) {
   // inline image on a line of its own, so "icon beside text" has to be a layout, not a style.
   const socials = `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr>${SOCIALS.map(
     (s) =>
-      `<td class="soc" style="padding:4px"><a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:block;background-color:#a45663;border-radius:8px;text-decoration:none"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td valign="middle" style="padding:9px 0 9px 12px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:block;border:0"></td><td valign="middle" style="padding:9px 14px 9px 8px;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px;color:#ffffff">${s.label}</td></tr></table></a></td>`
+      `<td class="soc" style="padding:4px"><a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:block;background-color:#a45663;border-radius:8px;color:#ffffff;text-decoration:none"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td valign="middle" style="padding:9px 0 9px 12px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:block;border:0"></td><td valign="middle" style="padding:9px 14px 9px 8px;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px;color:#ffffff"><span style="color:#ffffff;text-decoration:none">${s.label}</span></td></tr></table></a></td>`
   ).join('')}</tr></table>`;
 
   return `<!DOCTYPE html>
