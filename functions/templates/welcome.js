@@ -107,10 +107,12 @@ export function renderWelcome(lang) {
   const items = c.items
     .map(([icon, text]) => `<tr><td width="30" valign="top" style="padding:0 0 10px 0;font-size:18px;line-height:24px">${icon}</td><td valign="top" style="padding:0 0 10px 0;font-family:${SANS};font-size:16px;line-height:24px;color:#21242c">${esc(text)}</td></tr>`)
     .join('');
-  const socials = SOCIALS.map(
+  // Each button is a small table (icon cell, label cell): Apple Mail and Outlook put an
+  // inline image on a line of its own, so "icon beside text" has to be a layout, not a style.
+  const socials = `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto"><tr>${SOCIALS.map(
     (s) =>
-      `<a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin:4px 4px;padding:9px 16px 9px 12px;background-color:#a45663;border-radius:8px;color:#ffffff;text-decoration:none;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px"><span style="vertical-align:middle">${s.label}</span></a>`
-  ).join('');
+      `<td class="soc" style="padding:4px"><a href="${s.href}" target="_blank" rel="noopener noreferrer" style="display:block;background-color:#a45663;border-radius:8px;text-decoration:none"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td valign="middle" style="padding:9px 0 9px 12px"><img src="${SITE}/img/email/${s.key}.png" width="20" height="20" alt="" style="display:block;border:0"></td><td valign="middle" style="padding:9px 14px 9px 8px;font-family:${SANS};font-size:14px;font-weight:600;line-height:20px;color:#ffffff">${s.label}</td></tr></table></a></td>`
+  ).join('')}</tr></table>`;
 
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="ltr">
@@ -120,12 +122,13 @@ export function renderWelcome(lang) {
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="light">
 <title>${esc(c.title)}</title>
+<style>@media (max-width:480px){.soc{display:block !important;width:100% !important;padding:4px 0 !important} }</style>
 </head>
 <body style="margin:0;padding:0;background-color:#f9f7f5">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f9f7f5">${esc(c.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9f7f5">
 <tr><td align="center" style="padding:32px 12px">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#fdfcfc;border-radius:12px;overflow:hidden">
+<table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;margin:0 auto;background-color:#fdfcfc;border-radius:12px;overflow:hidden">
   <tr><td style="padding:40px 40px 8px 40px;font-family:${SERIF}">
     <a href="${SITE}/${lang}/" style="color:${ACCENT};text-decoration:none;font-family:${SERIF};font-size:18px;font-weight:bold"><img src="${SITE}/img/email/logo.png" width="140" height="72" alt="Lorenzo Loconsole" style="display:block;border:0;width:140px;height:auto;font-family:${SERIF};font-size:18px;color:${ACCENT}"></a>
   </td></tr>

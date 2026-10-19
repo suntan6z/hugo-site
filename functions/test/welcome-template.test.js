@@ -26,8 +26,15 @@ for (const lang of LANGS) {
     assert.doesNotMatch(html, /unsubscribe_url|RESEND_UNSUBSCRIBE_URL/);
   });
 
+  test(`${lang}: each profile button puts its icon and label in one row, and the card is centred`, () => {
+    for (const s of ['linkedin', 'mastodon', 'github']) {
+      assert.match(html, new RegExp(`<td valign="middle"[^>]*><img src="[^"]*/${s}\\.png"[^>]*></td><td valign="middle"`));
+    }
+    assert.match(html, /width="600" align="center"[^>]*margin:0 auto/);
+  });
+
   test(`${lang}: the three profile buttons carry their label as text, not only an icon`, () => {
-    for (const label of ['LinkedIn', 'Mastodon', 'GitHub']) assert.match(html, new RegExp(`>${label}</span>`));
+    for (const label of ['LinkedIn', 'Mastodon', 'GitHub']) assert.match(html, new RegExp(`>${label}</td>`));
     for (const icon of ['linkedin', 'mastodon', 'github']) assert.match(html, new RegExp(`/img/email/${icon}\\.png`));
     assert.doesNotMatch(html, /Trakt|Apple Music/);
   });
