@@ -846,7 +846,7 @@ describe('newsletter: one email per list', () => {
 		assert.equal(en.subject, 'A subject');
 		assert.equal(frb.segment_id, SEGMENT_FR);
 		assert.equal(frb.subject, 'Un sujet');
-		assert.match(String(frb.html), /<html lang="fr">/);
+		assert.match(String(frb.html), /<html lang="fr"/);
 		assert.match(String(frb.html), /Lire l'article/);
 		assert.match(String(frb.html), /\/fr\/blog\/first-home-nas\//);
 		assert.ok(String(frb.html).includes('RESEND_UNSUBSCRIBE_URL'));
@@ -873,7 +873,7 @@ describe('newsletter: one email per list', () => {
 		assert.equal(r.type, 'success', r.raw);
 		const [b] = bodies().slice(before);
 		assert.equal(b.segment_id, SEGMENT_FR);
-		assert.match(String(b.html), /<html lang="en">/);
+		assert.match(String(b.html), /<html lang="en"/);
 		assert.match(String(b.html), /Read the article/);
 	});
 
