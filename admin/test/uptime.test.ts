@@ -1,7 +1,8 @@
 import { test, describe } from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
-	parseCertDate, daysUntil, certCheck, pageCheck, problemsOf, shouldAlert, isDue, alertMessage, addHistory, certNotices,
+	parseCertDate, daysUntil, templatesCheck, REQUIRED_TEMPLATES, certCheck, pageCheck, problemsOf, shouldAlert, isDue, alertMessage, addHistory, certNotices,
 	type HealthReport, type Check
 } from '../src/lib/server/integrations/uptime-parse.ts';
 
@@ -117,5 +118,49 @@ describe('the record', () => {
 		assert.equal(h.length, 60);
 		assert.equal(h.at(-1)!.ok, true);
 		assert.deepEqual(problemsOf(report([bad('x'), ok('y')])), ['x']);
+	});
+});
+
+describe('the email templates', () => {
+	const all = REQUIRED_TEMPLATES.map((alias, i) => ({ id: `uuid-${i}`, alias, status: 'published' }));
+
+	test('all present and published is fine', () => {
+		const c = templatesCheck(all);
+		assert.equal(c.ok, true);
+		assert.equal(c.kind, 'template');
+		assert.match(c.detail, /all 10 are there/);
+	});
+
+	test('a missing one is named', () => {
+		const c = templatesCheck(all.filter((t) => t.alias !== 'newsletter-confirm-fr'));
+		assert.equal(c.ok, false);
+		assert.equal(c.detail, 'missing: newsletter-confirm-fr');
+	});
+
+	test('a draft is named too, because a draft cannot be sent', () => {
+		const c = templatesCheck(all.map((t) => (t.alias === 'form-confirmation-it' ? { ...t, status: 'draft' } : t)));
+		assert.equal(c.ok, false);
+		assert.equal(c.detail, 'not published: form-confirmation-it');
+	});
+
+	test('a template is found by its id as well as its alias', () => {
+		assert.equal(templatesCheck(all.map((t) => ({ id: t.alias, alias: null, status: t.status }))).ok, true);
+	});
+
+	test('Resend not answering is a problem that says why, never a pass', () => {
+		const c = templatesCheck(null, '401 unauthorized');
+		assert.equal(c.ok, false);
+		assert.match(c.detail, /could not be listed: 401/);
+	});
+
+	test('the list matches what the functions actually send with', () => {
+		const news = readFileSync(new URL('../../functions/newsletter.js', import.meta.url), 'utf8');
+		const contact = readFileSync(new URL('../../functions/contact.js', import.meta.url), 'utf8');
+		const named = [...news.matchAll(/'(newsletter-(?:confirm|welcome)-(?:en|fr|it))'/g)].map((m) => m[1]);
+		assert.equal(new Set(named).size, 6, 'newsletter.js names six templates');
+		for (const id of named) assert.ok(REQUIRED_TEMPLATES.includes(id), `${id} is sent but not checked`);
+		assert.ok(contact.includes("'contact-form-notification'") && REQUIRED_TEMPLATES.includes('contact-form-notification'));
+		assert.ok(contact.includes('`form-confirmation-${lang}`'));
+		for (const l of ['en', 'fr', 'it']) assert.ok(REQUIRED_TEMPLATES.includes(`form-confirmation-${l}`));
 	});
 });

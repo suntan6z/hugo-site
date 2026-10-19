@@ -50,6 +50,15 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 	return (text ? JSON.parse(text) : {}) as T;
 }
 
+/** Every template in the account, for the health check: id, alias, name and whether it is published. */
+export async function listTemplates(): Promise<{ id?: string; alias?: string | null; name?: string; status?: string }[]> {
+	type Row = { id?: string; alias?: string | null; name?: string; status?: string };
+	return readAll<Row>(async (after) => {
+		const r = await call<{ data?: Row[]; has_more?: boolean }>('GET', `/templates?limit=100${after ? `&after=${encodeURIComponent(after)}` : ''}`);
+		return { data: r.data ?? [], has_more: r.has_more };
+	});
+}
+
 /** The segments that exist, by language. A language with none cannot be written to or sent to. */
 export function segmentIds(): Partial<Record<Lang, string>> {
 	return Object.fromEntries(LANGS.flatMap((l) => (integrations.resendSegments[l] ? [[l, integrations.resendSegments[l]]] : []))) as Partial<Record<Lang, string>>;

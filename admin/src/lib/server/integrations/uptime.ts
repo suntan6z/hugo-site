@@ -2,9 +2,9 @@ import tls from 'node:tls';
 import { integrations, auth } from '../env.ts';
 import { store } from '../store/kv.ts';
 import { checkFunctions } from './functions.ts';
-import { isConfigured as resendConfigured, sendAlert, looksLikeEmail } from './resend.ts';
+import { isConfigured as resendConfigured, sendAlert, looksLikeEmail, listTemplates } from './resend.ts';
 import {
-	certCheck, pageCheck, parseCertDate, shouldAlert, isDue, alertMessage, addHistory,
+	certCheck, pageCheck, parseCertDate, templatesCheck, shouldAlert, isDue, alertMessage, addHistory,
 	type Check, type HealthReport, type HealthEntry
 } from './uptime-parse.ts';
 
@@ -84,6 +84,11 @@ export async function runChecks(): Promise<HealthReport> {
 	// functions' addresses are Scaleway's, renewed by them, and the preflight below proves them.
 	const hosts = [...new Set([hostOf(site), hostOf(auth.origin), hostOf(integrations.litlyxHost)].filter((h): h is string => !!h))];
 
+	// Without a Resend key there is nothing to look at: the sending features are off, and say so elsewhere.
+	const templates = resendConfigured()
+		? await listTemplates().then((rows) => templatesCheck(rows), (e) => templatesCheck(null, e instanceof Error ? e.message : String(e)))
+		: null;
+
 	const [home, manifest, fns, certs] = await Promise.all([
 		fetchPage('Home page', `${site}/en/`),
 		fetchPage('Publish manifest', `${site}/en/build-info.json`, true),
@@ -99,7 +104,7 @@ export async function runChecks(): Promise<HealthReport> {
 		detail: f.ok ? `answers the browser's preflight in ${f.ms < 1000 ? `${f.ms} ms` : `${(f.ms / 1000).toFixed(1)} s`}${f.cold ? ' (it was asleep)' : ''}` : (f.error ?? `HTTP ${f.status}`)
 	}));
 
-	return { at: new Date().toISOString(), checks: [home, manifest, ...forms, ...certs] };
+	return { at: new Date().toISOString(), checks: [home, manifest, ...forms, ...(templates ? [templates] : []), ...certs] };
 }
 
 export interface HealthRun {

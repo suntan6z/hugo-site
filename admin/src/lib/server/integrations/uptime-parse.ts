@@ -9,7 +9,7 @@
  * and ends between two runs.
  */
 
-export type CheckKind = 'page' | 'form' | 'certificate';
+export type CheckKind = 'page' | 'form' | 'certificate' | 'template';
 
 export interface Check {
 	name: string;
@@ -118,4 +118,41 @@ export function addHistory(history: HealthEntry[], report: HealthReport): Health
 /** Certificates close enough to expiry to mention but not yet a fault. */
 export function certNotices(report: HealthReport): Check[] {
 	return report.checks.filter((c) => c.kind === 'certificate' && c.ok && typeof c.daysLeft === 'number' && c.daysLeft <= CERT_NOTICE_DAYS);
+}
+
+/**
+ * The Resend templates the two form functions send with (functions/contact.js and
+ * newsletter.js). They live in Resend's dashboard, so nothing in the repo notices
+ * when one is renamed, deleted or left as a draft: the welcome and the form
+ * confirmation are best-effort, which means they would simply stop arriving.
+ * A test reads the functions' source and fails if this list falls out of step.
+ */
+export const REQUIRED_TEMPLATES: readonly string[] = [
+	'contact-form-notification',
+	...['en', 'fr', 'it'].map((l) => `form-confirmation-${l}`),
+	...['en', 'fr', 'it'].map((l) => `newsletter-confirm-${l}`),
+	...['en', 'fr', 'it'].map((l) => `newsletter-welcome-${l}`)
+];
+
+export interface TemplateRow {
+	id?: string;
+	alias?: string | null;
+	name?: string;
+	status?: string;
+}
+
+/** One check for all of them: which are missing, which are not published, or that all are fine. `rows` is null when Resend could not be asked. */
+export function templatesCheck(rows: TemplateRow[] | null, error?: string): Check {
+	const name = 'Email templates';
+	if (rows === null) return { name, kind: 'template', ok: false, ms: null, detail: `could not be listed${error ? `: ${error}` : ''}` };
+	const byKey = new Map<string, TemplateRow>();
+	for (const r of rows) for (const k of [r.alias, r.id]) if (k) byKey.set(k, r);
+	const missing = REQUIRED_TEMPLATES.filter((id) => !byKey.has(id));
+	// A draft cannot be sent; Resend answers a send that names one with an error.
+	const drafts = REQUIRED_TEMPLATES.filter((id) => byKey.has(id) && byKey.get(id)!.status !== undefined && byKey.get(id)!.status !== 'published');
+	if (missing.length === 0 && drafts.length === 0) {
+		return { name, kind: 'template', ok: true, ms: null, detail: `all ${REQUIRED_TEMPLATES.length} are there and published` };
+	}
+	const parts = [missing.length ? `missing: ${missing.join(', ')}` : '', drafts.length ? `not published: ${drafts.join(', ')}` : ''].filter(Boolean);
+	return { name, kind: 'template', ok: false, ms: null, detail: parts.join('; ') };
 }
