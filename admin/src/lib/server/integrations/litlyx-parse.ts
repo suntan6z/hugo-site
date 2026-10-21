@@ -128,11 +128,11 @@ export function mergePaths(rows: CountRow[]): CountRow[] {
 	return [...m.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
 }
 
-/** Litlyx leaves a field empty when it could not tell (an unusual browser, no UTM tag); name it rather than show a blank row. */
+/** Litlyx leaves a field empty, or writes NO_BROWSER / NO_OS, when it could not tell; name it rather than show a blank or shouting row. */
 export function labelled(rows: CountRow[], unknown = 'Unknown'): CountRow[] {
 	const m = new Map<string, number>();
 	for (const r of rows) {
-		const key = r.key.trim() === '' || r.key.toLowerCase() === 'unknown' ? unknown : r.key;
+		const key = r.key.trim() === '' || /^(unknown|no_[a-z_]+)$/i.test(r.key.trim()) ? unknown : r.key;
 		m.set(key, (m.get(key) ?? 0) + r.count);
 	}
 	return [...m.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);

@@ -76,8 +76,8 @@ describe('Litlyx breakdowns', () => {
 
 	test('an empty or "unknown" name is shown as Unknown, and they are added together', () => {
 		assert.deepEqual(
-			labelled([{ key: 'Chrome', count: 9 }, { key: '', count: 2 }, { key: 'unknown', count: 3 }, { key: '  ', count: 1 }]),
-			[{ key: 'Chrome', count: 9 }, { key: 'Unknown', count: 6 }]
+			labelled([{ key: 'Chrome', count: 9 }, { key: '', count: 2 }, { key: 'unknown', count: 3 }, { key: '  ', count: 1 }, { key: 'NO_BROWSER', count: 1 }, { key: 'NO_OS', count: 1 }]),
+			[{ key: 'Chrome', count: 9 }, { key: 'Unknown', count: 8 }]
 		);
 	});
 
