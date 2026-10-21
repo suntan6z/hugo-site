@@ -325,27 +325,47 @@ if (document.getElementById('newsletter-form')) {
    only once its own script has run, which a mail scanner that merely fetches
    the link does not do. */
 if (document.getElementById('newsletter-confirm')) {
-  const states = ['nlc-working', 'nlc-done', 'nlc-failed', 'nlc-error'];
+  const states = ['nlc-working', 'nlc-done', 'nlc-already', 'nlc-expired', 'nlc-renewed', 'nlc-failed', 'nlc-error'];
   const show = (id) => { states.forEach((s) => { document.getElementById(s).hidden = s !== id; }); showHint(id); };
   const showHint = (id) => { const h = document.getElementById('nlc-hint'); if (h) h.hidden = id !== 'nlc-done'; };
   const token = location.hash.slice(1);
+  const call = (payload) => fetch(FORM_ENDPOINTS.newsletter, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(60000),
+    body: JSON.stringify(payload),
+  });
 
   if (!token) {
     show('nlc-failed'); // opened without a link
   } else {
-    fetch(FORM_ENDPOINTS.newsletter, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(60000),
-      body: JSON.stringify({ confirm: token }),
-    })
-      .then((res) => {
+    call({ confirm: token })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
         // The link has done its job, or can never work: take it out of the address bar.
-        // On a temporary failure it stays, so reloading the page tries again.
+        // On a temporary failure it stays, so reloading the page tries again. An expired
+        // one is kept in this page's memory only, to ask for a new one with.
         if (res.ok || res.status === 400) history.replaceState(null, '', location.pathname);
-        show(res.ok ? 'nlc-done' : res.status === 400 ? 'nlc-failed' : 'nlc-error');
+        if (res.ok) show(data.already ? 'nlc-already' : 'nlc-done');
+        else if (res.status === 400) show(data.error === 'expired' ? 'nlc-expired' : 'nlc-failed');
+        else show('nlc-error');
       })
       .catch(() => show('nlc-error'));
+
+    // "Send me a new link": the old link proves which address it was for.
+    const renew = document.getElementById('nlc-renew');
+    renew?.addEventListener('click', () => {
+      renew.disabled = true;
+      call({ renew: token })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) show(data.already ? 'nlc-already' : 'nlc-renewed');
+          else if (res.status === 400) show('nlc-failed');
+          else show('nlc-error');
+        })
+        .catch(() => show('nlc-error'))
+        .finally(() => { renew.disabled = false; });
+    });
   }
 }
 

@@ -6,6 +6,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { normalizeLang } from './request.js';
 
 export const CONFIRM_TTL_SECONDS = 48 * 60 * 60;
+/** How long after it ran out an old link can still ask for a new one. */
+export const RENEW_GRACE_SECONDS = 30 * 24 * 60 * 60;
 
 const b64 = (value) => Buffer.from(value).toString('base64url');
 const sign = (secret, text) => createHmac('sha256', secret).update(text).digest('base64url');
@@ -22,8 +24,13 @@ export function signToken(email, { secret, lang = 'en', now = Date.now(), ttlSec
   return `${body}.${sign(secret, body)}`;
 }
 
-/** `{ email, lang }` for a good link, else `{ error: 'invalid' | 'expired' }`. */
-export function verifyToken(token, { secret, now = Date.now() }) {
+/**
+ * `{ email, lang }` for a good link, else `{ error: 'invalid' | 'expired' }`.
+ * With `graceSeconds`, a validly signed link that ran out no more than that long
+ * ago is still read, flagged `expired: true`: it is what lets the page offer "send
+ * me a new link" to the person holding an old one, and nothing else.
+ */
+export function verifyToken(token, { secret, now = Date.now(), graceSeconds = 0 }) {
   if (!secret || typeof token !== 'string' || token.length > 600) return { error: 'invalid' };
   const [body, signature, extra] = token.split('.');
   if (!body || !signature || extra !== undefined) return { error: 'invalid' };
@@ -39,6 +46,8 @@ export function verifyToken(token, { secret, now = Date.now() }) {
     return { error: 'invalid' };
   }
   if (typeof data?.e !== 'string' || typeof data?.x !== 'number') return { error: 'invalid' };
-  if (data.x < Math.floor(now / 1000)) return { error: 'expired' };
+  const late = Math.floor(now / 1000) - data.x;
+  if (late > graceSeconds) return { error: 'expired' };
+  if (late > 0) return { email: data.e, lang: normalizeLang(data.l), expired: true };
   return { email: data.e, lang: normalizeLang(data.l) };
 }

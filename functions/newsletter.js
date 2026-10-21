@@ -2,7 +2,7 @@ import { isValidEmail } from './lib/validate.js';
 import { optionsResponse, json, isAllowedOrigin, resolveOrigin } from './lib/cors.js';
 import { isRateLimited, clientIp } from './lib/rateLimit.js';
 import { wantsChallenge, serveChallenge, isHuman } from './lib/guard.js';
-import { signToken, verifyToken } from './lib/confirm.js';
+import { signToken, verifyToken, RENEW_GRACE_SECONDS } from './lib/confirm.js';
 import { confirmationEmail } from './lib/confirm-email.js';
 import { normalizeLang } from './lib/request.js';
 
@@ -82,6 +82,24 @@ async function enrol(email, known, segmentId) {
   return joined;
 }
 
+/** Emails `email` a fresh confirmation link in `lang`: the template, else the built-in message. Returns Resend's last answer. */
+async function sendConfirmation(event, email, lang, secret) {
+  const link = `${resolveOrigin(event)}/${lang}/newsletter-confirm/#${signToken(email, { secret, lang })}`;
+  const send = (payload) =>
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [email], ...payload }),
+    });
+  let sent = await send({ template: { id: CONFIRM[lang], variables: { confirm_url: link } } }).catch(() => null);
+  if (!sent?.ok) {
+    console.error(`newsletter: confirmation template ${CONFIRM[lang]} failed (${sent?.status ?? 'no answer'}), sending the built-in email`);
+    const mail = confirmationEmail(lang, link);
+    sent = await send({ subject: mail.subject, html: mail.html, text: mail.text });
+  }
+  return sent;
+}
+
 /**
  * Step one: nobody is added yet. The address gets an email with a signed link
  * to the site's confirmation page, and joins the audience only when the link
@@ -110,19 +128,7 @@ async function subscribe(event, body) {
   }
 
   const lang = normalizeLang(body.lang);
-  const link = `${resolveOrigin(event)}/${lang}/newsletter-confirm/#${signToken(email, { secret, lang })}`;
-  const send = (payload) =>
-    fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: [email], ...payload }),
-    });
-  let sent = await send({ template: { id: CONFIRM[lang], variables: { confirm_url: link } } }).catch(() => null);
-  if (!sent?.ok) {
-    console.error(`newsletter: confirmation template ${CONFIRM[lang]} failed (${sent?.status ?? 'no answer'}), sending the built-in email`);
-    const mail = confirmationEmail(lang, link);
-    sent = await send({ subject: mail.subject, html: mail.html, text: mail.text });
-  }
+  const sent = await sendConfirmation(event, email, lang, secret);
   if (!sent.ok) {
     console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
     return json(event, { error: 'Subscribe failed' }, 502);
@@ -133,7 +139,7 @@ async function subscribe(event, body) {
 /**
  * Step two: the link from the email, opened on the site's confirmation page,
  * which posts its token here. Using a link twice is harmless: an address
- * already on the list is answered ok and gets no second welcome email.
+ * already on the list is answered `already` and gets no second welcome email.
  */
 async function confirm(event, token) {
   const secret = process.env.CONFIRM_SECRET;
@@ -147,7 +153,8 @@ async function confirm(event, token) {
   let seen;
   try {
     seen = await lookup(checked.email);
-    if (seen.subscribed) return json(event, { ok: true }, 200);
+    // Said apart from a first confirmation, so the page can tell someone their link was already used.
+    if (seen.subscribed) return json(event, { ok: true, already: true }, 200);
   } catch (e) {
     console.error('newsletter:', e.message);
     return json(event, { error: 'Subscribe failed' }, 502);
@@ -178,6 +185,35 @@ async function confirm(event, token) {
   return json(event, { ok: true }, 200);
 }
 
+/**
+ * "Send me a new link", from the page an expired link lands on. The old link is
+ * the proof: it is signed, so it can only ever name the address it was sent to,
+ * and one that ran out more than RENEW_GRACE_SECONDS ago is refused like any
+ * other bad link. Someone already on the list is told so and gets no email.
+ */
+async function renew(event, token) {
+  const secret = process.env.CONFIRM_SECRET;
+  if (!secret) {
+    console.error('newsletter: CONFIRM_SECRET is not set');
+    return json(event, { error: 'Not configured' }, 503);
+  }
+  const checked = verifyToken(token, { secret, graceSeconds: RENEW_GRACE_SECONDS });
+  if (checked.error) return json(event, { error: 'invalid' }, 400);
+
+  try {
+    if ((await lookup(checked.email)).subscribed) return json(event, { ok: true, already: true }, 200);
+  } catch (e) {
+    console.error('newsletter:', e.message);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+  const sent = await sendConfirmation(event, checked.email, checked.lang, secret);
+  if (!sent.ok) {
+    console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
+    return json(event, { error: 'Subscribe failed' }, 502);
+  }
+  return json(event, { ok: true }, 200);
+}
+
 export async function handle(event) {
   if (event.httpMethod === 'OPTIONS') return optionsResponse(event);
   if (wantsChallenge(event)) return serveChallenge(event);
@@ -203,5 +239,6 @@ export async function handle(event) {
   }
 
   if (typeof body.confirm === 'string') return confirm(event, body.confirm);
+  if (typeof body.renew === 'string') return renew(event, body.renew);
   return subscribe(event, body);
 }

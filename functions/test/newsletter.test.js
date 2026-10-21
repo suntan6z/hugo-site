@@ -310,3 +310,65 @@ test('both emails a subscriber gets can be answered, and the answer reaches the 
   assert.equal(sent.length, 2);
   assert.ok(sent.every((m) => m.body.reply_to === 'contact@loconsole.eu'));
 });
+
+test('a first confirmation is plain ok; using the link again says it was already used', async () => {
+  const r = resend();
+  const token = signToken('once@example.com', { secret: 'confirm-secret' });
+  await withFetch(r.stub, async () => {
+    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true });
+    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true, already: true });
+  });
+});
+
+test('an expired link is told apart from a broken one', async () => {
+  const r = resend();
+  const old = signToken('late@example.com', { secret: 'confirm-secret', now: Date.now() - 3 * 86400_000 });
+  await withFetch(r.stub, async () => {
+    assert.equal(JSON.parse((await post({ confirm: old })).body).error, 'expired');
+    assert.equal(JSON.parse((await post({ confirm: 'garbage' })).body).error, 'invalid');
+  });
+});
+
+test('"send me a new link" on an expired link emails a fresh one, in the same language, to the same address', async () => {
+  const r = resend();
+  const old = signToken('late@example.com', { secret: 'confirm-secret', lang: 'fr', now: Date.now() - 3 * 86400_000 });
+  await withFetch(r.stub, async () => {
+    const res = await post({ renew: old });
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body), { ok: true });
+  });
+  assert.equal(added(r.calls).length, 0, 'nobody is added by asking for a link');
+  const [mail] = emails(r.calls);
+  assert.deepEqual(mail.body.to, ['late@example.com']);
+  assert.equal(mail.body.template.id, 'newsletter-confirm-fr');
+  const fresh = mail.body.template.variables.confirm_url.match(/#([\w.-]+)/)[1];
+  assert.deepEqual(verifyToken(fresh, { secret: 'confirm-secret' }), { email: 'late@example.com', lang: 'fr' });
+});
+
+test('a new link is refused for a forged link, or one that ran out long ago', async () => {
+  const r = resend();
+  const forged = signToken('x@example.com', { secret: 'not-our-secret', now: Date.now() - 3 * 86400_000 });
+  const ancient = signToken('old@example.com', { secret: 'confirm-secret', now: Date.now() - 60 * 86400_000 });
+  await withFetch(r.stub, async () => {
+    assert.equal((await post({ renew: forged })).statusCode, 400);
+    assert.equal((await post({ renew: ancient })).statusCode, 400);
+    assert.equal((await post({ renew: 'garbage' })).statusCode, 400);
+  });
+  assert.equal(emails(r.calls).length, 0);
+});
+
+test('asking for a new link when already subscribed says so and sends nothing', async () => {
+  const r = resend({ contacts: { 'in@example.com': false } });
+  const old = signToken('in@example.com', { secret: 'confirm-secret', now: Date.now() - 3 * 86400_000 });
+  await withFetch(r.stub, async () => {
+    assert.deepEqual(JSON.parse((await post({ renew: old })).body), { ok: true, already: true });
+  });
+  assert.equal(emails(r.calls).length, 0);
+});
+
+test('a new link also needs the site as the origin', async () => {
+  const old = signToken('o@example.com', { secret: 'confirm-secret', now: Date.now() - 3 * 86400_000 });
+  await withFetch(resend().stub, async () => {
+    assert.equal((await post({ renew: old }, { origin: 'https://evil.example' })).statusCode, 403);
+  });
+});

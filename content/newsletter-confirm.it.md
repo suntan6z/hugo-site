@@ -17,6 +17,12 @@ build:
         <div aria-live="polite">
           <p class="page-lede" id="nlc-working">Conferma dell'iscrizione in corso…</p>
           <p class="page-lede" id="nlc-done" hidden>Sei iscritto/a. Grazie per aver confermato! Un'email di benvenuto è in arrivo.</p>
+          <p class="page-lede" id="nlc-already" hidden>Questo link è già stato usato e sei già iscritto/a. Non c'è altro da fare.</p>
+          <div id="nlc-expired" hidden>
+            <p class="page-lede">Questo link è scaduto. I link di conferma funzionano per 48 ore e questo è scaduto. Premi il pulsante e te ne invio uno nuovo.</p>
+            <p style="margin-top:1.25rem"><button type="button" class="btn-primary" id="nlc-renew">Inviami un nuovo link</button></p>
+          </div>
+          <p class="page-lede" id="nlc-renewed" hidden>Un nuovo link è in arrivo nella tua casella. Funziona per 48 ore.</p>
           <p class="page-lede" id="nlc-failed" hidden>Questo link di conferma è scaduto o non è valido. Iscriviti di nuovo da un qualsiasi articolo e te ne manderò uno nuovo.</p>
           <p class="page-lede" id="nlc-error" hidden>Qualcosa è andato storto da parte mia. Ricarica questa pagina tra un momento: il link resta valido per 48 ore.</p>
           <p class="page-lede" id="nlc-hint" hidden style="font-size:0.95rem">L'email di benvenuto arriva entro un minuto. Se non lo vedi, controlla la cartella dello spam.</p>

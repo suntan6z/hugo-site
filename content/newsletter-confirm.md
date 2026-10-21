@@ -17,6 +17,12 @@ build:
         <div aria-live="polite">
           <p class="page-lede" id="nlc-working">Confirming your subscription…</p>
           <p class="page-lede" id="nlc-done" hidden>You are subscribed. Thank you for confirming! A welcome email is on its way.</p>
+          <p class="page-lede" id="nlc-already" hidden>This link has already been used, and you are subscribed. There is nothing more to do.</p>
+          <div id="nlc-expired" hidden>
+            <p class="page-lede">This link is too old. Confirmation links work for 48 hours, and this one has run out. Press the button and I'll send you a new one.</p>
+            <p style="margin-top:1.25rem"><button type="button" class="btn-primary" id="nlc-renew">Send me a new link</button></p>
+          </div>
+          <p class="page-lede" id="nlc-renewed" hidden>A new link is on its way to your inbox. It works for 48 hours.</p>
           <p class="page-lede" id="nlc-failed" hidden>This confirmation link has expired or isn't valid. Subscribe again from any article and I'll send you a new one.</p>
           <p class="page-lede" id="nlc-error" hidden>Something went wrong on my side. Please reload this page in a moment: the link stays valid for 48 hours.</p>
           <p class="page-lede" id="nlc-hint" hidden style="font-size:0.95rem">The welcome email arrives within a minute. If you don't see it, check your spam folder.</p>
