@@ -27,6 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: page dates (sitemap lastmod) come from git.
+          fetch-depth: 0
 
       # No photo may be published with its metadata (camera, date, GPS
       # position). The Hugo build itself refuses bundle and assets/ images that
