@@ -12,9 +12,6 @@
 # To bump the Hugo version: find the matching tag at
 # https://hub.docker.com/r/hugomods/hugo/tags (search "git-<version>",
 # no reg/std prefix) — don't assume a tag exists for every version.
-# StaticHost clones with only the latest commit, which would give every page the same
-# "last modified" date (hugo.toml: enableGitInfo), so the history is fetched first;
-# `|| true` keeps a build working where the clone is already complete (CI, local).
 image: "hugomods/hugo:debian-git-0.165.0"
-command: "(git fetch --unshallow --quiet || true) && hugo --minify"
+command: "hugo --minify"
 public: "public"
