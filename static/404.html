@@ -102,12 +102,41 @@
 </head>
 <body>
   <div class="wrap">
-    <img src="/img/404page.png" alt="404 illustration" />
+    <img id="nf-img" src="/img/404page.png" alt="404 illustration" />
     <div>
-      <h2><em>Magnifique!</em> You have discovered my secret <u>404</u> collection!</h2>
-      <p>It is a rare find, <em>n'est-ce pas?</em> Truly a work of art. But alas, even the most beautiful errors must come to an end. <em>Sacré bleu!</em> Click the button below and pretend you saw nothing. <em>Au revoir!</em></p>
-      <a href="/en/" class="btn">Return to Home</a>
+      <h2 id="nf-title"><em>Magnifique!</em> You have discovered my secret <u>404</u> collection!</h2>
+      <p id="nf-text">It is a rare find, <em>n'est-ce pas?</em> Truly a work of art. But alas, even the most beautiful errors must come to an end. <em>Sacré bleu!</em> Click the button below and pretend you saw nothing. <em>Au revoir!</em></p>
+      <a id="nf-home" href="/en/" class="btn">Return to Home</a>
     </div>
   </div>
+  <script>
+    // A missing /fr/… or /it/… page is shown in that language; anything else stays English
+    // (paths with no language prefix were already sent to /en/ above).
+    (function () {
+      var m = /^\/(fr|it)\//.exec(window.location.pathname);
+      if (!m) return;
+      var T = {
+        fr: {
+          alt: 'Illustration de la page 404',
+          title: '<em>Magnifique\u00a0!</em> Vous avez découvert ma collection secrète de <u>404</u>\u00a0!',
+          text: 'C\u2019est une trouvaille rare, <em>n\u2019est-ce pas\u00a0?</em> Un véritable chef-d\u2019œuvre. Mais hélas, même les plus belles erreurs ont une fin. <em>Sacré bleu\u00a0!</em> Cliquez sur le bouton ci-dessous et faites comme si vous n\u2019aviez rien vu. <em>Au revoir\u00a0!</em>',
+          home: 'Retour à l\u2019accueil'
+        },
+        it: {
+          alt: 'Illustrazione della pagina 404',
+          title: '<em>Magnifique!</em> Hai scoperto la mia collezione segreta di <u>404</u>!',
+          text: 'Una rarità, <em>n\u2019est-ce pas?</em> Una vera opera d\u2019arte. Ma ahimè, anche gli errori più belli devono finire. <em>Sacré bleu!</em> Clicca il pulsante qui sotto e fai finta di non aver visto niente. <em>Au revoir!</em>',
+          home: 'Torna alla home'
+        }
+      }[m[1]];
+      document.documentElement.lang = m[1];
+      document.getElementById('nf-img').alt = T.alt;
+      document.getElementById('nf-title').innerHTML = T.title;
+      document.getElementById('nf-text').innerHTML = T.text;
+      var home = document.getElementById('nf-home');
+      home.textContent = T.home;
+      home.href = '/' + m[1] + '/';
+    })();
+  </script>
 </body>
 </html>

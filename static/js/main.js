@@ -148,6 +148,42 @@ function wakeFunction(endpoint) {
   fetch(endpoint + '?challenge=1', { cache: 'no-store' }).catch(() => {});
 }
 
+/* The contact form's own words, in the page's language (the page is content, not a
+   template, so it cannot use the i18n files). */
+const CONTACT_TEXT = {
+  en: {
+    firstName: 'Please enter your first name.',
+    lastName: 'Please enter your last name.',
+    email: 'Please enter a valid email.',
+    subject: 'Please select a subject.',
+    customSubject: 'Please describe your subject.',
+    message: 'Message must be at least 50 characters (max 500).',
+    sending: 'Sending...',
+    failed: 'Failed to send message. Please try again or email me directly at lorenzo@loconsole.eu',
+  },
+  fr: {
+    firstName: 'Veuillez saisir votre prénom.',
+    lastName: 'Veuillez saisir votre nom.',
+    email: 'Veuillez saisir une adresse e-mail valide.',
+    subject: 'Veuillez choisir un sujet.',
+    customSubject: 'Veuillez décrire votre sujet.',
+    message: 'Le message doit contenir au moins 50 caractères (500 au maximum).',
+    sending: 'Envoi…',
+    failed: 'L’envoi a échoué. Réessayez ou écrivez-moi directement à lorenzo@loconsole.eu',
+  },
+  it: {
+    firstName: 'Inserisci il tuo nome.',
+    lastName: 'Inserisci il tuo cognome.',
+    email: 'Inserisci un indirizzo email valido.',
+    subject: 'Seleziona un oggetto.',
+    customSubject: 'Descrivi il tuo oggetto.',
+    message: 'Il messaggio deve avere almeno 50 caratteri (massimo 500).',
+    sending: 'Invio…',
+    failed: 'Invio non riuscito. Riprova o scrivimi direttamente a lorenzo@loconsole.eu',
+  },
+};
+const contactText = () => CONTACT_TEXT[document.documentElement.lang.slice(0, 2)] || CONTACT_TEXT.en;
+
 /* ── Contact page (only runs when the contact form is present) ── */
 if (document.getElementById('contact-form')) {
   const contactWidget = setUpProof(document.getElementById('contact-form'), FORM_ENDPOINTS.contact);
@@ -182,21 +218,22 @@ if (document.getElementById('contact-form')) {
   // Form validation + submit
   document.getElementById('contact-form')?.addEventListener('submit', async function (e) {
     e.preventDefault();
+    const T = contactText();
     let valid = true;
 
     const fields = [
       // Any non-empty name: two-letter names (Li, Wu, Ng, Al…) are real names.
-      { id: 'firstName', errorId: 'firstName-error', msg: 'Please enter your first name.', check: v => v.length >= 1 },
-      { id: 'lastName', errorId: 'lastName-error', msg: 'Please enter your last name.', check: v => v.length >= 1 },
-      { id: 'email', errorId: 'email-error', msg: 'Please enter a valid email.', check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
-      { id: 'subject', errorId: 'subject-error', msg: 'Please select a subject.', check: v => v !== '' },
-      { id: 'message', errorId: 'message-error', msg: 'Message must be at least 50 characters (max 500).', check: v => v.length >= 50 && v.length <= 500 },
+      { id: 'firstName', errorId: 'firstName-error', msg: T.firstName, check: v => v.length >= 1 },
+      { id: 'lastName', errorId: 'lastName-error', msg: T.lastName, check: v => v.length >= 1 },
+      { id: 'email', errorId: 'email-error', msg: T.email, check: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+      { id: 'subject', errorId: 'subject-error', msg: T.subject, check: v => v !== '' },
+      { id: 'message', errorId: 'message-error', msg: T.message, check: v => v.length >= 50 && v.length <= 500 },
     ];
 
     // "Other" asks for a description; the function puts it in the email's subject line.
     const isOther = document.getElementById('subject').value === 'other';
     if (isOther) {
-      fields.push({ id: 'customSubject', errorId: 'customSubject-error', msg: 'Please describe your subject.', check: v => v.length >= 1 && v.length <= 120 });
+      fields.push({ id: 'customSubject', errorId: 'customSubject-error', msg: T.customSubject, check: v => v.length >= 1 && v.length <= 120 });
     }
 
     fields.forEach(f => {
@@ -216,7 +253,8 @@ if (document.getElementById('contact-form')) {
     if (!valid) return;
 
     const btn = document.getElementById('submit-btn');
-    btn.textContent = 'Sending...';
+    const sendLabel = btn.textContent;
+    btn.textContent = T.sending;
     btn.disabled = true;
 
     // Phone is optional; only prefix the dialling code when a number was entered
@@ -260,9 +298,9 @@ if (document.getElementById('contact-form')) {
       }
     } catch {
       spendProof(contactWidget);
-      btn.textContent = 'Send Message';
+      btn.textContent = sendLabel;
       btn.disabled = false;
-      alert('Failed to send message. Please try again or email me directly at lorenzo@loconsole.eu');
+      alert(T.failed);
     }
   });
 }
