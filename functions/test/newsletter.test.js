@@ -311,12 +311,12 @@ test('both emails a subscriber gets can be answered, and the answer reaches the 
   assert.ok(sent.every((m) => m.body.reply_to === 'contact@loconsole.eu'));
 });
 
-test('a first confirmation is plain ok; using the link again says it was already used', async () => {
+test('a first confirmation is ok; using the link again says it was already used; both name the address', async () => {
   const r = resend();
   const token = signToken('once@example.com', { secret: 'confirm-secret' });
   await withFetch(r.stub, async () => {
-    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true });
-    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true, already: true });
+    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true, email: 'once@example.com' });
+    assert.deepEqual(JSON.parse((await post({ confirm: token })).body), { ok: true, already: true, email: 'once@example.com' });
   });
 });
 
@@ -335,7 +335,7 @@ test('"send me a new link" on an expired link emails a fresh one, in the same la
   await withFetch(r.stub, async () => {
     const res = await post({ renew: old });
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(JSON.parse(res.body), { ok: true });
+    assert.deepEqual(JSON.parse(res.body), { ok: true, email: 'late@example.com' });
   });
   assert.equal(added(r.calls).length, 0, 'nobody is added by asking for a link');
   const [mail] = emails(r.calls);
@@ -361,7 +361,7 @@ test('asking for a new link when already subscribed says so and sends nothing', 
   const r = resend({ contacts: { 'in@example.com': false } });
   const old = signToken('in@example.com', { secret: 'confirm-secret', now: Date.now() - 3 * 86400_000 });
   await withFetch(r.stub, async () => {
-    assert.deepEqual(JSON.parse((await post({ renew: old })).body), { ok: true, already: true });
+    assert.deepEqual(JSON.parse((await post({ renew: old })).body), { ok: true, already: true, email: 'in@example.com' });
   });
   assert.equal(emails(r.calls).length, 0);
 });

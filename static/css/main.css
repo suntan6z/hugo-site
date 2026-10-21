@@ -1415,3 +1415,6 @@ main:focus { outline: none; }
 .nlc-actions { margin-top: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
 .nlc-link { font-size: 0.95rem; color: var(--muted-foreground); text-decoration: underline; text-underline-offset: 3px; }
 .nlc-link:hover { color: var(--primary); }
+.nlc-email { margin-top: 0.9rem; }
+.nlc-email span { display: inline-block; max-width: 100%; padding: 0.45rem 1rem; border-radius: 2rem; background: var(--accent); color: var(--foreground); font-weight: 600; font-size: 0.95rem; overflow-wrap: anywhere; }
+.nlc-email span:empty { display: none; }

@@ -154,7 +154,7 @@ async function confirm(event, token) {
   try {
     seen = await lookup(checked.email);
     // Said apart from a first confirmation, so the page can tell someone their link was already used.
-    if (seen.subscribed) return json(event, { ok: true, already: true }, 200);
+    if (seen.subscribed) return json(event, { ok: true, already: true, email: checked.email }, 200);
   } catch (e) {
     console.error('newsletter:', e.message);
     return json(event, { error: 'Subscribe failed' }, 502);
@@ -182,7 +182,7 @@ async function confirm(event, token) {
     console.error('newsletter: welcome email failed', e?.message);
   }
 
-  return json(event, { ok: true }, 200);
+  return json(event, { ok: true, email: checked.email }, 200);
 }
 
 /**
@@ -201,7 +201,7 @@ async function renew(event, token) {
   if (checked.error) return json(event, { error: 'invalid' }, 400);
 
   try {
-    if ((await lookup(checked.email)).subscribed) return json(event, { ok: true, already: true }, 200);
+    if ((await lookup(checked.email)).subscribed) return json(event, { ok: true, already: true, email: checked.email }, 200);
   } catch (e) {
     console.error('newsletter:', e.message);
     return json(event, { error: 'Subscribe failed' }, 502);
@@ -211,7 +211,7 @@ async function renew(event, token) {
     console.error(`newsletter: Resend confirmation email failed (${sent.status})`);
     return json(event, { error: 'Subscribe failed' }, 502);
   }
-  return json(event, { ok: true }, 200);
+  return json(event, { ok: true, email: checked.email }, 200);
 }
 
 export async function handle(event) {

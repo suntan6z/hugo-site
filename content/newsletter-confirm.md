@@ -18,14 +18,17 @@ build:
     <div class="nlc-state" id="nlc-done" hidden>
       <div class="nlc-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>You're subscribed</h1>
-      <p class="page-lede">Thank you for confirming! A welcome email is on its way.</p>
-      <p class="nlc-note">It arrives within a minute. If you don't see it, check your spam folder.</p>
+      <p class="page-lede">Thank you for confirming! You are subscribed with:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">A welcome email is on its way, within a minute. If you don't see it, check your spam folder.</p>
       <div class="nlc-actions"><a class="btn-primary" href="/en/blog/">Read the latest articles</a></div>
     </div>
     <div class="nlc-state" id="nlc-already" hidden>
       <div class="nlc-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>Already confirmed</h1>
-      <p class="page-lede">This link has already been used, and you are subscribed. There is nothing more to do.</p>
+      <p class="page-lede">This link has already been used. You are subscribed with:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">There is nothing more to do.</p>
       <div class="nlc-actions"><a class="btn-primary" href="/en/blog/">Read the latest articles</a></div>
     </div>
     <div class="nlc-state" id="nlc-expired" hidden>
@@ -37,7 +40,9 @@ build:
     <div class="nlc-state" id="nlc-renewed" hidden>
       <div class="nlc-icon wait"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
       <h1>Check your inbox</h1>
-      <p class="page-lede">A new link is on its way. It works for 48 hours.</p>
+      <p class="page-lede">A new link is on its way to:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">It works for 48 hours.</p>
     </div>
     <div class="nlc-state" id="nlc-failed" hidden>
       <div class="nlc-icon bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></div>

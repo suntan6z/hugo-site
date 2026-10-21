@@ -18,14 +18,17 @@ build:
     <div class="nlc-state" id="nlc-done" hidden>
       <div class="nlc-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>Vous êtes inscrit·e</h1>
-      <p class="page-lede">Merci d'avoir confirmé ! Un e-mail de bienvenue est en route.</p>
-      <p class="nlc-note">Il arrive dans la minute. S'il n'apparaît pas, regardez dans vos courriers indésirables.</p>
+      <p class="page-lede">Merci d'avoir confirmé ! Vous êtes inscrit·e avec l'adresse&nbsp;:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">Un e-mail de bienvenue est en route, dans la minute. S'il n'apparaît pas, regardez dans vos courriers indésirables.</p>
       <div class="nlc-actions"><a class="btn-primary" href="/fr/blog/">Lire les derniers articles</a></div>
     </div>
     <div class="nlc-state" id="nlc-already" hidden>
       <div class="nlc-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h1>Déjà confirmé</h1>
-      <p class="page-lede">Ce lien a déjà été utilisé et vous êtes bien inscrit·e. Il n'y a rien d'autre à faire.</p>
+      <p class="page-lede">Ce lien a déjà été utilisé. Vous êtes inscrit·e avec l'adresse&nbsp;:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">Il n'y a rien d'autre à faire.</p>
       <div class="nlc-actions"><a class="btn-primary" href="/fr/blog/">Lire les derniers articles</a></div>
     </div>
     <div class="nlc-state" id="nlc-expired" hidden>
@@ -37,7 +40,9 @@ build:
     <div class="nlc-state" id="nlc-renewed" hidden>
       <div class="nlc-icon wait"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
       <h1>Consultez votre boîte mail</h1>
-      <p class="page-lede">Un nouveau lien vient d'être envoyé. Il est valable 48 heures.</p>
+      <p class="page-lede">Un nouveau lien vient d'être envoyé à&nbsp;:</p>
+      <p class="nlc-email"><span data-nlc-email></span></p>
+      <p class="nlc-note">Il est valable 48 heures.</p>
     </div>
     <div class="nlc-state" id="nlc-failed" hidden>
       <div class="nlc-icon bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></div>

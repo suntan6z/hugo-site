@@ -327,6 +327,8 @@ if (document.getElementById('newsletter-form')) {
 if (document.getElementById('newsletter-confirm')) {
   const states = ['nlc-working', 'nlc-done', 'nlc-already', 'nlc-expired', 'nlc-renewed', 'nlc-failed', 'nlc-error'];
   const show = (id) => states.forEach((s) => { document.getElementById(s).hidden = s !== id; });
+  // The address the answer is about, written into whichever card shows it (textContent: never markup).
+  const showEmail = (email) => document.querySelectorAll('[data-nlc-email]').forEach((el) => { el.textContent = typeof email === 'string' ? email : ''; });
   const token = location.hash.slice(1);
   const call = (payload) => fetch(FORM_ENDPOINTS.newsletter, {
     method: 'POST',
@@ -345,7 +347,7 @@ if (document.getElementById('newsletter-confirm')) {
         // On a temporary failure it stays, so reloading the page tries again. An expired
         // one is kept in this page's memory only, to ask for a new one with.
         if (res.ok || res.status === 400) history.replaceState(null, '', location.pathname);
-        if (res.ok) show(data.already ? 'nlc-already' : 'nlc-done');
+        if (res.ok) { showEmail(data.email); show(data.already ? 'nlc-already' : 'nlc-done'); }
         else if (res.status === 400) show(data.error === 'expired' ? 'nlc-expired' : 'nlc-failed');
         else show('nlc-error');
       })
@@ -358,7 +360,7 @@ if (document.getElementById('newsletter-confirm')) {
       call({ renew: token })
         .then(async (res) => {
           const data = await res.json().catch(() => ({}));
-          if (res.ok) show(data.already ? 'nlc-already' : 'nlc-renewed');
+          if (res.ok) { showEmail(data.email); show(data.already ? 'nlc-already' : 'nlc-renewed'); }
           else if (res.status === 400) show('nlc-failed');
           else show('nlc-error');
         })
