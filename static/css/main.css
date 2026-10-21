@@ -1397,3 +1397,21 @@ main:focus { outline: none; }
 .rss-langs label { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.85rem; border: 2px solid var(--border); border-radius: 2rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; }
 .rss-langs label:has(input:checked) { border-color: var(--primary); background: var(--accent); color: var(--accent-foreground); }
 .rss-langs input { accent-color: var(--primary); }
+
+/* Newsletter confirmation page: one centred card per outcome, each with its own icon. */
+.nlc-state { max-width: 34rem; margin: 0 auto; padding: 1rem 0 3rem; text-align: center; }
+.nlc-state[hidden] { display: none; }
+.nlc-icon { width: 4.75rem; height: 4.75rem; margin: 0 auto 1.5rem; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--primary); }
+.nlc-icon svg { width: 2.4rem; height: 2.4rem; }
+.nlc-icon.ok { background: hsl(150 35% 90%); color: hsl(150 40% 28%); }
+.nlc-icon.warn { background: hsl(42 90% 88%); color: hsl(32 70% 32%); }
+.nlc-icon.bad { background: hsl(350 60% 92%); color: hsl(350 55% 38%); }
+[data-theme="dark"] .nlc-icon.ok { background: hsl(150 25% 20%); color: hsl(150 45% 68%); }
+[data-theme="dark"] .nlc-icon.warn { background: hsl(40 35% 20%); color: hsl(42 85% 68%); }
+[data-theme="dark"] .nlc-icon.bad { background: hsl(350 30% 22%); color: hsl(350 70% 76%); }
+.nlc-state h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); }
+.nlc-state .page-lede { margin-left: auto; margin-right: auto; max-width: 28rem; }
+.nlc-note { margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted-foreground); }
+.nlc-actions { margin-top: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.nlc-link { font-size: 0.95rem; color: var(--muted-foreground); text-decoration: underline; text-underline-offset: 3px; }
+.nlc-link:hover { color: var(--primary); }
