@@ -9,6 +9,7 @@ partner_name: "ΕΝ.Ο GREECE"
 partner_url: "https://enogreece.org/"
 partner_logo_url: "enologo.png"
 eu_funding_text: "Cofinanziato dall'Unione europea nell'ambito del programma Erasmus+."
+lastmod: 2026-06-28
 ---
 
 ## La terra degli dei

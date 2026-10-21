@@ -5,6 +5,7 @@ slug: "ai-fatigue-is-real"
 category: "Technology"
 draft: false
 description: "A reflection on AI fatigue — the quiet exhaustion that sets in when artificial intelligence is pushed into every corner of daily life, like it or not."
+lastmod: 2026-06-27
 ---
 
 ## The Email I Did Not Ask For

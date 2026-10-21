@@ -9,6 +9,7 @@ partner_name: "Association Walktogether"
 partner_url: "https://walktogethereu.com/"
 partner_logo_url: "walktogetherlogo.png"
 eu_funding_text: "Cofinancé par l'Union européenne dans le cadre du programme Erasmus+."
+lastmod: 2026-06-28
 ---
 
 

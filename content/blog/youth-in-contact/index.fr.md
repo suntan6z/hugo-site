@@ -10,6 +10,7 @@ partner_url: "https://www.lesschinis.com"
 partner_logo_url: "lesschinislogo.png"
 project_url: "https://youthincontact.wixsite.com/project"
 eu_funding_text: "Cofinancé par l'Union européenne dans le cadre du programme Erasmus+."
+lastmod: 2026-06-28
 ---
 
 ![Le lieu de Youth in Contact — un magnifique bâtiment français à Chérac](youthciphoto1.jpg)

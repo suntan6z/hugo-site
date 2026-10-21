@@ -9,6 +9,7 @@ partner_name: "ΕΝ.Ο GREECE"
 partner_url: "https://enogreece.org/"
 partner_logo_url: "enologo.png"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
+lastmod: 2026-06-27
 ---
 
 ## The Land of the Gods

@@ -17,13 +17,12 @@ defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = true
 
 # A page's "last modified" (sitemap <lastmod>, og modified time, JSON-LD dateModified)
-# comes from the date of the last git commit that touched its file, so it moves when
-# the page does. A `lastmod:` in front matter overrides it. This needs the build to
-# see the repository's history: a shallow clone would give every page the same date,
-# so check the live sitemap's dates after changing how the site is built.
-enableGitInfo = true
+# is the `lastmod:` in its front matter, which the portal sets whenever it changes the
+# file. It is not taken from git (enableGitInfo): StaticHost clones only the latest
+# commit, so every page would get the deploy date. A page with no `lastmod` falls back
+# to its `date`, and a page with neither has no <lastmod> at all.
 [frontmatter]
-  lastmod = ["lastmod", ":git", "date", "publishDate"]
+  lastmod = ["lastmod", "date", "publishDate"]
 
 # Categories are only a frontmatter label for the JS blog filter, not browsable
 # taxonomy term pages — disable taxonomy/term generation so Hugo doesn't emit

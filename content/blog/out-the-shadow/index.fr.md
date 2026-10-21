@@ -10,6 +10,7 @@ partner_url: "https://www.fundacjainnowacyjnejedukacji.eu"
 partner_logo_url: "fundacjalogo.png"
 project_url: "https://www.outtheshadow.eu"
 eu_funding_text: "Cofinancé par l'Union européenne dans le cadre du programme Erasmus+."
+lastmod: 2026-06-28
 ---
 
 

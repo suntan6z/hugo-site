@@ -1,6 +1,7 @@
 ---
 title: "About Me"
 description: "Lorenzo Loconsole — Italian in France. Digital sovereignty, web development, cultural exchange, and dance."
+lastmod: 2026-10-11
 ---
 <div>
   <section class="page-header">

@@ -1,6 +1,7 @@
 ---
 title: "Contatti"
 description: "Mettiti in contatto con Lorenzo Loconsole — domande, collaborazioni, feedback o solo per salutare. Leggo ogni messaggio."
+lastmod: 2026-10-18
 ---
 <div>
   <section class="page-header">

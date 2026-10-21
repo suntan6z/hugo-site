@@ -1,6 +1,7 @@
 ---
 title: "Politique de confidentialité"
 description: "Politique de confidentialité du site personnel de Lorenzo Loconsole. Découvrez comment vos données, les cookies et vos droits au titre du RGPD sont traités."
+lastmod: 2026-10-19
 ---
 <div>
   <section class="page-header">

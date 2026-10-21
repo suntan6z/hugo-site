@@ -9,6 +9,7 @@ partner_name: "VVI Foundation"
 partner_url: "https://www.vvifoundation.org/en/"
 partner_logo_url: "vvilogo.png"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
+lastmod: 2026-09-13
 ---
 
 

@@ -5,6 +5,7 @@ slug: "chat-control-eu"
 category: "Cybersecurity"
 draft: false
 description: "Chat Control is the EU proposal to mass-scan private messages."
+lastmod: 2026-10-11
 ---
 
 Some people just can't take a no as a response.

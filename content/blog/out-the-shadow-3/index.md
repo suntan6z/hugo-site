@@ -10,6 +10,7 @@ partner_url: "https://www.hermesacademy.it"
 partner_logo_url: "hermeslogo.png"
 project_url: "https://www.outtheshadow.eu"
 eu_funding_text: "Co-funded by the European Union under the Erasmus+ programme."
+lastmod: 2026-08-21
 ---
 
 

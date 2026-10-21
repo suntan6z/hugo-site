@@ -5,6 +5,7 @@ slug: "understanding-the-fediverse"
 category: "Technology"
 draft: false
 description: "Una guida chiara al Fediverso — il social network decentralizzato dove nessun algoritmo possiede il tuo feed e nessuna singola azienda controlla la conversazione."
+lastmod: 2026-06-28
 ---
 
 ## Una parola strana per un'idea strana

@@ -1,6 +1,7 @@
 ---
 title: "Chi sono"
 description: "Lorenzo Loconsole — un italiano in Francia. Sovranità digitale, sviluppo web, scambio culturale e danza."
+lastmod: 2026-07-22
 ---
 <div>
   <section class="page-header">

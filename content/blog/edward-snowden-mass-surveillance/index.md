@@ -5,6 +5,7 @@ slug: "edward-snowden-mass-surveillance"
 category: "Cybersecurity"
 draft: false
 description: "The story of Edward Snowden — the NSA contractor who exposed the largest mass surveillance programme in history and changed the privacy debate forever."
+lastmod: 2026-06-27
 ---
 
 ## The Breaking Point

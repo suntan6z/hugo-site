@@ -1,6 +1,7 @@
 ---
 title: "Privacy Policy"
 description: "Privacy policy for Lorenzo Loconsole's personal website. Learn how we handle your data, cookies, and your rights under GDPR."
+lastmod: 2026-10-19
 ---
 <div>
   <section class="page-header">

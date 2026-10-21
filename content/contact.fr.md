@@ -1,6 +1,7 @@
 ---
 title: "Contact"
 description: "Contactez Lorenzo Loconsole — questions, collaborations, retours ou simplement pour dire bonjour. Je lis chaque message."
+lastmod: 2026-10-18
 ---
 <div>
   <section class="page-header">

@@ -9,6 +9,7 @@ partner_name: "Association La Villa"
 partner_url: "https://la-villa.org"
 partner_logo_url: "lavillalogo.png"
 eu_funding_text: "Cofinancé par l'Union européenne dans le cadre du programme Erasmus+."
+lastmod: 2026-06-28
 ---
 
 La première fois que j'ai vu l'appel à participants pour « Theatre: Breaking the Wall of Extremism », mon cerveau est immédiatement entré en mode conflit. D'un côté : la France. La belle, l'enchanteresse France, nichée dans les Pyrénées. De l'autre : le théâtre. Un domaine où j'avais à peu près zéro expérience et un potentiel d'embarras maximal.

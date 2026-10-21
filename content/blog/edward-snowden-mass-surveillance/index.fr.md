@@ -5,6 +5,7 @@ slug: "edward-snowden-mass-surveillance"
 category: "Cybersecurity"
 draft: false
 description: "L'histoire d'Edward Snowden — le sous-traitant de la NSA qui a révélé le plus vaste programme de surveillance de masse de l'histoire et a changé à jamais le débat sur la vie privée."
+lastmod: 2026-06-28
 ---
 
 ## Le point de rupture

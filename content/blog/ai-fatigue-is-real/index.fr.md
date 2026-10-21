@@ -5,6 +5,7 @@ slug: "ai-fatigue-is-real"
 category: "Technology"
 draft: false
 description: "Une réflexion sur la fatigue de l'IA — l'épuisement silencieux qui s'installe quand l'intelligence artificielle est imposée dans chaque recoin du quotidien, qu'on le veuille ou non."
+lastmod: 2026-06-28
 ---
 
 ## L'e-mail que je n'ai pas demandé

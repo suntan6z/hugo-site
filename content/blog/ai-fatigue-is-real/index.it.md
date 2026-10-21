@@ -5,6 +5,7 @@ slug: "ai-fatigue-is-real"
 category: "Technology"
 draft: false
 description: "Una riflessione sulla stanchezza da IA — l'esaurimento silenzioso che si insinua quando l'intelligenza artificiale viene spinta in ogni angolo della vita quotidiana, che ci piaccia o no."
+lastmod: 2026-06-28
 ---
 
 ## L'e-mail che non avevo chiesto

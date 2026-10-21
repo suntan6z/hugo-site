@@ -5,6 +5,7 @@ slug: "edward-snowden-mass-surveillance"
 category: "Cybersecurity"
 draft: false
 description: "La storia di Edward Snowden — il contractor della NSA che ha svelato il più grande programma di sorveglianza di massa della storia e ha cambiato per sempre il dibattito sulla privacy."
+lastmod: 2026-06-28
 ---
 
 ## Il punto di rottura

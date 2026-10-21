@@ -1,6 +1,7 @@
 ---
 title: "À propos de moi"
 description: "Lorenzo Loconsole — un Italien en France. Souveraineté numérique, développement web, échange culturel et danse."
+lastmod: 2026-07-22
 ---
 <div>
   <section class="page-header">

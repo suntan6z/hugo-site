@@ -1,6 +1,7 @@
 ---
 title: "Informativa sulla privacy"
 description: "Informativa sulla privacy del sito personale di Lorenzo Loconsole. Scopri come vengono gestiti i tuoi dati, i cookie e i tuoi diritti ai sensi del GDPR."
+lastmod: 2026-10-19
 ---
 <div>
   <section class="page-header">
