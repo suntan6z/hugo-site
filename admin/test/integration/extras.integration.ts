@@ -262,7 +262,7 @@ describe('pages', () => {
 		const r = await portal.action('/pages/about?/review', pageForm('about', { title_it: 'Chi sono davvero' }), { cookie });
 		assert.equal(r.type, 'success', r.raw);
 		const review = r.data?.review as { changes: { path: string; added: number; removed: number }[] };
-		assert.deepEqual(review.changes.map((c) => [c.path, c.added, c.removed]), [['content/about.it.md', 1, 1]]);
+		assert.deepEqual(review.changes.map((c) => [c.path, c.added, c.removed]), [['content/about.it.md', 2, 2]]); // the title, and the lastmod that moves with it
 		assert.equal(portal.read(pageFile('about', 'it')), before);
 	});
 

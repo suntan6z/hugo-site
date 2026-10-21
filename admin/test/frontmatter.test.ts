@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { FrontMatter, FrontMatterError, formatScalar, fromForm } from '../src/lib/server/content/frontmatter.ts';
+import { FrontMatter, FrontMatterError, formatScalar, fromForm, stampLastmod, todayIso } from '../src/lib/server/content/frontmatter.ts';
 
 const REPO = path.resolve(import.meta.dirname, '..', '..');
 
@@ -77,7 +77,7 @@ describe('editing', () => {
 		const fm = FrontMatter.parse(read('content/blog/ai-fatigue-is-real/index.md'));
 		fm.set('featured_image', 'hero.webp');
 		assert.deepEqual(fm.keys(), [
-			'title', 'date', 'slug', 'category', 'draft', 'description', 'featured_image'
+			'title', 'date', 'slug', 'category', 'draft', 'description', 'featured_image', 'lastmod'
 		]);
 	});
 
@@ -193,3 +193,47 @@ describe('empty front matter', () => {
 		assert.equal(FrontMatter.parse(out).get('title'), 'New');
 	});
 });;
+
+describe('lastmod', () => {
+	const doc = (extra = '') => `---\ntitle: "A"\ndate: 2026-06-01\n${extra}---\nBody\n`;
+
+	test('a new file gets today as its last-modified date', () => {
+		const out = stampLastmod(null, FrontMatter.parse(doc()), '2026-10-21');
+		assert.match(out, /^lastmod: 2026-10-21$/m);
+	});
+
+	test('a file that did not change keeps the date it has, byte for byte', () => {
+		const before = doc('lastmod: 2026-07-01\n');
+		assert.equal(stampLastmod(before, FrontMatter.parse(before), '2026-10-21'), before);
+	});
+
+	test('a file with no date yet and no change is left alone, not stamped', () => {
+		const before = doc();
+		assert.equal(stampLastmod(before, FrontMatter.parse(before), '2026-10-21'), before);
+	});
+
+	test('a real change moves the date, replacing the old one', () => {
+		const before = doc('lastmod: 2026-07-01\n');
+		const fm = FrontMatter.parse(before).set('title', 'B');
+		const out = stampLastmod(before, fm, '2026-10-21');
+		assert.match(out, /^title: "B"$/m);
+		assert.match(out, /^lastmod: 2026-10-21$/m);
+		assert.equal((out.match(/^lastmod:/gm) ?? []).length, 1);
+	});
+
+	test('a changed body counts as a change', () => {
+		const before = doc('lastmod: 2026-07-01\n');
+		const out = stampLastmod(before, FrontMatter.parse(before).setBody('New body\n'), '2026-10-21');
+		assert.match(out, /^lastmod: 2026-10-21$/m);
+		assert.ok(out.endsWith('New body\n'));
+	});
+
+	test('it is written bare, like date, in YYYY-MM-DD form only', () => {
+		assert.equal(FrontMatter.empty().set('lastmod', '2026-10-21').serialize(), '---\nlastmod: 2026-10-21\n---\n');
+		assert.throws(() => FrontMatter.empty().set('lastmod', 'yesterday'));
+	});
+
+	test('the date helper is a calendar day', () => {
+		assert.equal(todayIso(new Date(Date.UTC(2026, 9, 21, 23, 59))), '2026-10-21');
+	});
+});

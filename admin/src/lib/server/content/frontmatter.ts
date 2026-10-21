@@ -48,11 +48,12 @@ export const POST_ORDER = [
 	'partner_url',
 	'partner_logo_url',
 	'project_url',
-	'eu_funding_text'
+	'eu_funding_text',
+	'lastmod'
 ] as const;
 
 /** Keys written as bare YAML scalars rather than quoted strings. */
-const BARE_KEYS = new Set(['date', 'draft', 'untranslated']);
+const BARE_KEYS = new Set(['date', 'lastmod', 'draft', 'untranslated']);
 
 /** The closed category enum. Also mirrored in i18n/*.toml and layouts/blog/list.html. */
 export const CATEGORIES = ['Technology', 'Cybersecurity', 'Personal', 'Erasmus+'] as const;
@@ -251,8 +252,8 @@ export function parseScalar(raw: string): Scalar {
 export function formatScalar(key: string, value: Scalar): string {
 	if (typeof value === 'boolean') return String(value);
 	if (BARE_KEYS.has(key)) {
-		if (key === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-			throw new FrontMatterError(`date must be YYYY-MM-DD, got ${JSON.stringify(value)}`);
+		if ((key === 'date' || key === 'lastmod') && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+			throw new FrontMatterError(`${key} must be YYYY-MM-DD, got ${JSON.stringify(value)}`);
 		}
 		return value;
 	}
@@ -261,3 +262,22 @@ export function formatScalar(key: string, value: Scalar): string {
 	}
 	return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
+
+/**
+ * The text to write for a file, with `lastmod` set to `today` when, and only when,
+ * something else in the file changed.
+ *
+ * The site's sitemap, og:modified_time and JSON-LD dateModified read `lastmod`. It is
+ * kept in the file rather than taken from git because StaticHost builds from a clone
+ * with only the latest commit, which would give every page the deploy date. Saving
+ * a page that did not change must not move its date, and saving one language of an
+ * article must not move the others', so the date is touched only on a real change.
+ */
+export function stampLastmod(before: string | null, fm: FrontMatter, today: string): string {
+	const unstamped = fm.serialize();
+	if (before !== null && unstamped === before) return before;
+	return fm.set('lastmod', today).serialize();
+}
+
+/** Today's date as a front matter date. */
+export const todayIso = (now: Date = new Date()): string => now.toISOString().slice(0, 10);

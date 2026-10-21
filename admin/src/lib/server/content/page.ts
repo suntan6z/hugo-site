@@ -1,5 +1,5 @@
 import { repo, type FileOp } from './repo.ts';
-import { FrontMatter } from './frontmatter.ts';
+import { FrontMatter, stampLastmod, todayIso } from './frontmatter.ts';
 import { LANGS, type Lang } from '../langs.ts';
 import { pageFile, type PageName } from '../../pages.ts';
 
@@ -64,7 +64,7 @@ export async function planPageSave(name: PageName, next: Record<Lang, PageText>)
 		const fm = raw === null ? FrontMatter.empty() : FrontMatter.parse(raw);
 		fm.set('title', t.title);
 		if (t.description || fm.has('description')) fm.set('description', t.description);
-		const out = fm.setBody(t.body).serialize();
+		const out = stampLastmod(raw, fm.setBody(t.body), todayIso());
 		if (out !== raw) ops.push({ path, content: out });
 	}
 	return ops;

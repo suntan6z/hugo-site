@@ -1,6 +1,6 @@
 import { repo, type FileOp } from './repo.ts';
 import { memo, mapLimit, DEFAULT_TTL_MS } from '../cache.ts';
-import { FrontMatter, CATEGORIES, fromForm, type Category } from './frontmatter.ts';
+import { FrontMatter, CATEGORIES, fromForm, stampLastmod, todayIso, type Category } from './frontmatter.ts';
 import { SLUG_RE, redirectStubs, rewriteLinks, repointStub } from './rename.ts';
 import { fileChange, type FileChange } from '../diff.ts';
 import { LANGS, type Lang } from '../langs.ts';
@@ -188,7 +188,8 @@ export async function renderFile(slug: string, shared: PostShared, t: PostTransl
 	if (t.untranslated) fm.set('untranslated', true);
 	else fm.remove('untranslated');
 
-	return fm.setBody(t.body).serialize();
+	// The date moves only if this save changed the file (see stampLastmod).
+	return stampLastmod(existing ?? null, fm.setBody(t.body), todayIso());
 }
 
 export interface SavePostInput {

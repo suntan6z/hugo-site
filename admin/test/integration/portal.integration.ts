@@ -172,7 +172,7 @@ describe('articles, end to end', () => {
 		assert.doesNotThrow(() => FrontMatter.parse(raw), 'the portal cannot re-read its own output');
 	});
 
-	test('changing one field touches exactly one line', async () => {
+	test('changing one field touches that line and the last-modified date, nothing else', async () => {
 		const before = portal.read('content/blog/first-home-nas/index.md')!.split('\n');
 		const r = await portal.action(
 			'/posts/first-home-nas?/save',
@@ -183,7 +183,9 @@ describe('articles, end to end', () => {
 		const after = portal.read('content/blog/first-home-nas/index.md')!.split('\n');
 		assert.equal(after.length, before.length);
 		const changed = after.filter((l, i) => l !== before[i]);
-		assert.deepEqual(changed, ['description: "A new description for the integration test."']);
+		// The field, and the page's last-modified date moving with it.
+		assert.deepEqual(changed.filter((l) => !l.startsWith('lastmod:')), ['description: "A new description for the integration test."']);
+		assert.ok(changed.every((l) => l.startsWith('description:') || /^lastmod: \d{4}-\d{2}-\d{2}$/.test(l)), changed.join(' | '));
 	});
 
 	test('adding a first translation to a post that has none works', async () => {
