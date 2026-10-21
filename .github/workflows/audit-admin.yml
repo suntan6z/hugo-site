@@ -1,0 +1,33 @@
+name: Audit Admin Portal dependencies
+
+# Fails on a known high-severity vulnerability in a dependency that ships.
+#
+# Not part of the push checks on purpose: an advisory is published against a
+# package that has not changed, so as a push gate it failed every article
+# saved from the portal (and blocked every deploy) until the lockfile was
+# patched, for reasons unrelated to the push. Here it runs when the
+# dependencies change and once a week, so one email means "update a package".
+on:
+  push:
+    branches: [main]
+    paths: ["admin/package.json", "admin/package-lock.json"]
+  pull_request:
+    paths: ["admin/package.json", "admin/package-lock.json"]
+  schedule:
+    - cron: "41 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: npm audit (production dependencies, high and above)
+        working-directory: admin
+        run: npm audit --omit=dev --audit-level=high

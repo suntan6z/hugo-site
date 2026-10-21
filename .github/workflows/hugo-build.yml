@@ -26,13 +26,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No photo may be published with its metadata (camera, date, GPS
       # position). The Hugo build itself refuses bundle and assets/ images that
       # carry any (layouts/partials/image-metadata-guard.html); this also
       # covers static/, which Hugo copies without looking.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - name: No image metadata

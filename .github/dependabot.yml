@@ -10,11 +10,22 @@ updates:
     groups:
       admin-dependencies:
         patterns: ["*"]
+    # One incompatible major in the group fails the whole PR (TypeScript 7
+    # against svelte-check's "^5 || ^6" peer range broke npm ci). Majors are
+    # taken by hand, when their dependents support them.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /admin
     schedule:
       interval: monthly
+    # The image's Node major follows the node-version the workflows test with
+    # (24); bump both together by hand.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

@@ -5,11 +5,15 @@ name: Test Admin Portal
 # fixtures, which would drift), so a content change can break it too. Likewise
 # the settings suites read hugo.toml, the hero photo and the CV, and the pages
 # suite reads the standalone pages and the contact form's ids in main.js.
+#
+# A push under admin/ is not listed here: Deploy Admin Portal calls this same
+# workflow before it deploys, so listing it would run the suite twice and send
+# two failure emails for one problem.
 on:
+  workflow_call:
   push:
     branches: [main]
     paths:
-      - "admin/**"
       - "content/blog/**"
       - "content/gallery/**"
       - "content/*.md"
@@ -34,8 +38,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - working-directory: admin
@@ -44,12 +48,16 @@ jobs:
       - name: Type check
         working-directory: admin
         run: npm run check
+      # Reads the real content/blog and content/gallery from the checkout, so a
+      # front-matter serializer regression blocks the deploy rather than
+      # silently shipping and breaking Hugo's FR/IT placeholder pages.
       - name: Unit tests (incl. front-matter round-trip against real content)
         working-directory: admin
         run: npm test
+      # Boots the production build against a throwaway copy of the site and
+      # drives it over HTTP: sign-in enforcement, CSRF, saving, uploads,
+      # translations, deletion. Nearly every serious bug found while building
+      # the portal lived in the seams these exercise and the unit tests miss.
       - name: Integration tests (real app, throwaway site copy)
         working-directory: admin
         run: npm run test:integration
-      - name: Dependency audit
-        working-directory: admin
-        run: npm audit --omit=dev --audit-level=high

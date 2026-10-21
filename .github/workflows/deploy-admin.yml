@@ -17,42 +17,23 @@ env:
   SCW_CONTAINER: admin
   SCW_REGION: fr-par
 
+# Two quick pushes must deploy in order, or the older one can finish last and
+# put the older code back live. Queued, never cancelled.
+concurrency:
+  group: deploy-admin
+  cancel-in-progress: false
+
 jobs:
+  # The same suite Test Admin Portal runs, called rather than copied, so a
+  # push touching admin/ runs it once and the two cannot drift apart.
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - working-directory: admin
-        run: npm ci
-      # Type errors do not fail a Vite build, so they would otherwise ship.
-      - name: Type check
-        working-directory: admin
-        run: npm run check
-      # Reads the real content/blog and content/gallery from the checkout, so a
-      # front-matter serializer regression blocks the deploy rather than
-      # silently shipping and breaking Hugo's FR/IT placeholder pages.
-      - working-directory: admin
-        run: npm test
-      # Boots the production build against a throwaway copy of the site and
-      # drives it over HTTP: sign-in enforcement, CSRF, saving, uploads,
-      # translations, deletion. Nearly every serious bug found while building
-      # the portal lived in the seams these exercise and the unit tests miss.
-      - name: Integration tests (real app, throwaway site copy)
-        working-directory: admin
-        run: npm run test:integration
-      # Fails on a known high-severity vulnerability in a dependency that ships.
-      - name: Dependency audit
-        working-directory: admin
-        run: npm audit --omit=dev --audit-level=high
+    uses: ./.github/workflows/test-admin.yml
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Log in to Scaleway Container Registry
         run: echo "${{ secrets.SCW_SECRET_KEY }}" | docker login "$REGISTRY" -u nologin --password-stdin

@@ -10,6 +10,12 @@ on:
   # Run it by hand from the Actions tab whenever functions/ changed.
   workflow_dispatch:
 
+# Two quick pushes must deploy in order, or the older one can finish last and
+# put the older code back live. Queued, never cancelled.
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,9 +33,9 @@ jobs:
       RESEND_SEGMENT_FR: ${{ vars.RESEND_SEGMENT_FR }}
       RESEND_SEGMENT_IT: ${{ vars.RESEND_SEGMENT_IT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
